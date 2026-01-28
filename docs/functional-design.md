@@ -100,11 +100,11 @@ graph TB
 
 **フロントエンド**
 - フレームワーク: Next.js 14+ (App Router)
-- ランタイム: Node.js 20+
+- ランタイム: Bun 1.0+（高速JavaScript/TypeScriptランタイム）
 - 音声処理: Web Audio API (PCM 16kHz形式)
 - WebSocket: ネイティブ WebSocket API
 - アニメーション: Rive (https://rive.app/)
-- 状態管理: Zustand
+- 状態管理: Jotai（Atomic状態管理、App Router対応）
 - デプロイ: Cloud Run (コンテナ)
 - 静的アセット配信: Cloud Storage + Cloud CDN
 
@@ -159,15 +159,16 @@ graph TB
   - 保護者アカウント連携
 
 **インフラ**
-- **ホスティング**: Cloud Run（バックエンド）、Firebase Hosting（フロントエンド）
+- **ホスティング**: Cloud Run（フロントエンド・バックエンド両方）
 - **コンテナ**: Docker（Cloud Run用）
 - **CI/CD**: Cloud Build + GitHub Actions
 - **モニタリング**: Cloud Logging + Cloud Monitoring
 - **環境変数**: Secret Manager
 
 **開発環境**
-- **パッケージ管理**: uv / pip
-- **依存関係**:
+- **フロントエンドパッケージ管理**: Bun（高速インストール・ビルトインツール）
+- **バックエンドパッケージ管理**: uv（Rust製高速Pythonパッケージマネージャ）
+- **主要依存関係**:
   - `google-adk>=1.20.0`
   - `fastapi>=0.115.0`
   - `google-cloud-speech>=2.20.0`
@@ -574,6 +575,145 @@ stateDiagram-v2
 └─────────────────────────────────────┘
 ```
 
+#### 1.6.6 CameraView（写真で問題認識）
+
+**状態1: カメラ起動前**
+```
+┌─────────────────────────────────────┐
+│  [戻る]      問題を選ぶ             │
+├─────────────────────────────────────┤
+│                                     │
+│        ┌─────────────┐              │
+│        │             │              │
+│        │ キャラクター│              │
+│        │             │              │
+│        └─────────────┘              │
+│                                     │
+│     問題をどうやって教える？         │
+│                                     │
+│   ┌─────────────────────┐           │
+│   │  🎤 声で伝える       │           │
+│   └─────────────────────┘           │
+│                                     │
+│   ┌─────────────────────┐           │
+│   │  📷 写真で伝える     │           │
+│   └─────────────────────┘           │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**状態2: カメラプレビュー**
+```
+┌─────────────────────────────────────┐
+│  [×]              カメラ            │
+├─────────────────────────────────────┤
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │                             │    │
+│  │                             │    │
+│  │      カメラプレビュー        │    │
+│  │      (リアルタイム映像)      │    │
+│  │                             │    │
+│  │    ┌─────────────────┐      │    │
+│  │    │  問題全体が入る  │      │    │
+│  │    │  ように撮影して  │      │    │
+│  │    │   ください      │      │    │
+│  │    └─────────────────┘      │    │
+│  │                             │    │
+│  │                             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│        ┌─────────────┐              │
+│        │  📸 撮影する │              │
+│        └─────────────┘              │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**状態3: 画像処理中**
+```
+┌─────────────────────────────────────┐
+│            問題を認識中...          │
+├─────────────────────────────────────┤
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │                             │    │
+│  │                             │    │
+│  │      撮影した画像            │    │
+│  │                             │    │
+│  │                             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│            ⏳ 処理中...             │
+│                                     │
+│         問題を認識しています         │
+│                                     │
+│    ━━━━━━━━━━━━━━━━━━━━            │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**状態4: 認識結果表示**
+```
+┌─────────────────────────────────────┐
+│  [×]          認識結果              │
+├─────────────────────────────────────┤
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │                             │    │
+│  │      撮影した画像            │    │
+│  │                             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │ 認識した問題文:              │    │
+│  │                             │    │
+│  │ 5 + 3 = ?                   │    │
+│  │                             │    │
+│  │ この問題は算数の             │    │
+│  │ たし算の問題です             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│   ┌────────────┐  ┌────────────┐    │
+│   │ この問題で │  │  撮り直す │    │
+│   │  始める   │  │           │    │
+│   └────────────┘  └────────────┘    │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**状態5: 認識エラー**
+```
+┌─────────────────────────────────────┐
+│  [×]            エラー              │
+├─────────────────────────────────────┤
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │                             │    │
+│  │      撮影した画像            │    │
+│  │      (ぼやけている)          │    │
+│  │                             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│        ⚠️ 問題を認識できませんでした  │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │ もう一度、以下を試してください:│    │
+│  │                             │    │
+│  │ ✓ 問題全体が写るように       │    │
+│  │ ✓ 明るい場所で撮影           │    │
+│  │ ✓ 文字がはっきり見えるように │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│   ┌────────────┐  ┌────────────┐    │
+│   │ もう一度  │  │ 声で伝える │    │
+│   │  撮影する │  │           │    │
+│   └────────────┘  └────────────┘    │
+│                                     │
+└─────────────────────────────────────┘
+```
+
 ---
 
 ## 2. コンポーネント設計
@@ -931,6 +1071,359 @@ public/animations/
 - 自力解答数
 - 獲得ポイント
 - 現在のストーリー位置
+
+#### 2.1.5 CameraInterface
+写真による問題認識機能
+
+**責務**
+- カメラ起動・写真撮影
+- 画像のプレビュー表示
+- 画像データの送信
+- OCR結果の表示
+- 認識エラーのハンドリング
+
+**状態**
+- `isCameraActive: boolean`
+- `capturedImage: string | null`
+- `isProcessing: boolean`
+- `recognizedText: string | null`
+- `recognitionError: string | null`
+
+**実装**
+
+```typescript
+'use client';
+
+import { useState, useRef } from 'react';
+
+interface CameraInterfaceProps {
+  onImageCaptured: (imageData: string) => void;
+  onTextRecognized: (text: string, problemData: ProblemData) => void;
+  onError: (error: string) => void;
+}
+
+interface ProblemData {
+  problemText: string;
+  problemType: 'math' | 'reading' | 'writing';
+  detectedEquations?: string[];
+  detectedDiagrams?: boolean;
+}
+
+export function CameraInterface({
+  onImageCaptured,
+  onTextRecognized,
+  onError
+}: CameraInterfaceProps) {
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [recognizedText, setRecognizedText] = useState<string | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // カメラを起動
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment', // 背面カメラを優先
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
+      }
+    } catch (error) {
+      onError('カメラの起動に失敗しました。カメラの権限を確認してください。');
+    }
+  };
+
+  // 写真を撮影
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    // キャンバスにビデオフレームを描画
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+
+    // Base64形式で画像データを取得
+    const imageData = canvas.toDataURL('image/jpeg', 0.9);
+    setCapturedImage(imageData);
+    onImageCaptured(imageData);
+
+    // カメラストリームを停止
+    const stream = video.srcObject as MediaStream;
+    stream?.getTracks().forEach(track => track.stop());
+    setIsCameraActive(false);
+
+    // 画像認識処理を開始
+    processImage(imageData);
+  };
+
+  // 画像認識処理
+  const processImage = async (imageData: string) => {
+    setIsProcessing(true);
+
+    try {
+      const response = await fetch('/api/vision/recognize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: imageData,
+          recognitionType: 'homework_problem'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('画像認識に失敗しました');
+      }
+
+      const result = await response.json();
+
+      setRecognizedText(result.problemText);
+      onTextRecognized(result.problemText, {
+        problemText: result.problemText,
+        problemType: result.problemType,
+        detectedEquations: result.equations,
+        detectedDiagrams: result.hasDiagrams
+      });
+
+    } catch (error) {
+      onError('問題の認識に失敗しました。もう一度撮影してください。');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 再撮影
+  const retakePhoto = () => {
+    setCapturedImage(null);
+    setRecognizedText(null);
+    startCamera();
+  };
+
+  return (
+    <div className="camera-interface">
+      {!isCameraActive && !capturedImage && (
+        <button onClick={startCamera} className="start-camera-button">
+          📷 写真で問題を認識する
+        </button>
+      )}
+
+      {isCameraActive && (
+        <div className="camera-view">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            className="camera-video"
+          />
+          <div className="camera-overlay">
+            <div className="capture-guide">
+              問題全体が入るように撮影してください
+            </div>
+          </div>
+          <button onClick={capturePhoto} className="capture-button">
+            撮影する
+          </button>
+        </div>
+      )}
+
+      {capturedImage && (
+        <div className="image-preview">
+          <img src={capturedImage} alt="撮影した問題" />
+
+          {isProcessing && (
+            <div className="processing-overlay">
+              <div className="spinner" />
+              <p>問題を認識しています...</p>
+            </div>
+          )}
+
+          {recognizedText && !isProcessing && (
+            <div className="recognition-result">
+              <h3>認識した問題文:</h3>
+              <p className="recognized-text">{recognizedText}</p>
+              <div className="action-buttons">
+                <button onClick={() => {/* 認識結果を確定 */}} className="confirm-button">
+                  この問題で始める
+                </button>
+                <button onClick={retakePhoto} className="retake-button">
+                  撮り直す
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+    </div>
+  );
+}
+```
+
+**画像認識の流れ**
+
+```mermaid
+sequenceDiagram
+    participant User as 子供
+    participant Camera as CameraInterface
+    participant API as Vision API
+    participant Gemini as Gemini Vision
+
+    User->>Camera: カメラ起動ボタンをクリック
+    Camera->>Camera: navigator.mediaDevices.getUserMedia()
+    Camera->>User: カメラプレビュー表示
+
+    User->>Camera: 撮影ボタンをクリック
+    Camera->>Camera: canvas.toDataURL()
+    Camera->>API: POST /api/vision/recognize
+
+    API->>Gemini: 画像 + プロンプト送信
+    Note over Gemini: 問題文抽出<br/>数式認識<br/>図形検出
+
+    Gemini->>API: 認識結果
+    API->>Camera: 問題データ
+    Camera->>User: 認識した問題文表示
+
+    User->>Camera: 「この問題で始める」クリック
+    Camera->>User: 対話セッション開始
+```
+
+**Gemini Vision プロンプト設計**
+
+```python
+# バックエンド: /api/vision/recognize エンドポイント
+VISION_PROMPT = """
+あなたは小学校低学年（1〜3年生）の宿題問題を認識するAIです。
+画像から以下の情報を抽出してください：
+
+1. **問題文**: 画像に書かれている問題の文章を正確に読み取ってください
+2. **問題タイプ**: 算数/国語/その他を判定してください
+3. **数式**: 数式が含まれている場合は、LaTeX形式で抽出してください
+4. **図形**: 図形や図表が含まれているかを判定してください
+
+出力形式（JSON）：
+{
+  "problemText": "問題文全体",
+  "problemType": "math" | "reading" | "writing",
+  "equations": ["2 + 3 = ?", "x + 5 = 10"],
+  "hasDiagrams": true | false,
+  "confidence": 0.95
+}
+
+注意事項：
+- 手書き文字も正確に読み取ってください
+- 漢字にはルビ（ふりがな）が振られている場合があります
+- 問題番号（1. 2. など）は含めないでください
+"""
+
+async def recognize_homework_problem(image_data: str) -> dict:
+    """Gemini Visionで宿題問題を認識"""
+    import base64
+    from google import genai
+
+    # Base64デコード
+    image_bytes = base64.b64decode(image_data.split(',')[1])
+
+    # Gemini Vision呼び出し
+    client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+    response = client.models.generate_content(
+        model='gemini-2.0-flash-exp',
+        contents=[
+            VISION_PROMPT,
+            {
+                'inline_data': {
+                    'mime_type': 'image/jpeg',
+                    'data': base64.b64encode(image_bytes).decode()
+                }
+            }
+        ]
+    )
+
+    # JSON解析
+    result = json.loads(response.text)
+    return result
+```
+
+**UI/UX設計**
+
+| 状態 | 表示 | 操作 |
+|------|------|------|
+| **初期状態** | 「📷 写真で問題を認識する」ボタン | ボタンをタップしてカメラ起動 |
+| **カメラアクティブ** | リアルタイムプレビュー + ガイド線 | 「撮影する」ボタン |
+| **画像処理中** | スピナー + 「問題を認識しています...」 | （待機） |
+| **認識完了** | 認識した問題文 + 確認/撮り直しボタン | 確認して対話開始 or 撮り直し |
+| **認識エラー** | エラーメッセージ + 撮り直しボタン | 撮り直し |
+
+**エラーハンドリング**
+
+```typescript
+interface RecognitionError {
+  type: 'camera_permission' | 'recognition_failed' | 'low_confidence' | 'network_error';
+  message: string;
+  suggestions: string[];
+}
+
+const ERROR_MESSAGES = {
+  camera_permission: {
+    message: 'カメラの権限が必要です',
+    suggestions: [
+      'ブラウザの設定でカメラを許可してください',
+      '音声入力に切り替えることもできます'
+    ]
+  },
+  recognition_failed: {
+    message: '問題を認識できませんでした',
+    suggestions: [
+      '問題全体が写るように撮影してください',
+      '明るい場所で撮影してください',
+      '手書き文字ははっきりと書いてください'
+    ]
+  },
+  low_confidence: {
+    message: '問題の認識に自信がありません',
+    suggestions: [
+      '認識した内容を確認してください',
+      '正しくない場合は撮り直してください'
+    ]
+  },
+  network_error: {
+    message: 'ネットワークエラーが発生しました',
+    suggestions: [
+      'インターネット接続を確認してください',
+      'もう一度試してください'
+    ]
+  }
+};
+```
+
+**パフォーマンス最適化**
+
+- **画像圧縮**: JPEG品質90%、最大1920x1080px
+- **プログレッシブ処理**: 低解像度プレビュー → 高精度認識
+- **キャッシュ**: 同じ画像の再認識を防止
+- **タイムアウト**: 10秒以内に応答がない場合はエラー
+
+**アクセシビリティ**
+
+- カメラ非対応デバイスでは音声入力のみ表示
+- ファイルアップロードの代替手段を提供
+- 認識結果の読み上げ機能
 
 ### 2.2 バックエンドサービス
 
@@ -2025,6 +2518,114 @@ GET /api/problems?grade=1&subject=math   # 問題取得
 GET /api/problems/:problemId             # 問題詳細
 ```
 
+#### 5.1.6 画像認識（Vision API）
+
+```
+POST /api/vision/recognize               # 画像から問題を認識
+```
+
+**リクエスト**
+```typescript
+{
+  image: string,              // Base64エンコードされた画像データ
+  recognitionType: 'homework_problem' | 'handwriting' | 'diagram'
+}
+```
+
+**レスポンス（成功時）**
+```typescript
+{
+  success: true,
+  problemText: string,        // 認識された問題文
+  problemType: 'math' | 'reading' | 'writing',
+  equations?: string[],       // 数式（LaTeX形式）
+  hasDiagrams: boolean,       // 図形・図表の有無
+  confidence: number,         // 認識精度（0.0-1.0）
+  metadata: {
+    processingTime: number,   // 処理時間（ms）
+    imageSize: {
+      width: number,
+      height: number
+    }
+  }
+}
+```
+
+**レスポンス（エラー時）**
+```typescript
+{
+  success: false,
+  error: {
+    type: 'recognition_failed' | 'low_confidence' | 'invalid_image',
+    message: string,
+    suggestions: string[]
+  }
+}
+```
+
+**実装例（FastAPI）**
+
+```python
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+import base64
+from google import genai
+
+router = APIRouter()
+
+class VisionRequest(BaseModel):
+    image: str
+    recognitionType: str = 'homework_problem'
+
+@router.post("/api/vision/recognize")
+async def recognize_image(request: VisionRequest):
+    """画像から宿題問題を認識"""
+    try:
+        # Base64デコード
+        if ',' in request.image:
+            image_data = request.image.split(',')[1]
+        else:
+            image_data = request.image
+
+        image_bytes = base64.b64decode(image_data)
+
+        # Gemini Vision呼び出し
+        result = await recognize_homework_problem(image_bytes)
+
+        # 信頼度が低い場合は警告
+        if result['confidence'] < 0.7:
+            return {
+                "success": False,
+                "error": {
+                    "type": "low_confidence",
+                    "message": "問題の認識に自信がありません",
+                    "suggestions": [
+                        "明るい場所で撮影してください",
+                        "問題全体が写るように撮影してください",
+                        "手書き文字ははっきりと書いてください"
+                    ]
+                }
+            }
+
+        return {
+            "success": True,
+            **result
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": {
+                    "type": "recognition_failed",
+                    "message": "画像認識に失敗しました",
+                    "suggestions": ["もう一度撮影してください"]
+                }
+            }
+        )
+```
+
 ### 5.2 WebSocket API
 
 #### 5.2.1 接続
@@ -2133,6 +2734,66 @@ GET /api/problems/:problemId             # 問題詳細
     confidence: number
   }
 }
+```
+
+#### 5.2.5 画像認識イベント
+
+```typescript
+// クライアント → サーバー（写真で問題開始）
+{
+  type: 'start_with_image',
+  payload: {
+    problemText: string,
+    problemType: 'math' | 'reading' | 'writing',
+    imageUrl?: string,        // オプション: 画像の保存URL
+    metadata: {
+      equations?: string[],
+      hasDiagrams: boolean,
+      confidence: number
+    }
+  }
+}
+
+// サーバー → クライアント（画像認識確認）
+{
+  type: 'image_problem_confirmed',
+  payload: {
+    problemId: string,
+    coachResponse: string,     // 「では、この問題を一緒に考えてみよう！」
+    audioUrl: string
+  }
+}
+
+// サーバー → クライアント（画像認識エラー）
+{
+  type: 'image_recognition_error',
+  payload: {
+    error: string,
+    suggestions: string[]
+  }
+}
+```
+
+**画像認識フロー**
+
+```
+1. 子供が写真を撮影
+   ↓
+2. CameraInterface → POST /api/vision/recognize
+   ↓
+3. Gemini Vision が問題文を認識
+   ↓
+4. 認識結果をクライアントに表示
+   ↓
+5. 子供が「この問題で始める」をクリック
+   ↓
+6. WebSocket: 'start_with_image' イベント送信
+   ↓
+7. サーバーが問題をPROBLEMテーブルに保存
+   ↓
+8. サーバーから 'image_problem_confirmed' 返却
+   ↓
+9. 通常の対話セッション開始
 ```
 
 ---
@@ -2830,14 +3491,19 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# システム依存関係
+# システム依存関係 + uvインストール
 RUN apt-get update && apt-get install -y \
+    curl \
     gcc \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
-# Python依存関係
+# uvをPATHに追加
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Python依存関係（uvで高速インストール）
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --system --no-cache -r requirements.txt
 
 # アプリケーションコード
 COPY ./app /app
@@ -2849,6 +3515,11 @@ EXPOSE 8080
 # Uvicornでアプリ起動
 CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT}
 ```
+
+**uvを使った利点:**
+- 依存関係インストール時間が大幅短縮（pip比10-100倍高速）
+- Dockerビルド時間の短縮
+- メモリ使用量の削減
 
 #### requirements.txt
 ```txt
@@ -2867,22 +3538,22 @@ redis>=5.0.0
 #### frontend/Dockerfile
 ```dockerfile
 # マルチステージビルドでイメージサイズを最適化
-FROM node:20-alpine AS builder
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
 # 依存関係のインストール
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
 # アプリケーションコードのコピー
 COPY . .
 
 # Next.jsビルド
-RUN npm run build
+RUN bun run build
 
 # 本番用イメージ
-FROM node:20-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 
 WORKDIR /app
 
@@ -2896,15 +3567,20 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
 # 非rootユーザーで実行
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 bunjs
+RUN adduser --system --uid 1001 nextjs -G bunjs
 USER nextjs
 
 EXPOSE 8080
 
-# Next.jsサーバー起動
-CMD ["node", "server.js"]
+# Next.jsサーバー起動（Bunで実行）
+CMD ["bun", "run", "server.js"]
 ```
+
+**Bun Dockerイメージの利点:**
+- イメージサイズが小さい（Alpine: ~50MB）
+- 起動が高速（Node.jsより2-3倍速い）
+- メモリ使用量が少ない
 
 #### next.config.js
 ```javascript
@@ -2972,21 +3648,22 @@ module.exports = nextConfig;
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start -p ${PORT:-8080}",
-    "lint": "next lint"
+    "dev": "bun run next dev",
+    "build": "bun run next build",
+    "start": "bun run next start -p ${PORT:-8080}",
+    "lint": "bun run next lint",
+    "test": "bun test"
   },
   "dependencies": {
     "next": "^14.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zustand": "^4.5.0",
+    "jotai": "^2.6.0",
     "@rive-app/react-canvas": "^4.7.0",
     "@rive-app/react-webgl": "^4.7.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
+    "@types/bun": "^1.0.0",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "typescript": "^5.3.3",
@@ -2995,6 +3672,8 @@ module.exports = nextConfig;
   }
 }
 ```
+
+**注:** Bunは`bun.lockb`ファイルを生成します（package-lock.jsonの代わり）
 
 ### 12.4 CI/CD パイプライン（Cloud Build + GitHub Actions）
 
@@ -3326,37 +4005,49 @@ module.exports = {
 **マルチステージビルドでサイズ削減:**
 
 ```dockerfile
-# フロントエンド（Next.js）
-FROM node:20-alpine AS builder
+# フロントエンド（Next.js + Bun）
+FROM oven/bun:1 AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile --production
 COPY . .
-RUN npm run build
+RUN bun run build
 
-FROM node:20-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# 目標: イメージサイズ < 100MB
+# 目標: イメージサイズ < 80MB（Bunの方が小さい）
 ```
 
-**バックエンド（FastAPI）:**
+**バックエンド（FastAPI + uv）:**
 
 ```dockerfile
 FROM python:3.11-slim
 WORKDIR /app
 
-# 不要なパッケージを削除
+# uvインストール
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     gcc \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
-# 軽量なPythonイメージ使用
-# 目標: イメージサイズ < 500MB
+# uvをPATHに追加
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# 依存関係インストール（uvで高速化）
+COPY requirements.txt .
+RUN uv pip install --system -r requirements.txt
+
+# アプリケーションコード
+COPY . .
+
+# 軽量なPythonイメージ + uv使用
+# 目標: イメージサイズ < 500MB、ビルド時間50%削減
 ```
 
 #### 対策2: 起動時間の最適化
@@ -3589,12 +4280,26 @@ backend:
 ---
 
 **文書作成日**: 2026-01-28
-**バージョン**: 1.5
+**バージョン**: 1.6
 **作成者**: Claude Code
 **レビュー状態**: Draft
-**最終更新**: ER図、ユースケース図、画面遷移図、ワイヤフレーム、機能別アーキテクチャ追加（設計完了）
+**最終更新**: 技術スタック更新（Bun, Jotai, uv採用）、Dockerfile最適化（2026-01-29）
 
 ## 変更履歴
+
+### v1.6 (2026-01-29)
+- **技術スタックを更新**（セクション1.2）
+  - フロントエンドランタイムをNode.jsからBunに変更
+  - 状態管理をZustandからJotaiに変更
+  - バックエンドパッケージマネージャをuvに決定
+- **Dockerfileを更新**
+  - フロントエンド: Bunベースイメージに変更（セクション12.3）
+  - バックエンド: uvを使用した依存関係インストールに変更
+- **package.jsonを更新**（セクション12.3）
+  - jotaiに変更、bunコマンド対応
+  - bun.lockb使用（package-lock.json代替）
+- **インフラ設定を統一**
+  - フロントエンド・バックエンド両方をCloud Runで統一
 
 ### v1.5 (2026-01-28)
 - **ER図を追加**（セクション4.0）- データモデルの関係を視覚化
