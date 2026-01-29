@@ -1,5 +1,11 @@
 # Cloud Firestore 設計ドキュメント
 
+**Document Version**: 1.0
+**Last Updated**: 2026-01-28
+**Status**: 設計完了
+
+---
+
 ## 1. Cloud Firestoreに保存するデータ
 
 ### 1.1 リアルタイムデータの定義
@@ -514,5 +520,4 @@ service cloud.firestore {
 
 ---
 
-**作成日**: 2026-01-28
 **作成者**: Claude Code

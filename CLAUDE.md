@@ -58,11 +58,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### MVP Phase (フェーズ1)
 
-- **Platform**: Webサービス
-- **STT (Speech-to-Text)**: リアルタイム音声認識
-- **TTS (Text-to-Speech)**: 自然な音声合成（低レイテンシ < 500ms）
-- **LLM**: 対話生成・質問生成
-- **Dialogue Management**: 対話管理システム
+- **Frontend**: Next.js 14+ (App Router) + Bun
+- **Backend**: FastAPI + Python 3.10+ + uv
+- **Infrastructure**: Google Cloud Run
+- **Database**: Cloud Firestore (リアルタイムデータ), BigQuery (分析用データ), Redis (キャッシュ)
+- **AI/ML**: Google ADK + Gemini Live API
+- **STT**: Cloud Speech-to-Text API
+- **TTS**: Cloud Text-to-Speech API
+- **Vision**: Gemini Vision + Cloud Vision API (画像認識)
 
 ### Phase 2 Extensions
 
@@ -87,21 +90,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation
 
-- `docs/product-requirements.md`: プロダクト要求仕様書（詳細な機能要件、開発フェーズ、KPIなど）
+- `docs/product-requirements.md`: プロダクト要求仕様書（ビジネス要件、機能要件、KPI）
+- `docs/functional-design.md`: 機能設計書（システムアーキテクチャ、API仕様、データフロー）
+- `docs/architecture.md`: 技術仕様書（技術スタック、インフラ設計、パフォーマンス要件）
+- `docs/development-guidelines.md`: 開発ガイドライン（TDD原則、コーディング規約、テスト規約）
+- `docs/firestore-design.md`: Firestoreスキーマ設計（データ構造、セキュリティルール）
+- `docs/repository-structure.md`: リポジトリ構造定義（ディレクトリ構成、命名規則）
 
 ## Development Context
 
-このプロジェクトは現在、初期段階（プランニングフェーズ）です。コードベースはまだ存在せず、プロダクト要求仕様書のみが作成されています。
+このプロジェクトは現在、**設計フェーズ完了・実装準備中**の段階です。
 
-実装を開始する際は、以下の順序で進めることが推奨されます：
+### 完了済み
 
-1. **技術検証（PoC）**: 音声認識精度の確認、対話エンジンのプロトタイプ
-2. **MVPの設計**: アーキテクチャ設計、技術スタックの選定
-3. **コア機能の実装**: ソクラテス式対話エンジン、3段階ヒントシステム
+- プロダクト要求仕様書の作成
+- 機能設計書の作成（システムアーキテクチャ、API設計）
+- 技術仕様書の作成（技術スタック確定、インフラ設計）
+- 開発ガイドラインの策定（TDD原則、コーディング規約）
+- データベース設計（Firestore、BigQuery）
+- リポジトリ構造の定義
+
+### 実装開始時の順序
+
+1. **リポジトリセットアップ**: モノレポ構造の作成、CI/CD設定
+2. **技術検証（PoC）**: Google ADK + Gemini Live APIの動作確認
+3. **コア機能の実装**: ソクラテス式対話エンジン、3段階ヒントシステム（TDD実践）
 4. **パイロットテスト**: 小規模グループでのβテスト
+
+### 開発方針
+
+- **テスト駆動開発（TDD）を徹底**: t_wadaが提唱するRed-Green-Refactorサイクルを実践
+- **小さく始める**: MVPに必要な機能のみを実装
+- **品質を優先**: テストカバレッジ80%以上を維持
 
 ## Important Notes
 
 - **ターゲットユーザーは小学校低学年**: UIやメッセージは平易な日本語で
 - **学習効果の最大化**: 単なる回答提供ツールではなく、思考プロセスを育てることが目的
 - **成長マインドセット**: 正解だけでなく、挑戦したこと、間違いから学んだことを称賛
+
+## Development Guidelines
+
+実装時は必ず `docs/development-guidelines.md` を参照してください。
+
+### 必須事項
+
+1. **テスト駆動開発（TDD）の徹底**
+   - 実装コードを書く前に必ずテストを書く
+   - Red-Green-Refactorサイクルを守る
+   - テストカバレッジ80%以上を維持
+
+2. **コーディング規約の遵守**
+   - フロントエンド: TypeScript + React (関数コンポーネント)
+   - バックエンド: Python + FastAPI (型ヒント必須)
+   - 命名規則: camelCase (TS), snake_case (Python)
+
+3. **Git規約**
+   - ブランチ戦略: Git Flow
+   - コミットメッセージ: Conventional Commits形式
+   - PR前に自己レビュー必須
