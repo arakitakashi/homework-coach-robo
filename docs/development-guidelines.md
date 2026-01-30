@@ -1,6 +1,6 @@
 # 宿題コーチロボット - 開発ガイドライン
 
-**Document Version**: 1.7
+**Document Version**: 1.8
 **Last Updated**: 2026-01-31
 **Status**: Active
 
@@ -999,180 +999,59 @@ Git Workflow skillには以下が含まれます：
 ---
 ## 8. セキュリティガイドライン
 
-### 9.1 機密情報の管理
+**重要**: 認証実装、ユーザー入力処理、API作成、秘密情報管理、クラウドインフラ設定を行う際は、必ず**Security Review skill**を参照してください。
 
-**環境変数の使用:**
+### Security Review Skillの使用
 
-```bash
-# ❌ 悪い例: ハードコード
-const GEMINI_API_KEY = 'AIzaSyC...';
+セキュリティガイドラインの詳細は専用スキルに分離されています。
 
-# ✅ 良い例: 環境変数
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+以下のコマンドでSecurity Review skillを呼び出してください：
 
-# ✅ 良い例（Python）
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+```
+/security-review
 ```
 
-**.gitignoreに追加:**
+Security Review skillには以下が含まれます：
 
-```gitignore
-# 機密情報
-.env
-.env.local
-.env.production
-*.pem
-*.key
-credentials.json
-service-account.json
+- **Secrets Management**: 環境変数、クラウドシークレット管理、ローテーション
+- **Input Validation**: Zod/Pydanticバリデーション、ファイルアップロード検証
+- **SQL Injection Prevention**: パラメータ化クエリ、ORMの安全な使用
+- **Authentication & Authorization**: JWT、httpOnly cookies、Row Level Security
+- **XSS Prevention**: HTMLサニタイズ、Content Security Policy
+- **CSRF Protection**: トークン検証、SameSite cookies
+- **Rate Limiting**: API制限、高負荷操作の保護
+- **Sensitive Data Exposure**: ログのリダクション、エラーメッセージの安全化
+- **Dependency Security**: npm audit、定期的な更新
+- **Pre-Deployment Checklist**: 本番環境デプロイ前の必須チェック項目
 
-# ログ・デバッグファイル
-*.log
-debug.log
+### Cloud Infrastructure Security
+
+クラウドインフラ、CI/CD、デプロイ設定に関するセキュリティは、別途以下のドキュメントを参照してください：
+
+```
+.claude/skills/security-review/cloud-infrastructure-security.md
 ```
 
-### 9.2 入力検証
+クラウドセキュリティには以下が含まれます：
 
-```typescript
-// ✅ 良い例: サーバー側で検証
-import { z } from 'zod';
+- **IAM & Access Control**: 最小権限の原則、MFA
+- **Network Security**: VPC、ファイアウォール、セキュリティグループ
+- **Logging & Monitoring**: CloudWatch、監査ログ
+- **CI/CD Pipeline Security**: OIDC認証、シークレットスキャン、依存関係監査
+- **Cloudflare & CDN Security**: WAF、DDoS保護
+- **Backup & Disaster Recovery**: 自動バックアップ、復旧テスト
 
-const SessionCreateSchema = z.object({
-  userId: z.string().uuid(),
-  character: z.enum(['robot', 'wizard', 'astronaut', 'animal']),
-  gradeLevel: z.number().int().min(1).max(3)
-});
+### 基本原則
 
-export async function createSession(data: unknown) {
-  // バリデーション
-  const validated = SessionCreateSchema.parse(data);
+このプロジェクトでは、以下のセキュリティ原則を常に遵守します：
 
-  // 処理
-  return await createSessionInDb(validated);
-}
-```
+1. **機密情報はコードに含めない**: すべてのAPIキー、パスワード、トークンは環境変数またはクラウドシークレット管理サービスで管理
+2. **すべての入力を検証**: ユーザー入力は必ずバリデーションスキーマで検証
+3. **最小権限の原則**: IAMロール、データベースアクセスは必要最小限に
+4. **多層防御**: セキュリティは一つの層に依存せず、複数の防御層を構築
+5. **セキュアデフォルト**: デフォルト設定は常に最も安全な設定に
 
-```python
-# ✅ 良い例: Pydanticで検証
-from pydantic import BaseModel, validator
-
-class SessionCreate(BaseModel):
-    user_id: str
-    character: str
-    grade_level: int
-
-    @validator('character')
-    def validate_character(cls, v):
-        allowed = ['robot', 'wizard', 'astronaut', 'animal']
-        if v not in allowed:
-            raise ValueError(f'character must be one of {allowed}')
-        return v
-
-    @validator('grade_level')
-    def validate_grade_level(cls, v):
-        if v < 1 or v > 3:
-            raise ValueError('grade_level must be between 1 and 3')
-        return v
-```
-
-### 9.3 XSS対策
-
-```typescript
-// ✅ 良い例: Reactの自動エスケープ
-export function DialogueMessage({ content }: { content: string }) {
-  return <p>{content}</p>; // 自動的にエスケープされる
-}
-
-// ❌ 悪い例: dangerouslySetInnerHTMLの不用意な使用
-export function DialogueMessage({ content }: { content: string }) {
-  return <p dangerouslySetInnerHTML={{ __html: content }} />; // XSSリスク
-}
-
-// ✅ 良い例: 必要な場合はサニタイズ
-import DOMPurify from 'isomorphic-dompurify';
-
-export function DialogueMessage({ content }: { content: string }) {
-  const sanitized = DOMPurify.sanitize(content);
-  return <p dangerouslySetInnerHTML={{ __html: sanitized }} />;
-}
-```
-
-### 9.4 SQLインジェクション対策
-
-```python
-# ✅ 良い例: パラメータ化クエリ（BigQuery）
-from google.cloud import bigquery
-
-async def get_user_sessions(user_id: str):
-    query = """
-        SELECT * FROM homework_coach.sessions
-        WHERE user_id = @user_id
-    """
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ScalarQueryParameter("user_id", "STRING", user_id)
-        ]
-    )
-    results = client.query(query, job_config=job_config)
-    return list(results)
-
-# ❌ 悪い例: 文字列結合
-async def get_user_sessions(user_id: str):
-    query = f"SELECT * FROM sessions WHERE user_id = '{user_id}'"
-    # SQLインジェクションリスク
-```
-
-### 9.5 認証・認可
-
-```python
-# ✅ 良い例: 適切な認証・認可
-from fastapi import Depends, HTTPException, status
-from firebase_admin import auth
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        decoded_token = auth.verify_id_token(token)
-        return decoded_token
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials"
-        )
-
-@router.get("/api/v1/sessions/{session_id}")
-async def get_session(
-    session_id: str,
-    current_user = Depends(get_current_user)
-):
-    session = await fetch_session(session_id)
-
-    # 認可チェック
-    if session.user_id != current_user['uid']:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
-        )
-
-    return session
-```
-
-### 9.6 レート制限
-
-```python
-# API rate limiting
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-@router.post("/api/v1/vision/recognize")
-@limiter.limit("10/minute")
-async def recognize_image(request: Request):
-    # 処理
-    pass
-```
+**詳細な実装パターンとチェックリストは `/security-review` skillを参照してください。**
 
 ---
 
@@ -1242,6 +1121,14 @@ async def recognize_image(request: Request):
 - PRテンプレート、コードレビューチェックリスト
 - **使用タイミング**: ブランチ作成時、コミット時、PR作成時、レビュー時
 
+**Security Review Skill** (`/security-review`)
+- OWASP Top 10対策、セキュリティチェックリスト
+- Secrets Management、Input Validation、SQL/XSS/CSRF対策
+- 認証・認可、レート制限、データ保護
+- 依存関係セキュリティ、デプロイ前チェックリスト
+- Cloud Infrastructure Security（IAM、ネットワーク、CI/CD、WAF）
+- **使用タイミング**: 認証実装時、API作成時、ユーザー入力処理時、デプロイ前
+
 ### フロントエンド開発
 
 **Frontend Skill** (`/frontend`)
@@ -1280,12 +1167,23 @@ async def recognize_image(request: Request):
 3. **フロントエンド** → `/frontend` でUI/UX実装（Next.js + React + TypeScript）
 4. **AIエージェント基礎** → `/google-adk-basics` でAgent構造設計
 5. **音声対話機能** → `/google-adk-live` でリアルタイム対話実装
-6. **テスト実行** → `/tdd` のRed-Green-Refactorサイクルで品質確保
-7. **コミット・PR** → `/git-workflow` でGit操作・レビュー
+6. **セキュリティレビュー** → `/security-review` でセキュリティチェック（認証、入力検証、秘密管理）
+7. **テスト実行** → `/tdd` のRed-Green-Refactorサイクルで品質確保
+8. **コミット・PR** → `/git-workflow` でGit操作・レビュー
 
 ---
 
 ## 変更履歴
+
+### v1.8 (2026-01-31)
+- **セキュリティガイドラインのスキル分離**
+  - セキュリティセクション（旧9.1〜9.6）を`security-review` skillに分離
+  - 詳細なコード例（Secrets、Input Validation、XSS、SQL Injection、認証・認可、Rate Limiting）をskillに移行
+  - development-guidelines.mdは基本原則のみに簡素化
+  - Cloud Infrastructure Securityドキュメントへの参照を追加
+  - セキュリティの5つの基本原則を明記
+  - 利用可能なスキルセクションに`security-review`を追加
+  - 推奨実装フローを8ステップに拡張（セキュリティレビューステップを追加）
 
 ### v1.7 (2026-01-31)
 - **ブランチ戦略とプルリクエストの必須化**
