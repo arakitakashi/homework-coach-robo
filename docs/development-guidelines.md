@@ -1,6 +1,6 @@
 # 宿題コーチロボット - 開発ガイドライン
 
-**Document Version**: 1.4
+**Document Version**: 1.7
 **Last Updated**: 2026-01-31
 **Status**: Active
 
@@ -9,14 +9,16 @@
 ## 目次
 
 1. [開発の基本方針](#1-開発の基本方針)
+   - 1.1 [全ての開発はテストから始める](#11-全ての開発はテストから始める)
+   - 1.2 [なぜTDDなのか](#12-なぜtddなのか)
+   - 1.3 [必ずブランチを切ってプルリクエストを作成する](#13-必ずブランチを切ってプルリクエストを作成する)
 2. [テスト駆動開発（TDD）](#2-テスト駆動開発tdd)
 3. [コーディング規約](#3-コーディング規約)
 4. [命名規則](#4-命名規則)
 5. [スタイリング規約](#5-スタイリング規約)
 6. [テスト規約](#6-テスト規約)
-7. [Git規約](#7-git規約)
-8. [レビュープロセス](#8-レビュープロセス)
-9. [セキュリティガイドライン](#9-セキュリティガイドライン)
+7. [Git規約とレビュープロセス](#7-git規約とレビュープロセス)
+8. [セキュリティガイドライン](#8-セキュリティガイドライン)
 
 ---
 
@@ -42,6 +44,32 @@ TDDを実践することで、以下のメリットが得られます：
 3. **安心感**: リファクタリングや機能追加時に既存機能の破壊を防ぐ
 4. **ドキュメント**: テストコードが仕様書・ドキュメントとして機能する
 5. **開発速度の向上**: 長期的にはデバッグ時間が減り、開発が加速する
+
+### 1.3 必ずブランチを切ってプルリクエストを作成する
+
+**基本原則:**
+
+- **機能開発は必ず専用ブランチで行う**: `main`や`develop`ブランチに直接コミットしない
+- **すべての変更はプルリクエストを経由する**: レビュープロセスを省略しない
+- **Git Workflow skillを参照する**: ブランチ作成、コミット、PR作成時は必ず `/git-workflow` スキルを参照
+
+**実施方法:**
+
+1. 新機能開発や修正を始める前に、適切な命名規則でブランチを作成
+   ```bash
+   git checkout -b feature/awesome-new-feature
+   ```
+
+2. Git Workflow skillを参照して、適切なブランチ戦略とコミットメッセージを確認
+   ```
+   /git-workflow
+   ```
+
+3. 実装完了後、プルリクエストを作成してコードレビューを依頼
+
+4. レビュー承認後、マージを実行
+
+**詳細は `/git-workflow` スキルを参照してください。**
 
 ---
 
@@ -76,6 +104,8 @@ TDD skillには以下が含まれます：
 ---
 
 ## 3. コーディング規約
+
+**注**: フロントエンド開発の詳細なガイドライン（TypeScript、React、Next.js、Tailwind CSS、テストなど）については `/frontend` スキルを参照してください。
 
 ### 3.1 フロントエンド（TypeScript / React）
 
@@ -938,235 +968,36 @@ pytest --cov=app --cov-report=html --cov-report=term
 
 ---
 
-## 7. Git規約
 
-### 7.1 ブランチ戦略（Git Flow）
+## 7. Git規約とレビュープロセス
 
-```
-main (本番環境)
-  ↑
-develop (開発環境)
-  ↑
-feature/xxx (機能開発)
-hotfix/xxx (緊急修正)
-```
+**重要**: Git操作、ブランチ作成、コミット、プルリクエスト、コードレビューを行う際は、必ず**Git Workflow skill**を参照してください。
 
-**ブランチ命名規則:**
+### Git Workflow Skillの使用
 
-```bash
-# 機能開発
-feature/dialogue-engine
-feature/camera-interface
-feature/hint-system-level-1
+Git規約とレビュープロセスの詳細は専用スキルに分離されています。
 
-# バグ修正
-fix/audio-recording-issue
-fix/websocket-disconnect
-
-# ホットフィックス
-hotfix/critical-audio-bug
-hotfix/security-vulnerability
-
-# リファクタリング
-refactor/reorganize-components
-refactor/optimize-audio-processing
-
-# ドキュメント
-docs/update-architecture
-docs/add-api-documentation
-```
-
-### 7.2 コミットメッセージ規約
-
-**フォーマット:**
+以下のコマンドでGit Workflow skillを呼び出してください：
 
 ```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
+/git-workflow
 ```
 
-**Type:**
+Git Workflow skillには以下が含まれます：
 
-```bash
-feat:     新機能追加
-fix:      バグ修正
-docs:     ドキュメント更新
-style:    コードフォーマット（機能変更なし）
-refactor: リファクタリング
-test:     テスト追加・修正
-chore:    ビルド・設定変更
-perf:     パフォーマンス改善
-ci:       CI/CD設定変更
-```
-
-**例:**
-
-```bash
-# 良い例
-feat(dialogue): add 3-level hint system
-
-Implemented the 3-level hint system as specified in PRD:
-- Level 1: Problem understanding confirmation
-- Level 2: Recall of learned knowledge
-- Level 3: Partial support
-
-Closes #42
-
-# 良い例（日本語）
-feat(dialogue): 3段階ヒントシステムの実装
-
-PRDに記載された3段階ヒントシステムを実装:
-- レベル1: 問題理解の確認
-- レベル2: 既習事項の想起
-- レベル3: 部分的支援
-
-Closes #42
-
-# 悪い例
-update code
-```
-
-### 7.3 コミット粒度
-
-```bash
-# ✅ 良い例: 適切な粒度
-git commit -m "feat(audio): add audio recording component"
-git commit -m "feat(audio): integrate Web Audio API for level monitoring"
-git commit -m "test(audio): add tests for audio recorder hook"
-
-# ❌ 悪い例: 粒度が大きすぎる
-git commit -m "feat: implement entire dialogue system with audio and hints"
-
-# ❌ 悪い例: 粒度が小さすぎる
-git commit -m "fix: typo"
-git commit -m "fix: another typo"
-git commit -m "fix: one more typo"
-```
-
-### 7.4 プルリクエスト
-
-**PRタイトル:**
-
-```
-feat(dialogue): ソクラテス式対話エンジンの実装
-fix(audio): WebSocket接続の切断問題を修正
-```
-
-**PRテンプレート:**
-
-```markdown
-## 概要
-<!-- この変更の概要を記載 -->
-
-## 変更内容
-<!-- 具体的な変更内容を箇条書きで -->
--
--
--
-
-## 関連Issue
-<!-- 関連するIssueをリンク -->
-Closes #123
-
-## テスト
-<!-- テスト方法を記載 -->
-- [ ] ユニットテスト追加
-- [ ] 統合テスト追加
-- [ ] 手動テスト完了
-
-## スクリーンショット（該当する場合）
-<!-- UI変更の場合はスクリーンショットを添付 -->
-
-## チェックリスト
-- [ ] コードレビュー依頼前に自己レビュー完了
-- [ ] テストが全て通過
-- [ ] ドキュメント更新（必要な場合）
-- [ ] CLAUDE.mdの指針に従っている
-```
-
-### 7.5 コードレビュー
-
-**レビュワーの責任:**
-
-- コードの正確性を確認
-- セキュリティ脆弱性のチェック
-- パフォーマンスへの影響を評価
-- 可読性・保守性を確認
-- テストの妥当性を検証
-
-**レビュー基準:**
-
-```markdown
-## 必須チェック項目
-- [ ] 機能要件を満たしているか
-- [ ] テストが十分か（カバレッジ80%以上）
-- [ ] セキュリティリスクはないか
-- [ ] パフォーマンスへの悪影響はないか
-- [ ] コーディング規約に準拠しているか
-- [ ] ドキュメントが適切に更新されているか
-
-## 推奨チェック項目
-- [ ] より良い実装方法はないか
-- [ ] エッジケースが考慮されているか
-- [ ] エラーハンドリングが適切か
-- [ ] ログ出力が適切か
-```
+- **Git Flow**ブランチ戦略（main/develop/feature/hotfix）
+- **ブランチ命名規則**（feature/fix/refactor/docs）
+- **Conventional Commits**形式のコミットメッセージ
+- **コミット粒度**のベストプラクティス
+- **プルリクエストテンプレート**とタイトル規則
+- **コードレビューチェックリスト**
+- **レビュープロセス**とマージ基準
+- **一般的なGitワークフロー**（feature/bugfix/hotfix）
+- **Git設定**推奨事項
+- **トラブルシューティング**（reset/rebase/conflicts）
 
 ---
-
-## 8. レビュープロセス
-
-### 8.1 プルリクエストの作成
-
-1. **ブランチ作成**
-   ```bash
-   git checkout develop
-   git pull origin develop
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **変更の実装**
-   - 小さく、レビュー可能な単位で実装
-   - 1PR = 1機能/修正を原則とする
-
-3. **自己レビュー**
-   - コミット前に自分でコードを確認
-   - 不要なコメント・デバッグコードを削除
-   - テストを実行
-
-4. **PR作成**
-   ```bash
-   git push origin feature/your-feature-name
-   # GitHub上でPR作成
-   ```
-
-### 8.2 レビューフロー
-
-```
-作成者: PR作成
-  ↓
-レビュワー1: 初回レビュー（1営業日以内）
-  ↓
-作成者: フィードバック対応
-  ↓
-レビュワー2: 2次レビュー（必要な場合）
-  ↓
-承認 → マージ
-```
-
-### 8.3 マージ基準
-
-- 最低1名のApprove必須
-- CIが全てグリーン
-- コンフリクト解消済み
-- 全てのコメントが解決済み
-
----
-
-## 9. セキュリティガイドライン
+## 8. セキュリティガイドライン
 
 ### 9.1 機密情報の管理
 
@@ -1384,9 +1215,98 @@ async def recognize_image(request: Request):
 - [PEP 8 -- Style Guide for Python Code](https://peps.python.org/pep-0008/)
 - [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
 
+**AI/ML:**
+- [Google ADK Documentation](https://google.github.io/adk-docs)
+- [Gemini Live API](https://ai.google.dev/gemini-api/docs/live)
+- [ADK Python Repository](https://github.com/google/adk-python)
+- [ADK Samples](https://github.com/google/adk-samples)
+
+---
+
+## 利用可能なスキル
+
+このプロジェクトには、実装時に活用できるClaudeスキルが用意されています。スキルを使用することで、ベストプラクティスに従った実装が可能になります。
+
+### 開発プロセス
+
+**TDD Skill** (`/tdd`)
+- 和田卓人（t_wada）が提唱するTDD原則（完全版）
+- Red-Green-Refactorサイクル、仮実装・三角測量・明白な実装
+- TODOリスト駆動開発、ベイビーステップ
+- **使用タイミング**: 新機能実装開始時、テストファースト開発時
+
+**Git Workflow Skill** (`/git-workflow`)
+- Git Flow + Conventional Commits
+- ブランチ戦略（feature/fix/hotfix/refactor/docs）
+- コミットメッセージ規約（`<type>(<scope>): <subject>`）
+- PRテンプレート、コードレビューチェックリスト
+- **使用タイミング**: ブランチ作成時、コミット時、PR作成時、レビュー時
+
+### フロントエンド開発
+
+**Frontend Skill** (`/frontend`)
+- Next.js 14+ (App Router) + TypeScript + React
+- コンポーネント規約、命名規則、Tailwind CSS
+- Vitest + Testing Library、Zod バリデーション
+- **使用タイミング**: フロントエンド実装時、UI開発時、テスト作成時
+
+### バックエンド開発
+
+**FastAPI Skill** (`/fastapi`)
+- FastAPI 0.128.0 + Pydantic v2のベストプラクティス
+- Firestore統合、JWT認証、プロジェクト構造
+- 7つの既知の問題と予防策
+- **使用タイミング**: バックエンドAPI実装時、Firestore連携時、認証実装時
+
+**Google ADK Basics Skill** (`/google-adk-basics`)
+- Agent Development Kit (ADK) の基礎
+- Agent構造規約（root_agent/App patterns）
+- プロジェクトセットアップ（uv + Python 3.11+）
+- ツール統合、セッション管理、マルチエージェント
+- **使用タイミング**: ADKプロジェクトのセットアップ時、Agent構造設計時
+
+**Google ADK Live Skill** (`/google-adk-live`)
+- Gemini Live API（Bidi-streaming）の完全ガイド
+- リアルタイム音声・動画インタラクション
+- LiveRequestQueue + RunConfig、FastAPI + WebSocket統合
+- 音声トランスクリプション、セッション再開
+- **使用タイミング**: 音声対話エンジン実装時、リアルタイムAI構築時
+- **前提**: `/google-adk-basics` の知識が必要
+
+### 推奨される実装フロー
+
+1. **機能設計** → `/tdd` で仕様をテストコードとして記述
+2. **バックエンドAPI** → `/fastapi` でAPI実装
+3. **フロントエンド** → `/frontend` でUI/UX実装（Next.js + React + TypeScript）
+4. **AIエージェント基礎** → `/google-adk-basics` でAgent構造設計
+5. **音声対話機能** → `/google-adk-live` でリアルタイム対話実装
+6. **テスト実行** → `/tdd` のRed-Green-Refactorサイクルで品質確保
+7. **コミット・PR** → `/git-workflow` でGit操作・レビュー
+
 ---
 
 ## 変更履歴
+
+### v1.7 (2026-01-31)
+- **ブランチ戦略とプルリクエストの必須化**
+  - セクション1.3「必ずブランチを切ってプルリクエストを作成する」を追加
+  - 機能開発時のブランチ運用ルールを明文化
+  - Git Workflow skillの参照を明示
+  - 目次にサブセクション詳細を追加
+
+### v1.6 (2026-01-31)
+- **スキル分離によるコンパクト化**
+  - Git規約とレビュープロセス（旧7,8章）を`git-workflow` skillに分離
+  - フロントエンド詳細ガイドラインを`frontend` skillに分離
+  - development-guidelines.mdを1488行→1300行程度に削減
+  - 利用可能なスキルセクションに`frontend`と`git-workflow`を追加
+  - 推奨実装フローを更新（7ステップに拡張）
+
+### v1.5 (2026-01-31)
+- **利用可能なスキルセクションを追加**
+  - TDD、FastAPI、Google ADK Basics、Google ADK Live skillの説明を追加
+  - 推奨される実装フローを記載
+  - AI/ML関連の参考資料を追加
 
 ### v1.4 (2026-01-31)
 - **FastAPI重複記述の削除**
