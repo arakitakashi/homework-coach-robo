@@ -1,0 +1,5 @@
+{
+  "name": "git-workflow",
+  "description": "Git Flow workflow + Conventional Commits: Branch naming (feature/fix/hotfix/refactor/docs), commit message format (<type>(<scope>): <subject>), PR templates, code review checklist, merge criteria. Use for: Git operations, creating branches, writing commits, pull requests, code reviews.",
+  "user-invocable": true
+}

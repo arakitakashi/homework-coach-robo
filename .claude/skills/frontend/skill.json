@@ -1,0 +1,5 @@
+{
+  "name": "frontend",
+  "description": "Next.js 14+ (App Router) + TypeScript + React best practices: Coding conventions, file structure, naming rules, component patterns, error handling, Tailwind CSS styling, accessibility, Vitest testing, and validation patterns. Use for: Frontend development, React components, Next.js App Router, TypeScript coding, UI implementation.",
+  "user-invocable": true
+}

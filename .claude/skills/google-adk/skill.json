@@ -1,5 +1,0 @@
-{
-  "name": "google-adk",
-  "description": "Build AI agents with Google Agent Development Kit (ADK) and Gemini Live API. Covers real-time streaming (WebSocket/bidi-streaming), tool integration, agent configuration, FastAPI integration, and voice processing patterns. Use when: implementing Gemini Live API, building real-time AI agents, integrating ADK with FastAPI, or developing voice-based conversational AI systems.",
-  "user-invocable": true
-}

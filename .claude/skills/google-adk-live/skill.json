@@ -1,0 +1,5 @@
+{
+  "name": "google-adk-live",
+  "description": "Gemini Live API (Bidi-streaming) with ADK: Real-time voice/video interactions, LiveRequestQueue, RunConfig, WebSocket + FastAPI integration, audio transcription (input/output), session resumption, event processing patterns, voice activity detection, tool execution in live mode. Based on production sample 'realtime-conversational-agent'. Use for: Real-time voice AI, WebSocket streaming, native audio agents, conversational AI systems.",
+  "user-invocable": true
+}

@@ -1,0 +1,5 @@
+{
+  "name": "google-adk-basics",
+  "description": "Google ADK (Agent Development Kit) fundamentals: Agent structure conventions (root_agent/App patterns), project setup with uv + Python 3.11+, Simple Agent vs App Pattern, tool integration, session management (InMemoryRunner/VertexAIRunner), multi-agent systems, best practices, and common issues. Use for: Basic ADK agent development, project setup, agent structure, and core patterns.",
+  "user-invocable": true
+}

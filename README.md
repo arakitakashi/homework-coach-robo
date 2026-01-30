@@ -181,6 +181,48 @@ mkdir -p .steering/20250115-add-tag-feature
 
 #### 6. 品質チェック
 
+## 利用可能なスキル
+
+本プロジェクトでは、実装時に活用できるClaudeスキルが用意されています。
+スキルを使用することで、ベストプラクティスに従った実装が可能になります。
+
+### 開発プロセス
+
+- **TDD Skill** (`/tdd`) - テスト駆動開発の完全ガイド（和田卓人の原則準拠）
+- **使用タイミング**: 新機能実装開始時、テストファースト開発時
+
+- **Git Workflow Skill** (`/git-workflow`) - Git Flow + Conventional Commits
+- **使用タイミング**: ブランチ作成時、コミット時、PR作成時、レビュー時
+
+### フロントエンド開発
+
+- **Frontend Skill** (`/frontend`) - Next.js 14+ (App Router) + TypeScript + React
+- **使用タイミング**: フロントエンド実装時、UI開発時、テスト作成時
+
+### バックエンド開発
+
+- **FastAPI Skill** (`/fastapi`) - FastAPI + Pydantic v2 + Firestore統合
+- **使用タイミング**: バックエンドAPI実装時、Firestore連携時、認証実装時
+
+- **Google ADK Basics Skill** (`/google-adk-basics`) - ADKの基礎とAgent構造
+- **使用タイミング**: ADKプロジェクトのセットアップ時、Agent構造設計時
+
+- **Google ADK Live Skill** (`/google-adk-live`) - Gemini Live API（リアルタイム音声・動画）
+- **使用タイミング**: 音声対話エンジン実装時、リアルタイムAI構築時
+- **前提**: `/google-adk-basics` の知識が必要
+
+### 推奨される実装フロー
+
+1. **機能設計** → `/tdd` で仕様をテストコードとして記述
+2. **バックエンドAPI** → `/fastapi` でAPI実装
+3. **フロントエンド** → `/frontend` でUI/UX実装（Next.js + React + TypeScript）
+4. **AIエージェント基礎** → `/google-adk-basics` でAgent構造設計
+5. **音声対話機能** → `/google-adk-live` でリアルタイム対話実装
+6. **テスト実行** → `/tdd` のRed-Green-Refactorサイクルで品質確保
+7. **コミット・PR** → `/git-workflow` でGit操作・レビュー
+
+詳細は `CLAUDE.md` および `docs/development-guidelines.md` を参照してください。
+
 ## ドキュメント管理の原則
 
 ### 永続的ドキュメント（`docs/`）
