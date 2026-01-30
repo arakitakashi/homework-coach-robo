@@ -1,7 +1,5 @@
-# ADK関連ディレクトリ（外部リソース）
-adk-docs/
-adk-python/
-adk-samples/
+# 外部参照リソース（ADK関連、サンプルコード等）
+refs/
 
 # 環境変数
 .env
