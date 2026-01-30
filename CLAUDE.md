@@ -152,153 +152,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Available Skills
 
-実装時に活用できるスキルが用意されています。スキルを使用することで、ベストプラクティスに従った実装が可能になります。
+実装時に活用できるスキルが `.claude/skills/` に用意されています。詳細は `docs/development-guidelines.md` の「利用可能なスキル」セクションを参照してください。
 
-### TDD Skill
+### 開発プロセス
 
-**使用方法**: `/tdd` コマンド
+- **`/tdd`** - テスト駆動開発（Red-Green-Refactor、仮実装・三角測量・明白な実装）
+- **`/git-workflow`** - Git Flow + Conventional Commits（ブランチ戦略、コミット規約）
+- **`/security-review`** - OWASP Top 10対策、セキュリティチェックリスト
 
-**内容**:
-- 和田卓人（t_wada）が提唱するTDD原則（完全版）
-- Red-Green-Refactorサイクルの詳細解説
-- 仮実装・三角測量・明白な実装の3つの戦略
-- TODOリスト駆動開発
-- ベイビーステップの実践方法
-- TDDチェックリスト
+### フロントエンド開発
 
-**使用タイミング**:
-- 新機能の実装開始時
-- テストファーストで進めたい時
-- TDDのベストプラクティスを確認したい時
+- **`/frontend`** - Next.js 14+ App Router + TypeScript + React（コンポーネント規約、テスト）
+- **`/frontend-design`** - 高品質なUI/UXデザイン指針（独自性、美しさ、ユーザビリティ）
+- **`/vercel-react-best-practices`** - パフォーマンス最適化（45ルール、バンドル削減）
 
-### Frontend Skill
+### バックエンド開発
 
-**使用方法**: `/frontend` コマンド
+- **`/fastapi`** - FastAPI 0.128.0 + Pydantic v2 + Firestore統合（JWT認証、7つの既知問題）
+- **`/google-adk-basics`** - Agent Development Kit基礎（Agent構造、ツール統合）
+- **`/google-adk-live`** - Gemini Live API（双方向ストリーミング、音声対話）
 
-**内容**:
-- Next.js 14+ (App Router) + TypeScript + React
-- プロジェクト構造とファイル配置
-- TypeScript型定義とUtility Types
-- React コンポーネントパターン（Server/Client Component）
-- 命名規則（PascalCase/camelCase）
-- Tailwind CSS スタイリング
-- アクセシビリティ（ARIA、キーボードナビゲーション）
-- Vitest + Testing Library
-- Zod バリデーション
-
-**使用タイミング**:
-- フロントエンド実装開始時
-- Next.js App Routerでの開発時
-- React コンポーネント作成時
-- UI/UXテスト作成時
-
-### FastAPI Skill
-
-**使用方法**: `/fastapi` コマンド
-
-**内容**:
-- FastAPI 0.128.0 + Pydantic v2のベストプラクティス
-- Firestore統合パターン
-- JWT認証の実装方法
-- プロジェクト構造（ドメインベース）
-- 7つの既知の問題と予防策
-- CORS、バリデーション、非同期処理のパターン
-
-**使用タイミング**:
-- バックエンドAPI実装時
-- Firestore連携の実装時
-- JWT認証の実装時
-- FastAPIのエラー対処時
-
-### Google ADK Basics Skill
-
-**使用方法**: `/google-adk-basics` コマンド
-
-**内容**:
-- Agent Development Kit (ADK) の基礎
-- Agent構造規約（root_agent/App patterns）
-- プロジェクトセットアップ（uv + Python 3.11+）
-- Simple Agent vs App Pattern
-- ツール統合（定義、ハンドラー、使用方法）
-- セッション管理（InMemoryRunner/VertexAIRunner）
-- マルチエージェントシステム
-- ベストプラクティスとよくある問題
-
-**使用タイミング**:
-- ADK開発の基礎を学ぶとき
-- Agentの構造を設計するとき
-- ADKプロジェクトのセットアップ時
-- ツール統合の実装時
-
-### Google ADK Live Skill
-
-**使用方法**: `/google-adk-live` コマンド
-
-**内容**:
-- Gemini Live API（Bidi-streaming）の完全ガイド
-- リアルタイム音声・動画インタラクション
-- LiveRequestQueue + RunConfig
-- FastAPI + WebSocket統合（production sample準拠）
-- 音声トランスクリプション（入力/出力）
-- セッション再開機能
-- イベント処理パターン
-- 音声アクティビティ検出
-- ツール実行（Liveモード）
-
-**使用タイミング**:
-- Gemini Live API実装時
-- リアルタイム音声AIの構築時
-- WebSocketベースの会話型AI開発時
-- 双方向ストリーミング実装時
-- 本プロジェクトの音声対話エンジン実装時
-
-**注意**: このスキルは `/google-adk-basics` の知識が前提です。
-
-### Git Workflow Skill
-
-**使用方法**: `/git-workflow` コマンド
-
-**内容**:
-- Git Flow ブランチ戦略（main/develop/feature/hotfix）
-- ブランチ命名規則（feature/fix/refactor/docs）
-- Conventional Commits形式（`<type>(<scope>): <subject>`）
-- コミット粒度のベストプラクティス
-- プルリクエストテンプレート
-- コードレビューチェックリスト
-- レビュープロセスとマージ基準
-- 一般的なGitワークフロー（feature/bugfix/hotfix）
-- Git設定推奨事項
-- トラブルシューティング（reset/rebase/conflicts）
-
-**使用タイミング**:
-- ブランチ作成時
-- コミットメッセージを書くとき
-- プルリクエスト作成時
-- コードレビュー時
-- Git操作で困ったとき
-
-### Security Review Skill
-
-**使用方法**: `/security-review` コマンド
-
-**内容**:
-- OWASP Top 10対策の実装パターン
-- Secrets Management（環境変数、クラウドシークレット管理）
-- Input Validation（Zod、Pydantic、ファイルアップロード検証）
-- SQL Injection Prevention（パラメータ化クエリ、ORM安全使用）
-- Authentication & Authorization（JWT、httpOnly cookies、RLS）
-- XSS Prevention（HTMLサニタイズ、CSP）
-- CSRF Protection（トークン、SameSite cookies）
-- Rate Limiting（API制限、高負荷操作保護）
-- Sensitive Data Exposure（ログリダクション、エラー安全化）
-- Dependency Security（npm audit、定期更新）
-- Cloud Infrastructure Security（IAM、ネットワーク、CI/CD、WAF）
-- Pre-Deployment Checklist（本番デプロイ前チェック項目）
-
-**使用タイミング**:
-- 認証・認可機能の実装時
-- ユーザー入力処理の実装時
-- API エンドポイント作成時
-- 秘密情報・クレデンシャルの管理時
-- クラウドインフラ設定時
-- 本番デプロイ前のセキュリティレビュー時
+**注意**: `/google-adk-live` は `/google-adk-basics` の知識が前提です。
