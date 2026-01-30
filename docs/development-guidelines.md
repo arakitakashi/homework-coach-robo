@@ -1,6 +1,6 @@
 # 宿題コーチロボット - 開発ガイドライン
 
-**Document Version**: 1.9
+**Document Version**: 2.0
 **Last Updated**: 2026-01-31
 **Status**: Active
 
@@ -150,7 +150,9 @@ Frontend skillには以下が含まれます：
 
 #### FastAPI Skillの使用
 
-実装時は以下のコマンドでFastAPI skillを呼び出してください：
+バックエンド開発の詳細なガイドラインは専用スキルに分離されています。
+
+以下のコマンドでFastAPI skillを呼び出してください：
 
 ```
 /fastapi
@@ -158,335 +160,75 @@ Frontend skillには以下が含まれます：
 
 FastAPI skillには以下が含まれます：
 
-- **プロジェクト構造**（ドメインベース）
-- **Firestore統合**パターン
-- **JWT認証**の実装方法
-- **Pydantic v2**のベストプラクティス
-- **7つの既知の問題**と予防策
-- CORS、バリデーション、非同期処理のパターン
-- テストとデプロイメント
+- **プロジェクト構造**: ドメインベースのディレクトリ構成
+- **Firestore統合**: 接続パターン、CRUD操作、トランザクション
+- **JWT認証**: Firebase Admin SDK、認証・認可パターン
+- **Pydantic v2**: モデル定義、バリデーション、型変換
+- **7つの既知の問題**: よくある問題と予防策
+- **CORS・バリデーション・非同期処理**: ベストプラクティス
+- **テストとデプロイメント**: pytest、TestClient、Cloud Run
 
 #### 基本原則
 
-- **型ヒントを必ず使用**: 全ての関数・メソッドに型ヒント
-- **非同期処理**: I/O処理は`async/await`を使用
-- **依存性注入**: FastAPIのDependency Injectionを活用
-- **エラーハンドリング**: 適切な例外処理とHTTPステータスコード
+このプロジェクトでは、以下のバックエンド開発原則を常に遵守します：
 
-#### Pythonコーディング規約
+1. **型ヒントを必ず使用**: 全ての関数・メソッドに型ヒントを付与
+2. **非同期処理**: I/O処理は`async/await`を使用
+3. **依存性注入**: FastAPIのDependency Injectionを活用
+4. **エラーハンドリング**: 適切な例外処理とHTTPステータスコード
+5. **PEP 8準拠**: Pythonコーディング規約を遵守
 
-**PEP 8準拠:**
-
-```python
-# ✅ 良い例: PEP 8準拠
-from typing import Optional, List
-from datetime import datetime
-from pydantic import BaseModel
-
-class DialogueTurn(BaseModel):
-    """対話のターンを表すモデル"""
-    turn_id: str
-    speaker: str
-    content: str
-    timestamp: datetime
-    emotion: Optional[str] = None
-
-def create_dialogue_turn(
-    speaker: str,
-    content: str,
-    emotion: Optional[str] = None
-) -> DialogueTurn:
-    """
-    新しい対話ターンを作成する
-
-    Args:
-        speaker: 話者（'child' or 'ai'）
-        content: 発話内容
-        emotion: 感情状態（オプション）
-
-    Returns:
-        作成された DialogueTurn インスタンス
-    """
-    return DialogueTurn(
-        turn_id=generate_id(),
-        speaker=speaker,
-        content=content,
-        timestamp=datetime.now(),
-        emotion=emotion
-    )
-
-# ❌ 悪い例: PEP 8違反
-def createDialogueTurn(speaker,content,emotion=None):
-    return DialogueTurn(turn_id=generate_id(),speaker=speaker,content=content,timestamp=datetime.now(),emotion=emotion)
-```
-
-**型ヒントの徹底:**
-
-```python
-from typing import Optional, List, Dict, Any
-
-# ✅ 良い例: 完全な型ヒント
-async def get_session(session_id: str, db: FirestoreClient) -> Optional[Session]:
-    """セッションを取得する"""
-    # 実装は FastAPI skill を参照
-
-# ❌ 悪い例: 型ヒントなし
-async def get_session(session_id, db):
-    # 型情報が欠落
-```
-
-**詳細な実装例は `/fastapi` skillを参照してください。**
+**詳細な実装パターンとコード例は `/fastapi` skillを参照してください。**
 
 ---
 
 ## 4. 命名規則
 
-**注**: フロントエンドの命名規則については `/frontend` スキルを参照してください。
-
-### 4.1 バックエンド（Python）
-
-#### ファイル命名
-
-```
-app/
-├── dialogue_engine.py          # snake_case
-├── hint_system.py              # snake_case
-└── emotion_analyzer.py         # snake_case
-```
-
-#### 変数・関数命名
-
-```python
-# 変数: snake_case
-session_id = 'abc123'
-is_recording = False
-audio_level = 0.5
-
-# 定数: UPPER_SNAKE_CASE
-MAX_AUDIO_LEVEL = 100
-DEFAULT_CHARACTER = 'robot'
-API_BASE_URL = os.getenv('API_BASE_URL')
-
-# 関数: snake_case
-def create_session(user_id: str) -> Session:
-    pass
-
-async def fetch_user_data(user_id: str) -> User:
-    pass
-
-# Boolean変数: is/has/canプレフィックス
-is_loading = True
-has_error = False
-can_submit = True
-
-# プライベート関数・変数: _プレフィックス
-def _internal_helper(data: str) -> str:
-    pass
-
-_private_constant = 'internal'
-```
-
-#### クラス命名
-
-```python
-# クラス: PascalCase
-class DialogueEngine:
-    pass
-
-class HintSystem:
-    pass
-
-# 例外クラス: Error/Exceptionサフィックス
-class SessionNotFoundError(Exception):
-    pass
-
-class ValidationError(ValueError):
-    pass
-
-# Pydanticモデル: PascalCase
-class SessionCreate(BaseModel):
-    user_id: str
-    character: str
-
-class SessionResponse(BaseModel):
-    id: str
-    user_id: str
-    status: str
-```
+**注**:
+- フロントエンドの命名規則については `/frontend` スキルを参照
+- バックエンド（Python）の命名規則については `/fastapi` スキルを参照
 
 ---
 
 ## 5. スタイリング規約
 
-**注**: フロントエンドのスタイリング規約（Tailwind CSS、アクセシビリティ）については `/frontend` スキルを参照してください。
-
-### 5.1 コードフォーマット
-
-#### フロントエンド（Prettier）
-
-```json
-// .prettierrc
-{
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": true,
-  "printWidth": 100,
-  "tabWidth": 2,
-  "useTabs": false,
-  "arrowParens": "always"
-}
-```
-
-#### バックエンド（Black + isort）
-
-```toml
-# pyproject.toml
-[tool.black]
-line-length = 100
-target-version = ['py310']
-include = '\.pyi?$'
-
-[tool.isort]
-profile = "black"
-line_length = 100
-multi_line_output = 3
-include_trailing_comma = true
-```
+**注**:
+- フロントエンドのスタイリング規約（Tailwind CSS、アクセシビリティ、Prettier）については `/frontend` スキルを参照
+- バックエンドのコードフォーマット（Black、isort）については `/fastapi` スキルを参照
 
 ---
 
 ## 6. テスト規約
 
-**注**: フロントエンドのテスト規約（Vitest、Testing Library、テストパターン）については `/frontend` スキルと `/tdd` スキルを参照してください。
+**重要**: テスト実装時は、必ず**TDD skill**と各技術スタックのskillを参照してください。
 
-### 6.1 バックエンドテスト
+### テストの基本方針
 
-#### テストファイル構成
+このプロジェクトでは、以下のテスト方針を常に遵守します：
 
-```
-tests/
-├── unit/
-│   ├── test_dialogue_engine.py
-│   └── test_hint_system.py
-├── integration/
-│   └── test_api_sessions.py
-└── conftest.py
-```
+1. **テスト駆動開発（TDD）**: 実装前に必ずテストを書く（Red-Green-Refactorサイクル）
+2. **テストカバレッジ**: 80%以上を維持
+3. **3層のテスト**: ユニットテスト、統合テスト、E2Eテスト
+4. **テストの独立性**: 各テストは独立して実行可能
+5. **意図の明確化**: テストコードが仕様書として機能する
 
-#### ユニットテスト（pytest）
+### 6.1 フロントエンドテスト
 
-```python
-# tests/unit/test_dialogue_engine.py
-import pytest
-from app.services.dialogue_engine import DialogueEngine
-from app.models.session import Session
+**参照先**:
+- `/tdd` skill: TDDの基本原則とRed-Green-Refactorサイクル
+- `/frontend` skill: Vitest + Testing Library、コンポーネントテスト、フックテスト
 
-@pytest.fixture
-def mock_session():
-    return Session(
-        id='test-session-id',
-        user_id='test-user-id',
-        character='robot',
-        grade_level=2,
-        status='active'
-    )
+**テストフレームワーク**: Vitest + Testing Library
 
-@pytest.mark.asyncio
-async def test_create_session(mock_db):
-    """セッション作成のテスト"""
-    engine = DialogueEngine(db=mock_db)
-    session = await engine.create_session(
-        user_id='test-user-id',
-        character='robot',
-        grade_level=2
-    )
+### 6.2 バックエンドテスト
 
-    assert session.id is not None
-    assert session.user_id == 'test-user-id'
-    assert session.character == 'robot'
-    assert session.status == 'active'
+**参照先**:
+- `/tdd` skill: TDDの基本原則とRed-Green-Refactorサイクル
+- `/fastapi` skill: pytest、TestClient、非同期テスト、Firestoreモック
 
-@pytest.mark.asyncio
-async def test_generate_hint_level_1(mock_session):
-    """レベル1ヒント生成のテスト"""
-    engine = DialogueEngine(db=mock_db)
-    hint = await engine.generate_hint(
-        session=mock_session,
-        problem="3 + 5 = ?",
-        hint_level=1
-    )
+**テストフレームワーク**: pytest
 
-    assert hint is not None
-    assert "問題" in hint or "何" in hint  # 問題理解の確認
-    assert len(hint) > 0
-```
-
-#### 統合テスト（pytest + TestClient）
-
-```python
-# tests/integration/test_api_sessions.py
-from fastapi.testclient import TestClient
-from app.main import app
-
-client = TestClient(app)
-
-def test_create_session():
-    """セッション作成APIのテスト"""
-    response = client.post(
-        "/api/v1/sessions",
-        json={
-            "userId": "test-user-id",
-            "character": "robot",
-            "gradeLevel": 2
-        },
-        headers={"Authorization": f"Bearer {test_token}"}
-    )
-
-    assert response.status_code == 201
-    data = response.json()
-    assert data["userId"] == "test-user-id"
-    assert data["character"] == "robot"
-    assert "id" in data
-
-def test_get_session_not_found():
-    """存在しないセッションの取得テスト"""
-    response = client.get(
-        "/api/v1/sessions/nonexistent-id",
-        headers={"Authorization": f"Bearer {test_token}"}
-    )
-
-    assert response.status_code == 404
-    assert "見つかりません" in response.json()["detail"]
-
-def test_get_session_forbidden():
-    """他人のセッションへのアクセステスト"""
-    # 他のユーザーのセッションを作成
-    other_session_response = client.post(
-        "/api/v1/sessions",
-        json={"userId": "other-user-id", "character": "wizard", "gradeLevel": 1},
-        headers={"Authorization": f"Bearer {other_user_token}"}
-    )
-    other_session_id = other_session_response.json()["id"]
-
-    # 別のユーザーでアクセスを試みる
-    response = client.get(
-        f"/api/v1/sessions/{other_session_id}",
-        headers={"Authorization": f"Bearer {test_token}"}
-    )
-
-    assert response.status_code == 403
-```
-
-#### テストカバレッジ目標
-
-```bash
-# カバレッジ測定
-pytest --cov=app --cov-report=html --cov-report=term
-
-# 目標
-# - ユニットテスト: 80%以上
-# - 統合テスト: 主要API 100%
-```
+**詳細なテストパターンとコード例は `/tdd` と `/fastapi` skillを参照してください。**
 
 ---
 
@@ -696,6 +438,15 @@ Security Review skillには以下が含まれます：
 ---
 
 ## 変更履歴
+
+### v2.0 (2026-01-31) - メジャーバージョンアップ
+- **バックエンド関連記述のスキル分離（完全なスキル分離の完成）**
+  - Python/FastAPI規約（コーディング規約、命名規則、フォーマット、テスト）を`fastapi` + `tdd` skillに分離
+  - 詳細なコード例（PEP 8、型ヒント、Pydanticモデル、pytest、統合テスト）を削除
+  - セクション3.2を基本原則とskill参照のみに簡素化
+  - セクション4（命名規則）、5（スタイリング規約）を各skillへの参照のみに
+  - セクション6（テスト規約）をTDD基本方針とskill参照に簡素化
+  - バックエンド開発の5つの基本原則を明記
 
 ### v1.9 (2026-01-31)
 - **フロントエンド関連記述のスキル分離**
