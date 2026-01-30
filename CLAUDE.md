@@ -149,3 +149,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - ブランチ戦略: Git Flow
    - コミットメッセージ: Conventional Commits形式
    - PR前に自己レビュー必須
+
+## Available Skills
+
+実装時に活用できるスキルが用意されています。スキルを使用することで、ベストプラクティスに従った実装が可能になります。
+
+### TDD Skill
+
+**使用方法**: `/tdd` コマンド
+
+**内容**:
+- 和田卓人（t_wada）が提唱するTDD原則（完全版）
+- Red-Green-Refactorサイクルの詳細解説
+- 仮実装・三角測量・明白な実装の3つの戦略
+- TODOリスト駆動開発
+- ベイビーステップの実践方法
+- TDDチェックリスト
+
+**使用タイミング**:
+- 新機能の実装開始時
+- テストファーストで進めたい時
+- TDDのベストプラクティスを確認したい時
+
+### FastAPI Skill
+
+**使用方法**: `/fastapi` コマンド
+
+**内容**:
+- FastAPI 0.128.0 + Pydantic v2のベストプラクティス
+- Firestore統合パターン
+- JWT認証の実装方法
+- プロジェクト構造（ドメインベース）
+- 7つの既知の問題と予防策
+- CORS、バリデーション、非同期処理のパターン
+
+**使用タイミング**:
+- バックエンドAPI実装時
+- Firestore連携の実装時
+- JWT認証の実装時
+- FastAPIのエラー対処時

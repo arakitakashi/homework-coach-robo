@@ -1,0 +1,5 @@
+{
+  "name": "tdd",
+  "description": "Complete guide for Test-Driven Development following 和田卓人 (t_wada)'s principles. Covers Red-Green-Refactor cycle, Fake It/Triangulation/Obvious Implementation strategies, TODO-list driven development, and baby steps. Use when: implementing new features with TDD, learning TDD best practices, or needing TDD guidance for TypeScript/Python projects.",
+  "user-invocable": true
+}

@@ -1,0 +1,5 @@
+{
+  "name": "fastapi",
+  "description": "Build Python APIs with FastAPI, Pydantic v2, and Firestore integration. Covers project structure, JWT auth, validation, and database integration with uv package manager. Prevents 7 documented errors. Use when: creating Python APIs, implementing JWT auth, Firestore integration, or troubleshooting 422 validation, CORS, async blocking, form data, background tasks, or OpenAPI schema errors.",
+  "user-invocable": true
+}
