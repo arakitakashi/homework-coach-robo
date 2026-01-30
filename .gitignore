@@ -1,0 +1,61 @@
+# ADK関連ディレクトリ（外部リソース）
+adk-docs/
+adk-python/
+adk-samples/
+
+# 環境変数
+.env
+.env.local
+.env.*.local
+
+# 依存関係
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ビルド成果物
+dist/
+build/
+*.egg-info/
+.next/
+out/
+
+# IDE設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ログファイル
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# テストカバレッジ
+coverage/
+.nyc_output/
+htmlcov/
+.pytest_cache/
+
+# 一時ファイル
+*.tmp
+*.temp
+.cache/
+
+# 秘密鍵・認証情報
+*.key
+*.pem
+*.p12
+*-service-account.json
+firebase-adminsdk-*.json
