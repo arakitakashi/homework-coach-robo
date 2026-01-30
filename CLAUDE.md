@@ -188,3 +188,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Firestore連携の実装時
 - JWT認証の実装時
 - FastAPIのエラー対処時
+
+### Google ADK Skill
+
+**使用方法**: `/google-adk` コマンド
+
+**内容**:
+- Google Agent Development Kit (ADK) Python SDKのベストプラクティス
+- Gemini Live APIを使ったリアルタイムストリーミング（WebSocket/bidi-streaming）
+- ツール統合パターン（ヒント生成、感情検知、進捗記録）
+- FastAPI + WebSocket統合
+- 音声処理パターン（STT/TTS統合）
+- 子供向けAIエージェントの設定（安全設定、プロンプトエンジニアリング）
+- エラーハンドリング、レート制限、パフォーマンス最適化
+
+**使用タイミング**:
+- Gemini Live API実装時
+- リアルタイムAIエージェントの構築時
+- WebSocketベースの音声対話実装時
+- ADKツール統合時
+- 音声ベースの会話型AIシステム開発時
