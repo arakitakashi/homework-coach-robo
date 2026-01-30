@@ -1,6 +1,6 @@
 # 宿題コーチロボット - 開発ガイドライン
 
-**Document Version**: 1.8
+**Document Version**: 1.9
 **Last Updated**: 2026-01-31
 **Status**: Active
 
@@ -105,293 +105,44 @@ TDD skillには以下が含まれます：
 
 ## 3. コーディング規約
 
-**注**: フロントエンド開発の詳細なガイドライン（TypeScript、React、Next.js、Tailwind CSS、テストなど）については `/frontend` スキルを参照してください。
-
 ### 3.1 フロントエンド（TypeScript / React）
+
+**重要**: フロントエンド実装時は、必ず**Frontend skill**を参照してください。
+
+#### Frontend Skillの使用
+
+フロントエンド開発の詳細なガイドラインは専用スキルに分離されています。
+
+以下のコマンドでFrontend skillを呼び出してください：
+
+```
+/frontend
+```
+
+Frontend skillには以下が含まれます：
+
+- **プロジェクト構造**: Next.js App Routerのディレクトリ構成
+- **TypeScript型定義**: 型安全性、Utility Types、型エクスポート
+- **React コンポーネント規約**: 関数コンポーネント、Server/Client Components、カスタムフック
+- **命名規則**: ファイル、変数、関数、型・インターフェースの命名
+- **Tailwind CSS**: ユーティリティクラス、レスポンシブデザイン、ダークモード対応
+- **アクセシビリティ**: ARIA属性、キーボードナビゲーション
+- **Vitest + Testing Library**: コンポーネントテスト、フックテスト
+- **Zod バリデーション**: フォームバリデーション、型推論
+- **状態管理**: Jotai atoms、派生atom、永続化
+- **エラーハンドリング**: Error Boundaries、非同期エラー処理
 
 #### 基本原則
 
-- **型安全性を最優先**: `any`の使用を避け、適切な型定義を行う
-- **関数型プログラミング**: 副作用を最小化し、純粋関数を優先
-- **宣言的なコード**: 命令的ではなく宣言的なコードを書く
-- **コンポーネントの単一責任**: 1つのコンポーネントは1つの責任のみを持つ
+このプロジェクトでは、以下のフロントエンド開発原則を常に遵守します：
 
-#### ファイル構成
+1. **型安全性を最優先**: `any`型の使用を避け、明示的な型定義を行う
+2. **関数型プログラミング**: 副作用を最小化し、純粋関数を優先
+3. **宣言的なコード**: 命令的ではなく宣言的なコードを書く
+4. **コンポーネントの単一責任**: 1つのコンポーネントは1つの責任のみを持つ
+5. **パフォーマンス最適化**: Vercelのベストプラクティスに従う（`/vercel-react-best-practices` も参照）
 
-```
-frontend/
-├── app/                      # Next.js App Router
-│   ├── (auth)/              # 認証グループルート
-│   ├── session/             # セッションページ
-│   ├── layout.tsx           # ルートレイアウト
-│   └── page.tsx             # ホームページ
-├── components/              # 再利用可能なコンポーネント
-│   ├── ui/                  # UIプリミティブ
-│   ├── features/            # 機能別コンポーネント
-│   └── layouts/             # レイアウトコンポーネント
-├── lib/                     # ユーティリティ・ヘルパー
-│   ├── atoms/               # Jotai atoms
-│   ├── hooks/               # カスタムフック
-│   ├── utils/               # ユーティリティ関数
-│   └── api/                 # APIクライアント
-├── types/                   # 型定義
-└── public/                  # 静的アセット
-```
-
-#### TypeScriptガイドライン
-
-**型定義の原則:**
-
-```typescript
-// ✅ 良い例: 明示的な型定義
-interface SessionConfig {
-  userId: string;
-  character: CharacterType;
-  gradeLevel: 1 | 2 | 3;
-  startTime: Date;
-}
-
-function createSession(config: SessionConfig): Session {
-  // 実装
-}
-
-// ❌ 悪い例: any型の使用
-function createSession(config: any): any {
-  // 実装
-}
-```
-
-**型のエクスポート:**
-
-```typescript
-// types/session.ts
-export type CharacterType = 'robot' | 'wizard' | 'astronaut' | 'animal';
-
-export interface Session {
-  id: string;
-  userId: string;
-  character: CharacterType;
-  status: 'active' | 'paused' | 'completed';
-}
-
-export interface DialogueTurn {
-  id: string;
-  speaker: 'child' | 'ai';
-  content: string;
-  timestamp: Date;
-  emotion?: 'positive' | 'neutral' | 'negative';
-}
-```
-
-**Utility Typesの活用:**
-
-```typescript
-// 既存の型から新しい型を派生
-type SessionUpdate = Partial<Session>;
-type SessionCreation = Omit<Session, 'id'>;
-type SessionId = Pick<Session, 'id'>;
-```
-
-#### Reactコンポーネント規約
-
-**関数コンポーネントを使用:**
-
-```typescript
-// ✅ 良い例: 関数コンポーネント + 型定義
-interface CharacterAvatarProps {
-  character: CharacterType;
-  audioLevel: number;
-  isRecording: boolean;
-}
-
-export function CharacterAvatar({
-  character,
-  audioLevel,
-  isRecording
-}: CharacterAvatarProps) {
-  return (
-    <div className="character-avatar">
-      {/* 実装 */}
-    </div>
-  );
-}
-
-// ❌ 悪い例: クラスコンポーネント
-export class CharacterAvatar extends React.Component {
-  // 実装
-}
-```
-
-**Server ComponentsとClient Componentsの区別:**
-
-```typescript
-// ✅ Server Component（デフォルト）
-// app/session/[id]/page.tsx
-export default async function SessionPage({ params }: { params: { id: string } }) {
-  const session = await getSession(params.id);
-
-  return (
-    <div>
-      <SessionHeader session={session} />
-      <DialogueInterface sessionId={params.id} /> {/* Client Component */}
-    </div>
-  );
-}
-
-// ✅ Client Component（'use client'を明示）
-// components/features/DialogueInterface.tsx
-'use client';
-
-import { useAtom } from 'jotai';
-import { isRecordingAtom } from '@/lib/atoms/session';
-
-export function DialogueInterface({ sessionId }: { sessionId: string }) {
-  const [isRecording, setIsRecording] = useAtom(isRecordingAtom);
-
-  return (
-    <div>
-      {/* WebSocket接続、状態管理などのクライアント側ロジック */}
-    </div>
-  );
-}
-```
-
-**カスタムフックの作成:**
-
-```typescript
-// lib/hooks/useAudioRecorder.ts
-import { useAtom } from 'jotai';
-import { audioLevelAtom, isRecordingAtom } from '@/lib/atoms/session';
-import { useCallback, useEffect, useRef } from 'react';
-
-export function useAudioRecorder() {
-  const [audioLevel, setAudioLevel] = useAtom(audioLevelAtom);
-  const [isRecording, setIsRecording] = useAtom(isRecordingAtom);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true
-        }
-      });
-      streamRef.current = stream;
-      setIsRecording(true);
-
-      // 音声レベルの監視
-      monitorAudioLevel(stream, setAudioLevel);
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      throw error;
-    }
-  }, [setIsRecording, setAudioLevel]);
-
-  const stopRecording = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setIsRecording(false);
-    setAudioLevel(0);
-  }, [setIsRecording, setAudioLevel]);
-
-  useEffect(() => {
-    return () => {
-      // クリーンアップ
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
-
-  return {
-    isRecording,
-    audioLevel,
-    startRecording,
-    stopRecording
-  };
-}
-```
-
-**Jotai状態管理:**
-
-```typescript
-// lib/atoms/session.ts
-import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
-
-// 基本atom
-export const sessionAtom = atom<Session | null>(null);
-export const isRecordingAtom = atom(false);
-export const audioLevelAtom = atom(0);
-
-// 派生atom（読み取り専用）
-export const isSessionActiveAtom = atom(
-  (get) => {
-    const session = get(sessionAtom);
-    return session?.status === 'active';
-  }
-);
-
-// 書き込み可能な派生atom
-export const sessionIdAtom = atom(
-  (get) => get(sessionAtom)?.id ?? null,
-  (get, set, newId: string | null) => {
-    const currentSession = get(sessionAtom);
-    if (currentSession && newId) {
-      set(sessionAtom, { ...currentSession, id: newId });
-    }
-  }
-);
-
-// LocalStorageに永続化
-export const userPreferencesAtom = atomWithStorage('user-preferences', {
-  character: 'robot' as CharacterType,
-  voiceSpeed: 0.9,
-  volumeLevel: 1.0
-});
-```
-
-#### エラーハンドリング
-
-```typescript
-// ✅ 良い例: 適切なエラーハンドリング
-async function startSession(userId: string): Promise<Session> {
-  try {
-    const response = await fetch('/api/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const session = await response.json();
-    return session;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error('Failed to start session:', error.message);
-      throw new Error(`セッションの開始に失敗しました: ${error.message}`);
-    }
-    throw error;
-  }
-}
-
-// ❌ 悪い例: エラーの無視
-async function startSession(userId: string) {
-  const response = await fetch('/api/sessions', {
-    method: 'POST',
-    body: JSON.stringify({ userId })
-  });
-  return response.json();
-}
-```
+**詳細な実装パターンとコード例は `/frontend` skillを参照してください。**
 
 ### 3.2 バックエンド（Python / FastAPI）
 
@@ -490,73 +241,9 @@ async def get_session(session_id, db):
 
 ## 4. 命名規則
 
-### 4.1 フロントエンド（TypeScript / React）
+**注**: フロントエンドの命名規則については `/frontend` スキルを参照してください。
 
-#### ファイル命名
-
-```
-components/
-├── CharacterAvatar.tsx          # PascalCase（コンポーネント）
-├── useAudioRecorder.ts          # camelCase（カスタムフック、useプレフィックス）
-├── session.types.ts             # kebab-case（型定義）
-└── api-client.ts                # kebab-case（ユーティリティ）
-```
-
-#### 変数・関数命名
-
-```typescript
-// 変数: camelCase
-const sessionId = 'abc123';
-const isRecording = false;
-const audioLevel = 0.5;
-
-// 定数: UPPER_SNAKE_CASE
-const MAX_AUDIO_LEVEL = 100;
-const DEFAULT_CHARACTER: CharacterType = 'robot';
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-// 関数: camelCase
-function createSession(userId: string): Session { }
-async function fetchUserData(userId: string): Promise<User> { }
-
-// Boolean変数: is/has/canプレフィックス
-const isLoading = true;
-const hasError = false;
-const canSubmit = true;
-
-// コンポーネント: PascalCase
-function CharacterAvatar() { }
-function DialogueInterface() { }
-
-// カスタムフック: use + PascalCase
-function useAudioRecorder() { }
-function useSessionState() { }
-```
-
-#### 型・インターフェース命名
-
-```typescript
-// インターフェース: PascalCase
-interface Session {
-  id: string;
-  userId: string;
-}
-
-// 型エイリアス: PascalCase
-type CharacterType = 'robot' | 'wizard' | 'astronaut' | 'animal';
-
-// Props型: コンポーネント名 + Props
-interface CharacterAvatarProps {
-  character: CharacterType;
-  audioLevel: number;
-}
-
-// イベントハンドラー型: on + 動詞
-type OnRecordingStart = () => void;
-type OnAudioReceived = (audio: ArrayBuffer) => void;
-```
-
-### 4.2 バックエンド（Python）
+### 4.1 バックエンド（Python）
 
 #### ファイル命名
 
@@ -631,87 +318,9 @@ class SessionResponse(BaseModel):
 
 ## 5. スタイリング規約
 
-### 5.1 フロントエンド
+**注**: フロントエンドのスタイリング規約（Tailwind CSS、アクセシビリティ）については `/frontend` スキルを参照してください。
 
-#### TailwindCSS利用規約
-
-**基本原則:**
-
-- ユーティリティクラスを優先
-- カスタムCSSは最小限に
-- コンポーネント固有のスタイルは`@apply`で抽象化
-
-```tsx
-// ✅ 良い例: Tailwind Utility Classes
-export function CharacterAvatar({ character, audioLevel }: CharacterAvatarProps) {
-  return (
-    <div className="relative w-64 h-64 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 shadow-lg">
-      <div className="absolute inset-0 flex items-center justify-center">
-        <RiveAnimation character={character} audioLevel={audioLevel} />
-      </div>
-    </div>
-  );
-}
-
-// カスタムコンポーネントスタイル（必要な場合のみ）
-// globals.css
-@layer components {
-  .character-avatar {
-    @apply relative w-64 h-64 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 shadow-lg;
-  }
-}
-```
-
-**レスポンシブデザイン:**
-
-```tsx
-<div className="
-  w-full
-  md:w-1/2
-  lg:w-1/3
-  p-4
-  sm:p-6
-  lg:p-8
-">
-  {/* モバイルファースト */}
-</div>
-```
-
-**ダークモード対応:**
-
-```tsx
-<div className="
-  bg-white
-  dark:bg-gray-900
-  text-gray-900
-  dark:text-gray-100
-">
-  {/* ライト/ダークモード対応 */}
-</div>
-```
-
-#### アクセシビリティ
-
-```tsx
-// ✅ 良い例: アクセシビリティ配慮
-<button
-  type="button"
-  aria-label="録音を開始"
-  aria-pressed={isRecording}
-  className="btn-primary"
-  onClick={startRecording}
->
-  <MicrophoneIcon className="w-6 h-6" aria-hidden="true" />
-  {isRecording ? '録音中' : '録音開始'}
-</button>
-
-// ❌ 悪い例: アクセシビリティ不足
-<div onClick={startRecording}>
-  <MicrophoneIcon />
-</div>
-```
-
-### 5.2 コードフォーマット
+### 5.1 コードフォーマット
 
 #### フロントエンド（Prettier）
 
@@ -748,96 +357,9 @@ include_trailing_comma = true
 
 ## 6. テスト規約
 
-### 6.1 フロントエンドテスト
+**注**: フロントエンドのテスト規約（Vitest、Testing Library、テストパターン）については `/frontend` スキルと `/tdd` スキルを参照してください。
 
-#### テストファイル構成
-
-```
-components/
-├── CharacterAvatar.tsx
-├── CharacterAvatar.test.tsx
-└── __tests__/
-    └── CharacterAvatar.integration.test.tsx
-```
-
-#### ユニットテスト（Vitest + Testing Library）
-
-```typescript
-// CharacterAvatar.test.tsx
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import { CharacterAvatar } from './CharacterAvatar';
-
-describe('CharacterAvatar', () => {
-  it('should render with robot character', () => {
-    render(<CharacterAvatar character="robot" audioLevel={0} isRecording={false} />);
-
-    const avatar = screen.getByRole('img', { name: /robot/i });
-    expect(avatar).toBeInTheDocument();
-  });
-
-  it('should update audio level animation', () => {
-    const { rerender } = render(
-      <CharacterAvatar character="robot" audioLevel={0} isRecording={true} />
-    );
-
-    rerender(<CharacterAvatar character="robot" audioLevel={50} isRecording={true} />);
-
-    // アニメーションの確認（実装に応じて）
-    const avatar = screen.getByTestId('character-avatar');
-    expect(avatar).toHaveStyle({ '--audio-level': 50 });
-  });
-});
-```
-
-#### カスタムフックのテスト
-
-```typescript
-// useAudioRecorder.test.ts
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-import { useAudioRecorder } from './useAudioRecorder';
-
-// getUserMediaのモック
-global.navigator.mediaDevices = {
-  getUserMedia: vi.fn()
-};
-
-describe('useAudioRecorder', () => {
-  it('should start recording', async () => {
-    const mockStream = { getTracks: () => [] };
-    (navigator.mediaDevices.getUserMedia as any).mockResolvedValue(mockStream);
-
-    const { result } = renderHook(() => useAudioRecorder());
-
-    await act(async () => {
-      await result.current.startRecording();
-    });
-
-    expect(result.current.isRecording).toBe(true);
-  });
-
-  it('should stop recording', async () => {
-    const { result } = renderHook(() => useAudioRecorder());
-
-    await act(async () => {
-      await result.current.startRecording();
-      result.current.stopRecording();
-    });
-
-    expect(result.current.isRecording).toBe(false);
-    expect(result.current.audioLevel).toBe(0);
-  });
-});
-```
-
-#### テストカバレッジ目標
-
-- **ユニットテスト**: 80%以上
-- **統合テスト**: 主要フロー100%
-- **E2Eテスト**: クリティカルパス100%
-
-### 6.2 バックエンドテスト
+### 6.1 バックエンドテスト
 
 #### テストファイル構成
 
@@ -1174,6 +696,15 @@ Security Review skillには以下が含まれます：
 ---
 
 ## 変更履歴
+
+### v1.9 (2026-01-31)
+- **フロントエンド関連記述のスキル分離**
+  - フロントエンド規約（TypeScript、React、Tailwind CSS、命名規則、テスト）を`frontend` skillに分離
+  - 詳細なコード例（型定義、コンポーネント、フック、Jotai、スタイリング、アクセシビリティ、テスト）を削除
+  - セクション3.1を基本原則とskill参照のみに簡素化
+  - セクション4.1（命名規則）、5.1（スタイリング規約）、6.1（テスト規約）のフロントエンド部分を削除
+  - vercel-react-best-practicesスキルへの参照を追加
+  - フロントエンドの5つの基本原則を明記
 
 ### v1.8 (2026-01-31)
 - **セキュリティガイドラインのスキル分離**
