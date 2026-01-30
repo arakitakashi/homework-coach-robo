@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "pre-commit": "echo '🔍 Pre-commit check...' && if git diff --cached --name-only | grep -E '\\.(ts|tsx|py)$' > /dev/null; then echo '✅ Code files detected. Reminder: TDD principles (Red-Green-Refactor) and test coverage 80%+'; fi",
+    "user-prompt-submit": "if echo \"$PROMPT\" | grep -iE '(実装|コード|追加|修正|作成|開発)' > /dev/null; then echo '📋 Reminder: Follow TDD (test first), development guidelines, and security best practices'; fi"
+  },
+  "defaultModel": "sonnet",
+  "customInstructions": "# Autonomous Workflow Mode\n\n## When User Requests Implementation Tasks\n\nWhen the user asks you to implement a feature, fix a bug, or make changes, follow this autonomous workflow:\n\n### 1. Branch Creation\n- Automatically create a new branch following Git Flow conventions:\n  - `feature/<scope>-<description>` for new features\n  - `fix/<scope>-<description>` for bug fixes\n  - `refactor/<scope>-<description>` for refactoring\n- Use kebab-case for branch names\n- Check out from `develop` branch (not `main`)\n- Use `/git-workflow` skill for conventions\n\n### 2. TDD Implementation\n- ALWAYS write tests BEFORE implementation code\n- Follow Red-Green-Refactor cycle:\n  1. Red: Write failing test\n  2. Green: Write minimal code to pass\n  3. Refactor: Improve code quality\n- Use `/tdd` skill for TDD best practices\n- Use appropriate skills for implementation:\n  - `/frontend` for UI components\n  - `/fastapi` for backend APIs\n  - `/google-adk-live` for voice interaction features\n\n### 3. Quality Assurance\n- Run all tests and ensure 80%+ coverage\n- Run linters and formatters\n- Check for security issues using `/security-review`\n- Verify CLAUDE.md and docs/development-guidelines.md compliance\n\n### 4. PR Creation\n- Push branch to remote: `git push -u origin HEAD`\n- Create PR with proper Conventional Commits format:\n  - Title: `<type>(<scope>): <description>`\n  - Types: feat, fix, refactor, test, docs, perf, build, ci, chore\n- Include comprehensive PR description:\n  - Summary of changes\n  - Test plan\n  - Breaking changes (if any)\n  - Related issues/tickets\n- Use `/git-workflow` for PR template\n\n## When to Ask User Confirmation\n\n### ASK Before Proceeding:\n- Architectural decisions (choosing libraries, patterns, approaches)\n- Security-related implementations\n- Breaking changes\n- Scope clarifications (if requirements are unclear)\n\n### PROCEED Autonomously:\n- File creation/editing\n- Test writing and execution\n- Code refactoring\n- Documentation updates\n- Branch creation and commits\n- PR creation (after implementation is complete)\n\n## Workflow Example\n\nUser: \"Add email validation to the user registration form\"\n\nYou should:\n1. Create branch: `feature/frontend-email-validation`\n2. Write test for email validation (Red)\n3. Implement validation logic (Green)\n4. Refactor if needed\n5. Run tests, ensure coverage\n6. Security check (XSS, injection prevention)\n7. Commit with message: `feat(frontend): Add email validation to registration form`\n8. Push and create PR\n9. Report completion with PR URL\n\n## Important Notes\n\n- Complete the ENTIRE workflow unless user stops you\n- Use TodoWrite to track progress and show transparency\n- Report blockers immediately (missing dependencies, unclear requirements, etc.)\n- Maintain high code quality - never skip tests or security checks\n- Follow all guidelines in CLAUDE.md and docs/",
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upthink/mcp-context7@latest"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@upthink/mcp-playwright@latest"]
+    }
+  }
+}
