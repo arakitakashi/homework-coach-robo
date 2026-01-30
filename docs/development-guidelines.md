@@ -1,6 +1,6 @@
 # 宿題コーチロボット - 開発ガイドライン
 
-**Document Version**: 1.3
+**Document Version**: 1.4
 **Last Updated**: 2026-01-31
 **Status**: Active
 
@@ -365,45 +365,32 @@ async function startSession(userId: string) {
 
 ### 3.2 バックエンド（Python / FastAPI）
 
+**重要**: FastAPI実装時は、必ず**FastAPI skill**を参照してください。
+
+#### FastAPI Skillの使用
+
+実装時は以下のコマンドでFastAPI skillを呼び出してください：
+
+```
+/fastapi
+```
+
+FastAPI skillには以下が含まれます：
+
+- **プロジェクト構造**（ドメインベース）
+- **Firestore統合**パターン
+- **JWT認証**の実装方法
+- **Pydantic v2**のベストプラクティス
+- **7つの既知の問題**と予防策
+- CORS、バリデーション、非同期処理のパターン
+- テストとデプロイメント
+
 #### 基本原則
 
 - **型ヒントを必ず使用**: 全ての関数・メソッドに型ヒント
 - **非同期処理**: I/O処理は`async/await`を使用
 - **依存性注入**: FastAPIのDependency Injectionを活用
 - **エラーハンドリング**: 適切な例外処理とHTTPステータスコード
-
-#### ファイル構成
-
-```
-backend/
-├── app/
-│   ├── api/                 # APIエンドポイント
-│   │   ├── v1/
-│   │   │   ├── sessions.py
-│   │   │   ├── dialogue.py
-│   │   │   └── vision.py
-│   │   └── deps.py          # 共通の依存関係
-│   ├── core/                # コア機能
-│   │   ├── config.py        # 設定管理
-│   │   ├── security.py      # 認証・認可
-│   │   └── logging.py       # ログ設定
-│   ├── models/              # データモデル
-│   │   ├── session.py
-│   │   ├── dialogue.py
-│   │   └── user.py
-│   ├── services/            # ビジネスロジック
-│   │   ├── dialogue_engine.py
-│   │   ├── hint_system.py
-│   │   └── emotion_analyzer.py
-│   ├── integrations/        # 外部サービス統合
-│   │   ├── gemini/
-│   │   ├── firestore/
-│   │   └── bigquery/
-│   └── main.py              # アプリケーションエントリーポイント
-├── tests/
-├── requirements.txt
-└── pyproject.toml
-```
 
 #### Pythonコーディング規約
 
@@ -455,233 +442,19 @@ def createDialogueTurn(speaker,content,emotion=None):
 **型ヒントの徹底:**
 
 ```python
-from typing import Optional, List, Dict, Any, Union
-from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 
 # ✅ 良い例: 完全な型ヒント
-async def get_session(
-    session_id: str,
-    db: FirestoreClient
-) -> Optional[Session]:
+async def get_session(session_id: str, db: FirestoreClient) -> Optional[Session]:
     """セッションを取得する"""
-    doc = await db.collection('sessions').document(session_id).get()
-    if not doc.exists:
-        return None
-    return Session(**doc.to_dict())
-
-async def list_user_sessions(
-    user_id: str,
-    limit: int = 10,
-    db: FirestoreClient
-) -> List[Session]:
-    """ユーザーのセッション一覧を取得する"""
-    docs = await db.collection('sessions')\
-        .where('userId', '==', user_id)\
-        .limit(limit)\
-        .get()
-    return [Session(**doc.to_dict()) for doc in docs]
+    # 実装は FastAPI skill を参照
 
 # ❌ 悪い例: 型ヒントなし
 async def get_session(session_id, db):
-    doc = await db.collection('sessions').document(session_id).get()
-    if not doc.exists:
-        return None
-    return Session(**doc.to_dict())
+    # 型情報が欠落
 ```
 
-**FastAPI APIエンドポイント:**
-
-```python
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.api.deps import get_current_user, get_db
-from app.models.session import SessionCreate, SessionResponse
-from app.services.dialogue_engine import DialogueEngine
-
-router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
-
-@router.post(
-    "",
-    response_model=SessionResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="新しいセッションを作成"
-)
-async def create_session(
-    session_data: SessionCreate,
-    current_user: User = Depends(get_current_user),
-    db: FirestoreClient = Depends(get_db)
-) -> SessionResponse:
-    """
-    新しい学習セッションを作成する
-
-    - **userId**: ユーザーID
-    - **character**: キャラクタータイプ（robot, wizard, astronaut, animal）
-    - **gradeLevel**: 学年（1-3）
-    """
-    try:
-        session = await DialogueEngine.create_session(
-            user_id=current_user.id,
-            character=session_data.character,
-            grade_level=session_data.gradeLevel,
-            db=db
-        )
-        return SessionResponse(**session.dict())
-    except Exception as e:
-        logger.error(f"Failed to create session: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="セッションの作成に失敗しました"
-        )
-
-@router.get(
-    "/{session_id}",
-    response_model=SessionResponse,
-    summary="セッション情報を取得"
-)
-async def get_session(
-    session_id: str,
-    current_user: User = Depends(get_current_user),
-    db: FirestoreClient = Depends(get_db)
-) -> SessionResponse:
-    """指定されたIDのセッション情報を取得する"""
-    session = await db.collection('sessions').document(session_id).get()
-
-    if not session.exists:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="セッションが見つかりません"
-        )
-
-    session_data = session.to_dict()
-
-    # 権限チェック: 自分のセッションのみアクセス可能
-    if session_data['userId'] != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="このセッションにアクセスする権限がありません"
-        )
-
-    return SessionResponse(**session_data)
-```
-
-**WebSocket実装:**
-
-```python
-from fastapi import WebSocket, WebSocketDisconnect
-from app.services.dialogue_engine import DialogueEngine
-
-@router.websocket("/ws/dialogue/{session_id}")
-async def dialogue_websocket(
-    websocket: WebSocket,
-    session_id: str,
-    token: str,  # クエリパラメータで認証トークンを受け取る
-    db: FirestoreClient = Depends(get_db)
-):
-    """
-    双方向音声対話のWebSocketエンドポイント
-    """
-    # 認証
-    try:
-        user = await verify_token(token)
-    except Exception:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    # WebSocket接続確立
-    await websocket.accept()
-
-    # DialogueEngineの初期化
-    engine = DialogueEngine(session_id=session_id, db=db)
-
-    try:
-        while True:
-            # クライアントから音声チャンクを受信
-            audio_chunk = await websocket.receive_bytes()
-
-            # 音声処理・応答生成
-            response_audio = await engine.process_audio(audio_chunk)
-
-            # 応答音声を送信
-            if response_audio:
-                await websocket.send_bytes(response_audio)
-
-    except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected for session {session_id}")
-        await engine.cleanup()
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
-        await engine.cleanup()
-```
-
-**非同期処理:**
-
-```python
-import asyncio
-from typing import List
-
-# ✅ 良い例: 並行処理の活用
-async def get_user_progress_summary(user_id: str, db: FirestoreClient) -> Dict[str, Any]:
-    """ユーザーの学習進捗サマリーを取得"""
-    # 複数のデータソースから並行して取得
-    sessions_task = db.collection('sessions')\
-        .where('userId', '==', user_id)\
-        .get()
-    history_task = db.collection('learning_history')\
-        .where('userId', '==', user_id)\
-        .get()
-
-    sessions, history = await asyncio.gather(sessions_task, history_task)
-
-    return {
-        'total_sessions': len(sessions),
-        'total_problems': len(history),
-        'self_solved_count': sum(1 for h in history if h['solved_independently']),
-        'average_hints_used': sum(h['hints_used'] for h in history) / len(history) if history else 0
-    }
-
-# ❌ 悪い例: 同期的な逐次処理
-async def get_user_progress_summary(user_id: str, db: FirestoreClient) -> Dict[str, Any]:
-    sessions = await db.collection('sessions').where('userId', '==', user_id).get()
-    history = await db.collection('learning_history').where('userId', '==', user_id).get()
-    # 無駄な待ち時間が発生
-```
-
-**エラーハンドリング:**
-
-```python
-from app.core.exceptions import (
-    SessionNotFoundError,
-    UnauthorizedError,
-    ValidationError
-)
-
-# カスタム例外の定義
-class SessionNotFoundError(Exception):
-    """セッションが見つからない場合の例外"""
-    pass
-
-# グローバル例外ハンドラ
-@app.exception_handler(SessionNotFoundError)
-async def session_not_found_handler(request: Request, exc: SessionNotFoundError):
-    return JSONResponse(
-        status_code=404,
-        content={"detail": "セッションが見つかりません"}
-    )
-
-# サービス層でのエラーハンドリング
-async def get_session_or_fail(session_id: str, db: FirestoreClient) -> Session:
-    """
-    セッションを取得する。見つからない場合は例外を発生。
-    """
-    try:
-        doc = await db.collection('sessions').document(session_id).get()
-        if not doc.exists:
-            raise SessionNotFoundError(f"Session {session_id} not found")
-        return Session(**doc.to_dict())
-    except Exception as e:
-        logger.error(f"Failed to get session {session_id}: {e}")
-        raise
-```
+**詳細な実装例は `/fastapi` skillを参照してください。**
 
 ---
 
@@ -1614,6 +1387,13 @@ async def recognize_image(request: Request):
 ---
 
 ## 変更履歴
+
+### v1.4 (2026-01-31)
+- **FastAPI重複記述の削除**
+  - development-guidelines.mdからFastAPIの詳細実装例を削除
+  - ファイル構成、APIエンドポイント、WebSocket、非同期処理、エラーハンドリングの例を削除
+  - FastAPI skillへの参照のみに簡素化
+  - FastAPI skill (v1.0) にFirestore統合を含む完全なガイドラインを集約
 
 ### v1.3 (2026-01-31)
 - **TDD重複記述の削除**
