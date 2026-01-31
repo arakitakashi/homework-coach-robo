@@ -26,7 +26,7 @@
 
 | 技術 | バージョン | 用途 |
 |------|-----------|------|
-| **Next.js** | 14+ | フロントエンドフレームワーク（App Router使用） |
+| **Next.js** | 16+ | フロントエンドフレームワーク（App Router使用） |
 | **Bun** | 1.0+ | JavaScriptランタイム（高速・All-in-one） |
 | **TypeScript** | 5.0+ | 型安全な開発 |
 | **React** | 18+ | UIライブラリ（Next.jsに含まれる） |
@@ -49,8 +49,7 @@
   "devDependencies": {
     "@types/bun": "^1.0.0",
     "@types/react": "^18.0.0",
-    "eslint": "^8.0.0",
-    "prettier": "^3.0.0"
+    "@biomejs/biome": "^2.0.0"
   }
 }
 ```
@@ -507,7 +506,7 @@ uv pip install <package>
 
 | ツール | 推奨プラグイン |
 |--------|--------------|
-| **VS Code** | ESLint, Prettier, Python, Pylance, Docker |
+| **VS Code** | Biome, Python, Pylance, Ruff, Docker |
 | **Cursor** | 上記 + AI code completion |
 
 #### コード品質管理
@@ -516,8 +515,9 @@ uv pip install <package>
 ```json
 {
   "scripts": {
-    "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
     "type-check": "tsc --noEmit"
   }
 }
@@ -525,10 +525,9 @@ uv pip install <package>
 
 **バックエンド:**
 ```bash
-# Linting & Formatting
-black .                  # コードフォーマット
-isort .                  # import文の整理
-flake8 .                 # リンター
+# Linting & Formatting (Ruff - Black/isort/flake8の統合代替)
+ruff check .             # リンター
+ruff format .            # コードフォーマット
 mypy .                   # 型チェック
 ```
 
@@ -591,8 +590,8 @@ jobs:
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Install dependencies
         run: uv pip install -r requirements.txt
-      - run: black --check .
-      - run: flake8 .
+      - run: ruff check .
+      - run: ruff format --check .
       - run: mypy .
       - run: pytest --cov
 
