@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## 🚨 実装タスク開始前の必須チェック
+
+**実装タスクを開始する前に、必ず `.claude/rules/pre-implementation-checklist.md` のチェックリストを完了すること。**
+
+完了するまでコードを書き始めてはならない。詳細はルールファイルを参照。
+
+---
+
 ## Project Overview
 
 **宿題コーチロボット (Homework Coach Robot)** は、小学校低学年（1〜3年生）向けのリアルタイム音声アシスタントです。答えをすぐに教えるのではなく、ソクラテス式対話で子供が自分で考え、自分で気づくプロセスを支援します。
@@ -88,14 +98,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 学習履歴の記録: 問題ごとの正答率、ヒント使用回数
 - データ暗号化、GDPR/個人情報保護法準拠
 
+## Repository Structure
+
+**モノレポ (Monorepo)** 構成を採用しています。
+
+```
+homework-coach-robo/
+├── frontend/                 # Next.js 14+ (App Router)
+│   ├── app/                  # ページ・ルート
+│   ├── components/           # Reactコンポーネント
+│   │   ├── ui/               # 汎用UI
+│   │   ├── features/         # 機能別
+│   │   └── layouts/          # レイアウト
+│   ├── lib/                  # ユーティリティ
+│   │   ├── api/              # APIクライアント
+│   │   └── hooks/            # カスタムフック
+│   ├── store/                # Jotai atoms
+│   └── types/                # TypeScript型定義
+│
+├── backend/                  # FastAPI + Python
+│   └── app/
+│       ├── api/v1/           # APIエンドポイント
+│       ├── services/         # ビジネスロジック
+│       │   └── adk/          # Google ADK関連
+│       ├── models/           # データモデル
+│       ├── schemas/          # APIスキーマ
+│       └── db/               # DB接続
+│
+├── shared/                   # 共通リソース
+├── infrastructure/           # Terraform, Cloud Build
+├── docs/                     # 設計ドキュメント
+└── .claude/
+    ├── rules/                # 開発ルール（自動読み込み）
+    └── skills/               # スキルファイル
+```
+
+**命名規則・配置ルールの詳細は `.claude/rules/file-structure-rules.md` を参照。**
+
 ## Documentation
 
 - `docs/product-requirements.md`: プロダクト要求仕様書（ビジネス要件、機能要件、KPI）
 - `docs/functional-design.md`: 機能設計書（システムアーキテクチャ、API仕様、データフロー）
 - `docs/architecture.md`: 技術仕様書（技術スタック、インフラ設計、パフォーマンス要件）
-- `docs/development-guidelines.md`: 開発ガイドライン（TDD原則、コーディング規約、テスト規約）
 - `docs/firestore-design.md`: Firestoreスキーマ設計（データ構造、セキュリティルール）
-- `docs/repository-structure.md`: リポジトリ構造定義（ディレクトリ構成、命名規則）
 
 ## Development Context
 
@@ -129,47 +174,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **学習効果の最大化**: 単なる回答提供ツールではなく、思考プロセスを育てることが目的
 - **成長マインドセット**: 正解だけでなく、挑戦したこと、間違いから学んだことを称賛
 
-## Development Guidelines
+## Rules
 
-実装時は必ず `docs/development-guidelines.md` を参照してください。
+開発ルールは `.claude/rules/` に配置されており、Claude Code が自動的に読み込みます。
 
-### 必須事項
-
-1. **テスト駆動開発（TDD）の徹底**
-   - 実装コードを書く前に必ずテストを書く
-   - Red-Green-Refactorサイクルを守る
-   - テストカバレッジ80%以上を維持
-
-2. **コーディング規約の遵守**
-   - フロントエンド: TypeScript + React (関数コンポーネント)
-   - バックエンド: Python + FastAPI (型ヒント必須)
-   - 命名規則: camelCase (TS), snake_case (Python)
-
-3. **Git規約**
-   - ブランチ戦略: Git Flow
-   - コミットメッセージ: Conventional Commits形式
-   - PR前に自己レビュー必須
+| ルール | 内容 |
+|--------|------|
+| `pre-implementation-checklist.md` | 実装前チェック（ブランチ、ステアリングディレクトリ） |
+| `steering-workflow.md` | ワークフロー（requirements/design/tasklist作成） |
+| `tdd-requirement.md` | TDD必須（Red-Green-Refactor、カバレッジ80%） |
+| `coding-standards.md` | コーディング規約 |
+| `security-requirement.md` | セキュリティ要件 |
+| `file-structure-rules.md` | ファイル配置・命名規則 |
 
 ## Available Skills
 
-実装時に活用できるスキルが `.claude/skills/` に用意されています。詳細は `docs/development-guidelines.md` の「利用可能なスキル」セクションを参照してください。
+実装時に活用できるスキルが `.claude/skills/` に用意されています。
 
-### 開発プロセス
-
-- **`/tdd`** - テスト駆動開発（Red-Green-Refactor、仮実装・三角測量・明白な実装）
-- **`/git-workflow`** - Git Flow + Conventional Commits（ブランチ戦略、コミット規約）
-- **`/security-review`** - OWASP Top 10対策、セキュリティチェックリスト
-
-### フロントエンド開発
-
-- **`/frontend`** - Next.js 14+ App Router + TypeScript + React（コンポーネント規約、テスト）
-- **`/frontend-design`** - 高品質なUI/UXデザイン指針（独自性、美しさ、ユーザビリティ）
-- **`/vercel-react-best-practices`** - パフォーマンス最適化（45ルール、バンドル削減）
-
-### バックエンド開発
-
-- **`/fastapi`** - FastAPI 0.128.0 + Pydantic v2 + Firestore統合（JWT認証、7つの既知問題）
-- **`/google-adk-basics`** - Agent Development Kit基礎（Agent構造、ツール統合）
-- **`/google-adk-live`** - Gemini Live API（双方向ストリーミング、音声対話）
+| カテゴリ | スキル |
+|----------|--------|
+| 開発プロセス | `/tdd`, `/git-workflow`, `/security-review` |
+| フロントエンド | `/frontend`, `/frontend-design`, `/vercel-react-best-practices` |
+| バックエンド | `/fastapi`, `/google-adk-basics`, `/google-adk-live` |
 
 **注意**: `/google-adk-live` は `/google-adk-basics` の知識が前提です。

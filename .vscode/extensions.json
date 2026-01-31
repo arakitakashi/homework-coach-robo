@@ -1,0 +1,25 @@
+{
+	"recommendations": [
+		// Biome (TypeScript/JavaScript lint & format)
+		"biomejs.biome",
+
+		// Ruff (Python lint & format)
+		"charliermarsh.ruff",
+
+		// Python
+		"ms-python.python",
+		"ms-python.vscode-pylance",
+
+		// Tailwind CSS
+		"bradlc.vscode-tailwindcss",
+
+		// Git
+		"eamodio.gitlens",
+
+		// その他
+		"esbenp.prettier-vscode",
+		"dbaeumer.vscode-eslint",
+		"ms-azuretools.vscode-docker",
+		"usernamehw.errorlens"
+	]
+}

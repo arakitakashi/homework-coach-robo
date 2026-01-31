@@ -1,6 +1,6 @@
 # Frontend Development - Next.js + TypeScript + React
 
-**Version**: 1.0 | **Last Updated**: 2026-01-31 | **For**: Next.js 14+ App Router
+**Version**: 1.1 | **Last Updated**: 2026-02-01 | **For**: Next.js 16 App Router
 
 ---
 
@@ -9,7 +9,7 @@
 Best practices for frontend development with Next.js, TypeScript, and React.
 
 **Tech Stack:**
-- Next.js 14+ (App Router)
+- Next.js 16 (App Router)
 - TypeScript 5+
 - React 18+
 - Tailwind CSS 3+
@@ -475,7 +475,9 @@ export const CharacterAvatar = memo(function CharacterAvatar({ character }: Prop
 
 ## References
 
-- [Next.js Docs](https://nextjs.org/docs)
+**⚠️ API仕様は `frontend/CLAUDE.md` のNext.js公式ドキュメントを優先参照すること**
+
+- `frontend/CLAUDE.md` - Next.js 16 公式ドキュメントインデックス（API仕様の優先ソース）
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [React Docs](https://react.dev/)
 - [Tailwind CSS](https://tailwindcss.com/docs)
