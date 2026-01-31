@@ -68,8 +68,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### MVP Phase (フェーズ1)
 
-- **Frontend**: Next.js 14+ (App Router) + Bun
-- **Backend**: FastAPI + Python 3.10+ + uv
+- **Frontend**: Next.js 16 (App Router) + Bun + Biome
+- **Backend**: FastAPI + Python 3.10+ + uv + Ruff
 - **Infrastructure**: Google Cloud Run
 - **Database**: Cloud Firestore (リアルタイムデータ), BigQuery (分析用データ), Redis (キャッシュ)
 - **AI/ML**: Google ADK + Gemini Live API
@@ -104,8 +104,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 homework-coach-robo/
-├── frontend/                 # Next.js 14+ (App Router)
-│   ├── app/                  # ページ・ルート
+├── frontend/                 # Next.js 16 (App Router)
+│   ├── src/app/              # ページ・ルート（Next.js 16デフォルト構造）
 │   ├── components/           # Reactコンポーネント
 │   │   ├── ui/               # 汎用UI
 │   │   ├── features/         # 機能別
