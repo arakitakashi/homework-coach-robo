@@ -98,13 +98,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 学習履歴の記録: 問題ごとの正答率、ヒント使用回数
 - データ暗号化、GDPR/個人情報保護法準拠
 
+## Repository Structure
+
+**モノレポ (Monorepo)** 構成を採用しています。
+
+```
+homework-coach-robo/
+├── frontend/                 # Next.js 14+ (App Router)
+│   ├── app/                  # ページ・ルート
+│   ├── components/           # Reactコンポーネント
+│   │   ├── ui/               # 汎用UI
+│   │   ├── features/         # 機能別
+│   │   └── layouts/          # レイアウト
+│   ├── lib/                  # ユーティリティ
+│   │   ├── api/              # APIクライアント
+│   │   └── hooks/            # カスタムフック
+│   ├── store/                # Jotai atoms
+│   └── types/                # TypeScript型定義
+│
+├── backend/                  # FastAPI + Python
+│   └── app/
+│       ├── api/v1/           # APIエンドポイント
+│       ├── services/         # ビジネスロジック
+│       │   └── adk/          # Google ADK関連
+│       ├── models/           # データモデル
+│       ├── schemas/          # APIスキーマ
+│       └── db/               # DB接続
+│
+├── shared/                   # 共通リソース
+├── infrastructure/           # Terraform, Cloud Build
+├── docs/                     # 設計ドキュメント
+└── .claude/
+    ├── rules/                # 開発ルール（自動読み込み）
+    └── skills/               # スキルファイル
+```
+
+**命名規則・配置ルールの詳細は `.claude/rules/file-structure-rules.md` を参照。**
+
 ## Documentation
 
 - `docs/product-requirements.md`: プロダクト要求仕様書（ビジネス要件、機能要件、KPI）
 - `docs/functional-design.md`: 機能設計書（システムアーキテクチャ、API仕様、データフロー）
 - `docs/architecture.md`: 技術仕様書（技術スタック、インフラ設計、パフォーマンス要件）
 - `docs/firestore-design.md`: Firestoreスキーマ設計（データ構造、セキュリティルール）
-- `docs/repository-structure.md`: リポジトリ構造定義（ディレクトリ構成、命名規則）
 
 ## Development Context
 
@@ -149,6 +185,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tdd-requirement.md` | TDD必須（Red-Green-Refactor、カバレッジ80%） |
 | `coding-standards.md` | コーディング規約 |
 | `security-requirement.md` | セキュリティ要件 |
+| `file-structure-rules.md` | ファイル配置・命名規則 |
 
 ## Available Skills
 
