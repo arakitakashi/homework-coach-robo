@@ -1,0 +1,59 @@
+{
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.organizeImports": "explicit"
+	},
+
+	// TypeScript/JavaScript (Biome)
+	"[typescript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[javascript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[javascriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+
+	// Python (Ruff)
+	"[python]": {
+		"editor.defaultFormatter": "charliermarsh.ruff",
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit",
+			"source.fixAll": "explicit"
+		}
+	},
+	"python.analysis.typeCheckingMode": "basic",
+
+	// ファイル除外
+	"files.exclude": {
+		"**/__pycache__": true,
+		"**/.pytest_cache": true,
+		"**/.mypy_cache": true,
+		"**/node_modules": true,
+		"**/.next": true,
+		"**/.venv": true
+	},
+
+	// 検索除外
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/.next": true,
+		"**/.venv": true,
+		"**/bun.lock": true,
+		"**/uv.lock": true
+	},
+
+	// TypeScript
+	"typescript.preferences.importModuleSpecifier": "relative",
+	"typescript.suggest.autoImports": true
+}

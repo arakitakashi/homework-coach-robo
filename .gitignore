@@ -27,11 +27,17 @@ build/
 out/
 
 # IDE設定
-.vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# VS Code (共有設定以外)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # OS
 .DS_Store
