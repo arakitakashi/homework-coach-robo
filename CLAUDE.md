@@ -125,6 +125,10 @@ homework-coach-robo/
 │       ├── schemas/          # APIスキーマ
 │       └── db/               # DB接続
 │
+├── poc/                      # 技術検証（PoC）実装
+│   ├── server/               # FastAPI + ADK + Gemini Live API
+│   └── client/               # Web Audio APIテストUI
+│
 ├── shared/                   # 共通リソース
 ├── infrastructure/           # Terraform, Cloud Build
 ├── docs/                     # 設計ドキュメント
@@ -144,7 +148,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**設計フェーズ完了・実装準備中**の段階です。
+このプロジェクトは現在、**コア機能実装準備中**の段階です。
 
 ### 完了済み
 
@@ -154,12 +158,29 @@ homework-coach-robo/
 - 開発ガイドラインの策定（TDD原則、コーディング規約）
 - データベース設計（Firestore、BigQuery）
 - リポジトリ構造の定義
+- **リポジトリセットアップ**: モノレポ構造、CI/CD、開発環境構築完了
+- **技術検証（PoC）**: Google ADK + Gemini Live APIの動作確認完了
 
-### 実装開始時の順序
+### 技術検証（PoC）の成果
 
-1. **リポジトリセットアップ**: モノレポ構造の作成、CI/CD設定
-2. **技術検証（PoC）**: Google ADK + Gemini Live APIの動作確認
-3. **コア機能の実装**: ソクラテス式対話エンジン、3段階ヒントシステム（TDD実践）
+`poc/` ディレクトリに技術検証の実装があります。
+
+| 検証項目 | 結果 | 備考 |
+|----------|------|------|
+| Live API接続 | ✅ 成功 | ADK + google-genaiで正常接続 |
+| 日本語音声入出力 | ✅ 動作 | 音声認識・合成ともに日本語対応 |
+| ソクラテス式対話 | ✅ 動作 | システムプロンプトで実現 |
+| レイテンシ | ⚠️ 約5秒 | プレビュー版の制約（目標2秒） |
+
+**使用モデル**: `gemini-2.5-flash-native-audio-preview-12-2025`
+
+詳細は `.steering/20260131-gemini-live-api-poc/COMPLETED.md` を参照。
+
+### 次のステップ
+
+1. ~~リポジトリセットアップ~~ ✅ 完了
+2. ~~技術検証（PoC）~~ ✅ 完了
+3. **コア機能の実装**: ソクラテス式対話エンジン、3段階ヒントシステム（TDD実践）← 現在地
 4. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
