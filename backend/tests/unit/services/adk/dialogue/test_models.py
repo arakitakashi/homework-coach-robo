@@ -59,3 +59,62 @@ class TestDialogueTone:
 
         assert isinstance(DialogueTone.ENCOURAGING.value, str)
         assert isinstance(DialogueTone.ENCOURAGING, str)
+
+
+class TestResponseAnalysis:
+    """ResponseAnalysis Pydanticモデルのテスト"""
+
+    def test_response_analysis_creation(self):
+        """ResponseAnalysisを作成できる"""
+        from app.services.adk.dialogue.models import ResponseAnalysis
+
+        analysis = ResponseAnalysis(
+            understanding_level=7,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=["足し算の概念を理解している"],
+        )
+
+        assert analysis.understanding_level == 7
+        assert analysis.is_correct_direction is True
+        assert analysis.needs_clarification is False
+        assert analysis.key_insights == ["足し算の概念を理解している"]
+
+    def test_response_analysis_understanding_level_range(self):
+        """understanding_levelは0-10の範囲"""
+        from app.services.adk.dialogue.models import ResponseAnalysis
+        from pydantic import ValidationError
+
+        # 有効な範囲
+        analysis = ResponseAnalysis(
+            understanding_level=0,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=[],
+        )
+        assert analysis.understanding_level == 0
+
+        analysis = ResponseAnalysis(
+            understanding_level=10,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=[],
+        )
+        assert analysis.understanding_level == 10
+
+        # 無効な範囲
+        with pytest.raises(ValidationError):
+            ResponseAnalysis(
+                understanding_level=-1,
+                is_correct_direction=True,
+                needs_clarification=False,
+                key_insights=[],
+            )
+
+        with pytest.raises(ValidationError):
+            ResponseAnalysis(
+                understanding_level=11,
+                is_correct_direction=True,
+                needs_clarification=False,
+                key_insights=[],
+            )
