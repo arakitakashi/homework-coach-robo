@@ -44,3 +44,17 @@ class DialogueTurn(BaseModel):
     response_analysis: ResponseAnalysis | None = Field(
         default=None, description="回答分析（子供の回答の場合）"
     )
+
+
+class DialogueContext(BaseModel):
+    """対話コンテキスト（セッション全体の状態）"""
+
+    session_id: str = Field(..., description="セッションID")
+    problem: str = Field(..., description="現在の問題")
+    current_hint_level: int = Field(
+        default=1, ge=1, le=3, description="現在のヒントレベル（1-3）"
+    )
+    tone: DialogueTone = Field(
+        default=DialogueTone.ENCOURAGING, description="対話トーン"
+    )
+    turns: list[DialogueTurn] = Field(default_factory=list, description="対話履歴")
