@@ -2,9 +2,12 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from typing import Self
 
 
 class QuestionType(str, Enum):
@@ -58,3 +61,30 @@ class DialogueContext(BaseModel):
         default=DialogueTone.ENCOURAGING, description="対話トーン"
     )
     turns: list[DialogueTurn] = Field(default_factory=list, description="対話履歴")
+
+    @classmethod
+    def from_adk_session(cls, session: Any) -> "Self":
+        """ADKセッションからDialogueContextを構築
+
+        Args:
+            session: ADKのSessionオブジェクト（id, state属性を持つ）
+
+        Returns:
+            DialogueContext: 構築されたコンテキスト
+        """
+        state = session.state or {}
+
+        # toneの変換（文字列 -> Enum）
+        tone_str = state.get("tone", "encouraging")
+        try:
+            tone = DialogueTone(tone_str)
+        except ValueError:
+            tone = DialogueTone.ENCOURAGING
+
+        return cls(
+            session_id=session.id,
+            problem=state.get("problem", ""),
+            current_hint_level=state.get("current_hint_level", 1),
+            tone=tone,
+            turns=[],
+        )
