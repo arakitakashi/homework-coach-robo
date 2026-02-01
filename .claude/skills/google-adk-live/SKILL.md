@@ -1,6 +1,6 @@
 # Google ADK Live - Gemini Live API (Bidi-streaming)
 
-**Version**: 1.0 | **Last Updated**: 2026-01-31 | **For**: ADK + Gemini Live API
+**Version**: 1.1 | **Last Updated**: 2026-02-02 | **For**: ADK + Gemini Live API
 
 ---
 
@@ -11,11 +11,13 @@ Gemini Live API enables low-latency, bidirectional voice and video interactions.
 **Use Cases:** Real-time tutors, live support, accessibility tools, interactive assistants
 
 **Requirements:**
-- ADK basics (use `/google-adk-basics`)
-- Model: `gemini-live-2.5-flash-preview-native-audio`
+- ADK basics (use `/google-adk-basics` first)
+- Model: `gemini-2.5-flash-native-audio-preview-*` (check latest version)
 - SSL: `export SSL_CERT_FILE=$(python -m certifi)`
 
-**Supported Models:** Only `gemini-live-2.5-flash-preview-native-audio` (check [docs](https://ai.google.dev/gemini-api/docs/models#live-api))
+**Supported Models:** Check [Live API docs](https://ai.google.dev/gemini-api/docs/models#live-api) for current models
+
+**Note:** For session & memory management patterns, see `/google-adk-basics`
 
 ---
 
@@ -410,4 +412,40 @@ def test_websocket():
 
 ---
 
-**Version 1.0** | **Requires:** `/google-adk-basics` for fundamentals
+## Production Session Management
+
+For production deployments requiring persistent sessions and long-term memory, combine Live API with ADK's session services:
+
+```python
+from google.adk.sessions import VertexAiSessionService
+from google.adk.memory import VertexAiMemoryBankService
+from google.adk.runners import Runner
+
+# Use VertexAiSessionService instead of InMemoryRunner
+session_service = VertexAiSessionService(
+    project=PROJECT_ID,
+    location=LOCATION,
+    agent_engine_id=AGENT_ENGINE_ID,
+)
+
+memory_service = VertexAiMemoryBankService(
+    project=PROJECT_ID,
+    location=LOCATION,
+    agent_engine_id=AGENT_ENGINE_ID,
+)
+
+runner = Runner(
+    app_name="live_app",
+    agent=root_agent,
+    session_service=session_service,
+    memory_service=memory_service,
+)
+
+# Then use runner.run_live() with the persistent session
+```
+
+See `/google-adk-basics` for detailed session & memory management patterns.
+
+---
+
+**Version 1.1** | **Requires:** `/google-adk-basics` for fundamentals

@@ -1,6 +1,6 @@
 # Google ADK Basics - Agent Development Fundamentals
 
-**Version**: 1.0 | **Last Updated**: 2026-01-31 | **For**: ADK Python SDK v1.0+
+**Version**: 2.0 | **Last Updated**: 2026-02-02 | **For**: ADK Python SDK v1.0+
 
 ---
 
@@ -8,9 +8,9 @@
 
 Google Agent Development Kit (ADK) is a code-first framework for building AI agents with Gemini models.
 
-**Key Features:** Code-first Python, multi-agent systems, rich tools, model-agnostic, deploy anywhere
+**Key Features:** Code-first Python, multi-agent systems, rich tools, session & memory management, deploy anywhere
 
-**Requirements:** Python 3.11+, `uv` package manager, Google AI Studio OR Vertex AI
+**Requirements:** Python 3.10+, `uv` package manager, Google AI Studio OR Vertex AI
 
 ---
 
@@ -25,7 +25,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 2. Create Project
 
 ```bash
-uv venv --python "python3.11" ".venv"
+uv venv --python "python3.10" ".venv"
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv pip install google-adk google-genai
 ```
@@ -37,7 +37,7 @@ uv pip install google-adk google-genai
 GOOGLE_GENAI_USE_VERTEXAI=FALSE
 GOOGLE_API_KEY=your-api-key
 
-# Option 2: Vertex AI
+# Option 2: Vertex AI (production)
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=us-central1
@@ -69,14 +69,12 @@ from . import agent
 
 # my_agent/agent.py
 from google.adk.agents import Agent
-from google.adk.tools import google_search
 
 root_agent = Agent(
     name="search_assistant",
     model="gemini-2.5-flash",
-    instruction="You are a helpful assistant. Use Google Search when needed.",
-    description="An assistant that can search the web.",
-    tools=[google_search]
+    instruction="You are a helpful assistant.",
+    description="An assistant that can help with tasks.",
 )
 ```
 
@@ -84,55 +82,216 @@ root_agent = Agent(
 
 ---
 
-## App Pattern with Plugins
+## LlmAgent Pattern (Recommended)
 
-Use when you need plugins, event compaction, or custom configuration.
+Use `LlmAgent` for production agents with tools and callbacks.
 
 ```python
-# my_agent/__init__.py
-from . import agent
+from google.adk.agents import LlmAgent
+from google.adk.tools import google_search_tool
+from google.adk.tools.preload_memory_tool import PreloadMemoryTool
 
-# my_agent/agent.py
-from google.adk.agents import Agent
-from google.adk.apps import App
-from google.adk.plugins import ContextFilterPlugin
-
-root_agent = Agent(
-    name="advanced_agent",
+root_agent = LlmAgent(
+    name="homework_coach",
     model="gemini-2.5-flash",
-    instruction="You are a helpful assistant.",
-    tools=[],
-)
-
-app = App(
-    name="my_app",
-    root_agent=root_agent,
-    plugins=[
-        ContextFilterPlugin(num_invocations_to_keep=3),  # Keep last 3 turns
-    ],
+    description="Homework coaching agent",
+    instruction="""
+        You are a helpful tutor for elementary school students.
+        Use the Socratic method to guide students.
+        Never give direct answers.
+    """,
+    tools=[PreloadMemoryTool(), google_search_tool],
+    output_key="coach_response",  # Store output in session state
+    after_agent_callback=save_to_memory,  # Callback after execution
 )
 ```
 
-**Plugins:** `ContextFilterPlugin`, custom callbacks
+---
+
+## Session & Memory Management
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    ADK Runner                        │
+│  ┌─────────────────┐    ┌─────────────────────────┐ │
+│  │ SessionService  │    │   MemoryBankService     │ │
+│  │ (short-term)    │    │   (long-term)           │ │
+│  │                 │    │                         │ │
+│  │ - conversation  │    │ - user preferences      │ │
+│  │ - session state │    │ - learned facts         │ │
+│  │ - current turn  │    │ - historical context    │ │
+│  └─────────────────┘    └─────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+```
+
+### SessionService (Short-term Memory)
+
+Manages conversation context within a session.
+
+```python
+# Development: InMemorySessionService
+from google.adk.sessions import InMemorySessionService
+session_service = InMemorySessionService()
+
+# Production: VertexAiSessionService
+from google.adk.sessions import VertexAiSessionService
+session_service = VertexAiSessionService(
+    project=PROJECT_ID,
+    location=LOCATION,
+    agent_engine_id=AGENT_ENGINE_ID,
+)
+
+# Create session
+session = await session_service.create_session(
+    app_name="homework_coach",
+    user_id="user123",
+)
+
+# Get existing session
+session = await session_service.get_session(
+    app_name="homework_coach",
+    user_id="user123",
+    session_id="existing-session-id",
+)
+```
+
+### session.state (Custom State)
+
+Store custom data in session state:
+
+```python
+# Store custom state
+session.state = {
+    "current_phase": 2,
+    "problem": "3 + 5 = ?",
+    "attempts_count": 1,
+    "hint_level": 1,
+}
+
+# Access in agent instruction
+instruction = """
+Current phase: {current_phase}
+Problem: {problem}
+"""
+```
+
+### MemoryBankService (Long-term Memory)
+
+Persists important information across sessions.
+
+```python
+# Production: VertexAiMemoryBankService
+from google.adk.memory import VertexAiMemoryBankService
+
+memory_service = VertexAiMemoryBankService(
+    project=PROJECT_ID,
+    location=LOCATION,
+    agent_engine_id=AGENT_ENGINE_ID,
+)
+
+# Save session to memory (in callback)
+await memory_service.add_session_to_memory(session)
+```
+
+### PreloadMemoryTool
+
+Automatically loads relevant memories into context:
+
+```python
+from google.adk.tools.preload_memory_tool import PreloadMemoryTool
+
+root_agent = LlmAgent(
+    name="coach",
+    tools=[PreloadMemoryTool()],  # Add to tools
+    instruction="Use memory to personalize responses.",
+)
+```
 
 ---
 
-## Multi-Agent Systems
+## Runner Configuration
+
+### Complete Runner Setup
 
 ```python
-from google.adk.agents import Agent
+from google.adk.agents import LlmAgent
+from google.adk.runners import Runner
+from google.adk.sessions import VertexAiSessionService
+from google.adk.memory import VertexAiMemoryBankService
 
-greeter = Agent(name="greeter", model="gemini-2.5-flash", 
-                instruction="Greet users warmly.")
+# Initialize services
+session_service = VertexAiSessionService(
+    project=PROJECT_ID,
+    location=LOCATION,
+    agent_engine_id=AGENT_ENGINE_ID,
+)
 
-task_executor = Agent(name="task_executor", model="gemini-2.5-flash",
-                      instruction="Execute tasks efficiently.")
+memory_service = VertexAiMemoryBankService(
+    project=PROJECT_ID,
+    location=LOCATION,
+    agent_engine_id=AGENT_ENGINE_ID,
+)
 
-coordinator = Agent(
-    name="coordinator",
-    model="gemini-2.5-flash",
-    description="Coordinates greetings and tasks.",
-    sub_agents=[greeter, task_executor],
+# Create runner
+runner = Runner(
+    app_name="homework_coach",
+    agent=root_agent,
+    session_service=session_service,
+    memory_service=memory_service,
+)
+
+# Run agent
+async def call_agent(user_id: str, session_id: str, message: str):
+    session = await session_service.get_session(
+        app_name="homework_coach",
+        user_id=user_id,
+        session_id=session_id,
+    ) or await session_service.create_session(
+        app_name="homework_coach",
+        user_id=user_id,
+    )
+
+    content = types.Content(role="user", parts=[types.Part(text=message)])
+
+    events = runner.run(
+        user_id=session.user_id,
+        session_id=session.id,
+        new_message=content,
+    )
+
+    for event in events:
+        if event.is_final_response():
+            return event.content.parts[0].text
+```
+
+---
+
+## Callbacks
+
+### after_agent_callback
+
+Execute code after agent completes:
+
+```python
+from typing import Optional
+from google.adk.agents.callback_context import CallbackContext
+from google.genai import types
+
+async def save_session_to_memory(
+    callback_context: CallbackContext
+) -> Optional[types.Content]:
+    """Save session to memory bank after agent execution."""
+    await callback_context._invocation_context.memory_service.add_session_to_memory(
+        callback_context._invocation_context.session
+    )
+    # Return None to not modify response
+    return None
+
+root_agent = LlmAgent(
+    name="coach",
+    after_agent_callback=save_session_to_memory,
 )
 ```
 
@@ -140,7 +299,7 @@ coordinator = Agent(
 
 ## Tool Integration
 
-### Define Tool
+### Define Tool with FunctionDeclaration
 
 ```python
 from google.genai import types
@@ -154,7 +313,7 @@ hint_tool = types.Tool(
                 "type": "object",
                 "properties": {
                     "problem": {"type": "string", "description": "The homework problem"},
-                    "level": {"type": "integer", "description": "Hint level (1-3)", 
+                    "level": {"type": "integer", "description": "Hint level (1-3)",
                              "enum": [1, 2, 3]}
                 },
                 "required": ["problem", "level"]
@@ -164,75 +323,52 @@ hint_tool = types.Tool(
 )
 ```
 
-### Implement Handler
+### MCP Toolset
+
+Use Model Context Protocol tools:
 
 ```python
-from typing import Dict, Any
-import json
+from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 
-async def handle_generate_hint(args: Dict[str, Any]) -> str:
-    problem = args["problem"]
-    level = args["level"]
-    hint = f"Hint level {level} for: {problem}"
-    return json.dumps({"hint": hint, "level": level})
+maps_toolset = MCPToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://mapstools.googleapis.com/mcp",
+        headers={"X-Goog-Api-Key": API_KEY}
+    )
+)
 
-TOOL_HANDLERS = {"generate_hint": handle_generate_hint}
-
-async def dispatch_tool_call(function_name: str, args: Dict[str, Any]) -> str:
-    handler = TOOL_HANDLERS.get(function_name)
-    if not handler:
-        return json.dumps({"error": f"Unknown tool: {function_name}"})
-    try:
-        return await handler(args)
-    except Exception as e:
-        return json.dumps({"error": str(e)})
-```
-
-### Use Tool
-
-```python
-from google.adk.agents import Agent
-from .tools import hint_tool
-
-root_agent = Agent(
-    name="tutor_agent",
-    model="gemini-2.5-flash",
-    instruction="Use generate_hint to help students.",
-    tools=[hint_tool],
+root_agent = LlmAgent(
+    name="agent",
+    tools=[maps_toolset],
 )
 ```
 
 ---
 
-## Session Management
-
-### InMemoryRunner (Development)
+## Multi-Agent Systems
 
 ```python
-from google.adk.runners import InMemoryRunner
+from google.adk.agents import LlmAgent
 
-runner = InMemoryRunner(app_name="my_app", agent=root_agent)
-
-session = await runner.session_service.create_session(
-    app_name="my_app",
-    user_id="user123",
+greeter = LlmAgent(
+    name="greeter",
+    model="gemini-2.5-flash",
+    instruction="Greet users warmly.",
 )
 
-result = await runner.run_async(session=session, new_message="Hello")
-```
-
-### VertexAIRunner (Production)
-
-```python
-from google.adk.runners import VertexAIRunner
-
-runner = VertexAIRunner(
-    app_name="my_app",
-    agent=root_agent,
-    project_id="your-project-id",
-    location="us-central1",
+tutor = LlmAgent(
+    name="tutor",
+    model="gemini-2.5-flash",
+    instruction="Help with homework using Socratic method.",
 )
-# Sessions auto-persisted in Vertex AI
+
+coordinator = LlmAgent(
+    name="coordinator",
+    model="gemini-2.5-flash",
+    description="Coordinates greetings and tutoring.",
+    sub_agents=[greeter, tutor],
+)
 ```
 
 ---
@@ -241,23 +377,20 @@ runner = VertexAIRunner(
 
 ### 1. Agent Structure
 
-✅ **DO**: `my_agent/__init__.py` + `agent.py` with `root_agent`
-❌ **DON'T**: Custom file names (won't be discovered)
+- **DO**: `my_agent/__init__.py` + `agent.py` with `root_agent`
+- **DON'T**: Custom file names (won't be discovered by ADK CLI)
 
-### 2. Development
+### 2. Session Management
 
-✅ **DO**: `uv` + Python 3.11+
-❌ **DON'T**: `pip` or Python 3.9
+- **DO**: Use ADK SessionService (don't build custom state tracker)
+- **DO**: Store custom state in `session.state`
+- **DON'T**: Manage session state manually
 
-### 3. Error Handling
+### 3. Memory
 
-```python
-try:
-    result = await agent.run_async(session, message)
-except Exception as e:
-    logger.error(f"Agent error: {e}", exc_info=True)
-    return {"error": "Sorry, I encountered an issue."}
-```
+- **DO**: Use `PreloadMemoryTool` for personalization
+- **DO**: Save important sessions with `after_agent_callback`
+- **DON'T**: Store sensitive data in memory
 
 ### 4. Safety (for children)
 
@@ -265,7 +398,7 @@ except Exception as e:
 from google.genai import types
 
 safety_settings = [
-    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", 
+    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT",
                        threshold="BLOCK_MEDIUM_AND_ABOVE"),
     types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH",
                        threshold="BLOCK_MEDIUM_AND_ABOVE"),
@@ -274,18 +407,6 @@ safety_settings = [
     types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT",
                        threshold="BLOCK_MEDIUM_AND_ABOVE"),
 ]
-```
-
-### 5. Context Management
-
-```python
-from google.adk.plugins import ContextFilterPlugin
-
-app = App(
-    name="my_app",
-    root_agent=root_agent,
-    plugins=[ContextFilterPlugin(num_invocations_to_keep=3)],
-)
 ```
 
 ---
@@ -297,18 +418,15 @@ app = App(
 **Cause**: Wrong structure
 **Solution**: Ensure `my_agent/__init__.py` has `from . import agent` and `agent.py` has `root_agent`
 
-### Issue #2: Tool calls fail
+### Issue #2: Session not persisting
 
-**Cause**: Missing error handling
-**Solution**: Add try-except in `dispatch_tool_call` (see Tool Integration section)
+**Cause**: Using InMemorySessionService in production
+**Solution**: Use VertexAiSessionService with Agent Engine
 
-### Issue #3: High latency
+### Issue #3: Memory not loading
 
-**Solutions**:
-- Use `gemini-2.5-flash`
-- Reduce system instruction length
-- Minimize tool count
-- Use `ContextFilterPlugin`
+**Cause**: Missing PreloadMemoryTool
+**Solution**: Add `PreloadMemoryTool()` to agent tools
 
 ---
 
@@ -318,28 +436,47 @@ app = App(
 
 ```python
 import pytest
-from example_agent.agent import root_agent
+from my_agent.agent import root_agent
 
 @pytest.mark.asyncio
 async def test_agent_config():
-    assert root_agent.name == "tutor_agent"
+    assert root_agent.name == "homework_coach"
     assert root_agent.model == "gemini-2.5-flash"
 ```
 
-### Integration Test
+### Integration Test with InMemorySessionService
 
 ```python
 import pytest
-from google.adk.runners import InMemoryRunner
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
 
 @pytest.mark.asyncio
-async def test_agent_run():
-    runner = InMemoryRunner(app_name="test", agent=root_agent)
-    session = await runner.session_service.create_session(
-        app_name="test", user_id="test-user"
+async def test_agent_session():
+    session_service = InMemorySessionService()
+    runner = Runner(
+        app_name="test",
+        agent=root_agent,
+        session_service=session_service,
     )
-    result = await runner.run_async(session=session, new_message="Hello")
-    assert result is not None
+
+    session = await session_service.create_session(
+        app_name="test",
+        user_id="test-user",
+    )
+
+    content = types.Content(role="user", parts=[types.Part(text="Hello")])
+    events = runner.run(
+        user_id=session.user_id,
+        session_id=session.id,
+        new_message=content,
+    )
+
+    for event in events:
+        if event.is_final_response():
+            assert event.content is not None
+            break
 ```
 
 ---
@@ -348,22 +485,23 @@ async def test_agent_run():
 
 ### New Agent
 - [ ] Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- [ ] Create venv: `uv venv --python "python3.11" ".venv"`
+- [ ] Create venv: `uv venv --python "python3.10" ".venv"`
 - [ ] Activate: `source .venv/bin/activate`
 - [ ] Install: `uv pip install google-adk google-genai`
 - [ ] Create: `my_agent/__init__.py` + `agent.py`
-- [ ] Define: `root_agent = Agent(...)` in `agent.py`
+- [ ] Define: `root_agent = LlmAgent(...)` in `agent.py`
 - [ ] Add: `from . import agent` in `__init__.py`
 - [ ] Config: `.env` with API key
 - [ ] Test: `adk web my_agent`
 
 ### Production
-- [ ] Use `VertexAIRunner`
+- [ ] Use `VertexAiSessionService`
+- [ ] Use `VertexAiMemoryBankService`
+- [ ] Add `PreloadMemoryTool`
+- [ ] Implement `after_agent_callback`
 - [ ] Error handling
-- [ ] Rate limiting
 - [ ] Safety settings
 - [ ] Monitoring
-- [ ] Load testing
 
 ---
 
@@ -371,11 +509,10 @@ async def test_agent_run():
 
 - [ADK Docs](https://google.github.io/adk-docs)
 - [ADK Python](https://github.com/google/adk-python)
-- [AGENTS.md](https://github.com/google/adk-python/blob/main/AGENTS.md)
-- [Samples](https://github.com/google/adk-samples)
+- [ADK Samples](https://github.com/google/adk-samples)
+- [Memory Docs](https://google.github.io/adk-docs/sessions/memory)
 - **For Live API**: Use `/google-adk-live` skill
-- [Reddit](https://www.reddit.com/r/agentdevelopmentkit/)
 
 ---
 
-**Version 1.0** | **Next**: Use `/google-adk-live` for real-time voice/video
+**Version 2.0** | **Next**: Use `/google-adk-live` for real-time voice/video
