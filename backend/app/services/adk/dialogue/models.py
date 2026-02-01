@@ -2,6 +2,8 @@
 
 from enum import Enum
 
+from pydantic import BaseModel, Field
+
 
 class QuestionType(str, Enum):
     """質問タイプ"""
@@ -17,3 +19,12 @@ class DialogueTone(str, Enum):
     ENCOURAGING = "encouraging"  # 励まし
     NEUTRAL = "neutral"  # 中立
     EMPATHETIC = "empathetic"  # 共感
+
+
+class ResponseAnalysis(BaseModel):
+    """回答分析結果"""
+
+    understanding_level: int = Field(..., ge=0, le=10, description="理解度（0-10）")
+    is_correct_direction: bool = Field(..., description="正しい方向に向かっているか")
+    needs_clarification: bool = Field(..., description="追加の説明が必要か")
+    key_insights: list[str] = Field(..., description="重要な気づき")
