@@ -118,3 +118,96 @@ class TestResponseAnalysis:
                 needs_clarification=False,
                 key_insights=[],
             )
+
+
+class TestDialogueTurn:
+    """DialogueTurn Pydanticモデルのテスト"""
+
+    def test_dialogue_turn_child_message(self):
+        """子供のメッセージを作成できる"""
+        from datetime import datetime
+
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        turn = DialogueTurn(
+            role="child",
+            content="3と5を足すの？",
+            timestamp=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        assert turn.role == "child"
+        assert turn.content == "3と5を足すの？"
+        assert turn.timestamp == datetime(2026, 2, 2, 10, 0, 0)
+        assert turn.question_type is None
+        assert turn.response_analysis is None
+
+    def test_dialogue_turn_assistant_message_with_question_type(self):
+        """アシスタントのメッセージに質問タイプを設定できる"""
+        from datetime import datetime
+
+        from app.services.adk.dialogue.models import DialogueTurn, QuestionType
+
+        turn = DialogueTurn(
+            role="assistant",
+            content="この問題は何を聞いていると思う？",
+            timestamp=datetime(2026, 2, 2, 10, 0, 1),
+            question_type=QuestionType.UNDERSTANDING_CHECK,
+        )
+
+        assert turn.role == "assistant"
+        assert turn.content == "この問題は何を聞いていると思う？"
+        assert turn.question_type == QuestionType.UNDERSTANDING_CHECK
+
+    def test_dialogue_turn_with_response_analysis(self):
+        """子供のメッセージに回答分析を付与できる"""
+        from datetime import datetime
+
+        from app.services.adk.dialogue.models import DialogueTurn, ResponseAnalysis
+
+        analysis = ResponseAnalysis(
+            understanding_level=6,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=["問題の意図を理解している"],
+        )
+
+        turn = DialogueTurn(
+            role="child",
+            content="足し算をするんだと思う",
+            timestamp=datetime(2026, 2, 2, 10, 0, 2),
+            response_analysis=analysis,
+        )
+
+        assert turn.response_analysis is not None
+        assert turn.response_analysis.understanding_level == 6
+
+    def test_dialogue_turn_role_validation(self):
+        """roleはchildまたはassistantのみ許可"""
+        from datetime import datetime
+
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        # 有効なrole
+        turn = DialogueTurn(
+            role="child",
+            content="テスト",
+            timestamp=datetime(2026, 2, 2, 10, 0, 0),
+        )
+        assert turn.role == "child"
+
+        turn = DialogueTurn(
+            role="assistant",
+            content="テスト",
+            timestamp=datetime(2026, 2, 2, 10, 0, 0),
+        )
+        assert turn.role == "assistant"
+
+        # 無効なrole
+        with pytest.raises(ValidationError):
+            DialogueTurn(
+                role="teacher",
+                content="テスト",
+                timestamp=datetime(2026, 2, 2, 10, 0, 0),
+            )
