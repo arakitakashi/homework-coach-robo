@@ -319,3 +319,65 @@ class TestDialogueContext:
         assert context.current_hint_level == 1
         assert context.tone == DialogueTone.ENCOURAGING
         assert context.turns == []
+
+
+class TestFromAdkSession:
+    """from_adk_session()ファクトリメソッドのテスト"""
+
+    def test_from_adk_session_basic(self):
+        """基本的なADKセッションからDialogueContextを作成"""
+        from unittest.mock import MagicMock
+
+        from app.services.adk.dialogue.models import DialogueContext, DialogueTone
+
+        # ADKセッションのモック
+        mock_session = MagicMock()
+        mock_session.id = "adk-session-123"
+        mock_session.state = {
+            "problem": "3 + 5 = ?",
+            "current_hint_level": 2,
+            "tone": "neutral",
+        }
+
+        context = DialogueContext.from_adk_session(mock_session)
+
+        assert context.session_id == "adk-session-123"
+        assert context.problem == "3 + 5 = ?"
+        assert context.current_hint_level == 2
+        assert context.tone == DialogueTone.NEUTRAL
+        assert context.turns == []
+
+    def test_from_adk_session_with_empty_state(self):
+        """空のstateを持つADKセッションからDialogueContextを作成"""
+        from unittest.mock import MagicMock
+
+        from app.services.adk.dialogue.models import DialogueContext, DialogueTone
+
+        mock_session = MagicMock()
+        mock_session.id = "adk-session-456"
+        mock_session.state = {}
+
+        context = DialogueContext.from_adk_session(mock_session)
+
+        assert context.session_id == "adk-session-456"
+        assert context.problem == ""
+        assert context.current_hint_level == 1
+        assert context.tone == DialogueTone.ENCOURAGING
+        assert context.turns == []
+
+    def test_from_adk_session_with_none_state(self):
+        """stateがNoneのADKセッションからDialogueContextを作成"""
+        from unittest.mock import MagicMock
+
+        from app.services.adk.dialogue.models import DialogueContext, DialogueTone
+
+        mock_session = MagicMock()
+        mock_session.id = "adk-session-789"
+        mock_session.state = None
+
+        context = DialogueContext.from_adk_session(mock_session)
+
+        assert context.session_id == "adk-session-789"
+        assert context.problem == ""
+        assert context.current_hint_level == 1
+        assert context.tone == DialogueTone.ENCOURAGING
