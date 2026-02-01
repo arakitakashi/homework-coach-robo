@@ -1,6 +1,8 @@
 """ソクラテス式対話エンジン - データモデル"""
 
+from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -28,3 +30,17 @@ class ResponseAnalysis(BaseModel):
     is_correct_direction: bool = Field(..., description="正しい方向に向かっているか")
     needs_clarification: bool = Field(..., description="追加の説明が必要か")
     key_insights: list[str] = Field(..., description="重要な気づき")
+
+
+class DialogueTurn(BaseModel):
+    """対話ターン（1回の発話）"""
+
+    role: Literal["child", "assistant"] = Field(..., description="発話者")
+    content: str = Field(..., description="発話内容")
+    timestamp: datetime = Field(..., description="発話時刻")
+    question_type: QuestionType | None = Field(
+        default=None, description="質問タイプ（アシスタントの場合）"
+    )
+    response_analysis: ResponseAnalysis | None = Field(
+        default=None, description="回答分析（子供の回答の場合）"
+    )
