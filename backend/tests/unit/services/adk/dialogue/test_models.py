@@ -211,3 +211,111 @@ class TestDialogueTurn:
                 content="テスト",
                 timestamp=datetime(2026, 2, 2, 10, 0, 0),
             )
+
+
+class TestDialogueContext:
+    """DialogueContext Pydanticモデルのテスト"""
+
+    def test_dialogue_context_creation(self):
+        """DialogueContextを作成できる"""
+        from app.services.adk.dialogue.models import DialogueContext, DialogueTone
+
+        context = DialogueContext(
+            session_id="session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+        assert context.session_id == "session-123"
+        assert context.problem == "3 + 5 = ?"
+        assert context.current_hint_level == 1
+        assert context.tone == DialogueTone.ENCOURAGING
+        assert context.turns == []
+
+    def test_dialogue_context_with_turns(self):
+        """DialogueContextにターンを追加できる"""
+        from datetime import datetime
+
+        from app.services.adk.dialogue.models import (
+            DialogueContext,
+            DialogueTone,
+            DialogueTurn,
+            QuestionType,
+        )
+
+        turns = [
+            DialogueTurn(
+                role="assistant",
+                content="この問題は何を聞いていると思う？",
+                timestamp=datetime(2026, 2, 2, 10, 0, 0),
+                question_type=QuestionType.UNDERSTANDING_CHECK,
+            ),
+            DialogueTurn(
+                role="child",
+                content="足し算をする問題だと思う",
+                timestamp=datetime(2026, 2, 2, 10, 0, 5),
+            ),
+        ]
+
+        context = DialogueContext(
+            session_id="session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=turns,
+        )
+
+        assert len(context.turns) == 2
+        assert context.turns[0].role == "assistant"
+        assert context.turns[1].role == "child"
+
+    def test_dialogue_context_hint_level_range(self):
+        """current_hint_levelは1-3の範囲"""
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.models import DialogueContext, DialogueTone
+
+        # 有効な範囲
+        for level in [1, 2, 3]:
+            context = DialogueContext(
+                session_id="session-123",
+                problem="3 + 5 = ?",
+                current_hint_level=level,
+                tone=DialogueTone.NEUTRAL,
+                turns=[],
+            )
+            assert context.current_hint_level == level
+
+        # 無効な範囲
+        with pytest.raises(ValidationError):
+            DialogueContext(
+                session_id="session-123",
+                problem="3 + 5 = ?",
+                current_hint_level=0,
+                tone=DialogueTone.NEUTRAL,
+                turns=[],
+            )
+
+        with pytest.raises(ValidationError):
+            DialogueContext(
+                session_id="session-123",
+                problem="3 + 5 = ?",
+                current_hint_level=4,
+                tone=DialogueTone.NEUTRAL,
+                turns=[],
+            )
+
+    def test_dialogue_context_default_values(self):
+        """DialogueContextのデフォルト値"""
+        from app.services.adk.dialogue.models import DialogueContext, DialogueTone
+
+        context = DialogueContext(
+            session_id="session-123",
+            problem="3 + 5 = ?",
+        )
+
+        assert context.current_hint_level == 1
+        assert context.tone == DialogueTone.ENCOURAGING
+        assert context.turns == []
