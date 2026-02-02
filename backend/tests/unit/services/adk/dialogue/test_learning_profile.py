@@ -288,3 +288,105 @@ class TestSessionSummary:
                 hints_used=2,
                 subjects_covered=["math"],
             )
+
+
+class TestChildLearningProfile:
+    """ChildLearningProfile Pydanticモデルのテスト"""
+
+    def test_child_learning_profile_creation(self):
+        """ChildLearningProfileを作成できる"""
+        from app.services.adk.dialogue.learning_profile import (
+            ChildLearningProfile,
+            SubjectUnderstanding,
+            ThinkingTendencies,
+        )
+
+        thinking = ThinkingTendencies(
+            persistence_score=7.5,
+            independence_score=6.0,
+            reflection_quality=8.0,
+            hint_dependency=0.3,
+            updated_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        subjects = [
+            SubjectUnderstanding(
+                subject="math",
+                topic="addition",
+                level=7.5,
+                trend="improving",
+                assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
+        ]
+
+        profile = ChildLearningProfile(
+            child_id="child-123",
+            thinking=thinking,
+            subjects=subjects,
+            total_sessions=10,
+            total_problems_solved=50,
+            created_at=datetime(2026, 1, 1, 0, 0, 0),
+            updated_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        assert profile.child_id == "child-123"
+        assert profile.thinking.persistence_score == 7.5
+        assert len(profile.subjects) == 1
+        assert profile.total_sessions == 10
+        assert profile.total_problems_solved == 50
+
+    def test_child_learning_profile_empty_subjects(self):
+        """subjects は空リストでも作成可能"""
+        from app.services.adk.dialogue.learning_profile import (
+            ChildLearningProfile,
+            ThinkingTendencies,
+        )
+
+        thinking = ThinkingTendencies(
+            persistence_score=5,
+            independence_score=5,
+            reflection_quality=5,
+            hint_dependency=0.5,
+            updated_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        profile = ChildLearningProfile(
+            child_id="child-123",
+            thinking=thinking,
+            subjects=[],
+            total_sessions=0,
+            total_problems_solved=0,
+            created_at=datetime(2026, 2, 2, 10, 0, 0),
+            updated_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        assert profile.subjects == []
+        assert profile.total_sessions == 0
+
+    def test_child_learning_profile_non_negative_counts(self):
+        """カウント系フィールドは非負"""
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.learning_profile import (
+            ChildLearningProfile,
+            ThinkingTendencies,
+        )
+
+        thinking = ThinkingTendencies(
+            persistence_score=5,
+            independence_score=5,
+            reflection_quality=5,
+            hint_dependency=0.5,
+            updated_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        with pytest.raises(ValidationError):
+            ChildLearningProfile(
+                child_id="child-123",
+                thinking=thinking,
+                subjects=[],
+                total_sessions=-1,
+                total_problems_solved=0,
+                created_at=datetime(2026, 2, 2, 10, 0, 0),
+                updated_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
