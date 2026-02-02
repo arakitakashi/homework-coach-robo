@@ -51,3 +51,14 @@ class ChildLearningProfile(BaseModel):
     total_problems_solved: int = Field(..., ge=0, description="総解決問題数")
     created_at: datetime = Field(..., description="作成日時")
     updated_at: datetime = Field(..., description="最終更新日時")
+
+
+class LearningMemory(BaseModel):
+    """ADK MemoryBank用の記憶"""
+
+    memory_type: Literal["learning_insight", "thinking_pattern", "effective_approach"] = Field(
+        ..., description="記憶タイプ"
+    )
+    content: str = Field(..., description="自然言語での記憶内容")
+    tags: list[str] = Field(default_factory=list, description="検索用タグ")
+    created_at: datetime = Field(..., description="作成日時")
