@@ -104,3 +104,114 @@ class TestThinkingTendencies:
                 hint_dependency=1.1,
                 updated_at=datetime(2026, 2, 2, 10, 0, 0),
             )
+
+
+class TestSubjectUnderstanding:
+    """SubjectUnderstanding Pydanticモデルのテスト"""
+
+    def test_subject_understanding_creation(self):
+        """SubjectUnderstandingを作成できる"""
+        from app.services.adk.dialogue.learning_profile import SubjectUnderstanding
+
+        understanding = SubjectUnderstanding(
+            subject="math",
+            topic="addition",
+            level=7.5,
+            trend="improving",
+            weak_points=["繰り上がり"],
+            strong_points=["一桁の足し算"],
+            assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        assert understanding.subject == "math"
+        assert understanding.topic == "addition"
+        assert understanding.level == 7.5
+        assert understanding.trend == "improving"
+        assert understanding.weak_points == ["繰り上がり"]
+        assert understanding.strong_points == ["一桁の足し算"]
+
+    def test_subject_understanding_level_range(self):
+        """levelは0-10の範囲"""
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.learning_profile import SubjectUnderstanding
+
+        # 有効な範囲
+        understanding = SubjectUnderstanding(
+            subject="math",
+            topic="addition",
+            level=0,
+            trend="stable",
+            assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+        assert understanding.level == 0
+
+        understanding = SubjectUnderstanding(
+            subject="math",
+            topic="addition",
+            level=10,
+            trend="stable",
+            assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+        assert understanding.level == 10
+
+        # 無効な範囲
+        with pytest.raises(ValidationError):
+            SubjectUnderstanding(
+                subject="math",
+                topic="addition",
+                level=-1,
+                trend="stable",
+                assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
+
+        with pytest.raises(ValidationError):
+            SubjectUnderstanding(
+                subject="math",
+                topic="addition",
+                level=11,
+                trend="stable",
+                assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
+
+    def test_subject_understanding_trend_values(self):
+        """trendはimproving/stable/decliningのみ"""
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.learning_profile import SubjectUnderstanding
+
+        # 有効な値
+        for trend in ["improving", "stable", "declining"]:
+            understanding = SubjectUnderstanding(
+                subject="math",
+                topic="addition",
+                level=5,
+                trend=trend,
+                assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
+            assert understanding.trend == trend
+
+        # 無効な値
+        with pytest.raises(ValidationError):
+            SubjectUnderstanding(
+                subject="math",
+                topic="addition",
+                level=5,
+                trend="unknown",
+                assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
+
+    def test_subject_understanding_default_lists(self):
+        """weak_pointsとstrong_pointsはデフォルトで空リスト"""
+        from app.services.adk.dialogue.learning_profile import SubjectUnderstanding
+
+        understanding = SubjectUnderstanding(
+            subject="math",
+            topic="addition",
+            level=5,
+            trend="stable",
+            assessed_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        assert understanding.weak_points == []
+        assert understanding.strong_points == []
