@@ -26,3 +26,16 @@ class SubjectUnderstanding(BaseModel):
     weak_points: list[str] = Field(default_factory=list, description="苦手ポイント")
     strong_points: list[str] = Field(default_factory=list, description="得意ポイント")
     assessed_at: datetime = Field(..., description="評価日時")
+
+
+class SessionSummary(BaseModel):
+    """セッションサマリー"""
+
+    session_id: str = Field(..., description="セッションID")
+    date: datetime = Field(..., description="セッション日時")
+    duration_seconds: int = Field(..., ge=0, description="セッション時間（秒）")
+    problems_attempted: int = Field(..., ge=0, description="取り組んだ問題数")
+    problems_solved_independently: int = Field(..., ge=0, description="独力で解いた問題数")
+    hints_used: int = Field(..., ge=0, description="使用したヒント数")
+    subjects_covered: list[str] = Field(..., description="取り組んだ科目")
+    insights: list[str] = Field(default_factory=list, description="セッションからの気づき")
