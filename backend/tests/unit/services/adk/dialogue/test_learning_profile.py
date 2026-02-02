@@ -390,3 +390,57 @@ class TestChildLearningProfile:
                 created_at=datetime(2026, 2, 2, 10, 0, 0),
                 updated_at=datetime(2026, 2, 2, 10, 0, 0),
             )
+
+
+class TestLearningMemory:
+    """LearningMemory Pydanticモデルのテスト"""
+
+    def test_learning_memory_creation(self):
+        """LearningMemoryを作成できる"""
+        from app.services.adk.dialogue.learning_profile import LearningMemory
+
+        memory = LearningMemory(
+            memory_type="learning_insight",
+            content="たろうくんは足し算は得意だが、繰り上がりがある問題では混乱しやすい。",
+            tags=["math", "addition", "weakness"],
+            created_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        assert memory.memory_type == "learning_insight"
+        assert "繰り上がり" in memory.content
+        assert memory.tags == ["math", "addition", "weakness"]
+
+    def test_learning_memory_type_values(self):
+        """memory_typeは指定された値のみ許可"""
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.learning_profile import LearningMemory
+
+        # 有効な値
+        for memory_type in ["learning_insight", "thinking_pattern", "effective_approach"]:
+            memory = LearningMemory(
+                memory_type=memory_type,
+                content="テスト",
+                created_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
+            assert memory.memory_type == memory_type
+
+        # 無効な値
+        with pytest.raises(ValidationError):
+            LearningMemory(
+                memory_type="invalid_type",
+                content="テスト",
+                created_at=datetime(2026, 2, 2, 10, 0, 0),
+            )
+
+    def test_learning_memory_default_tags(self):
+        """tagsはデフォルトで空リスト"""
+        from app.services.adk.dialogue.learning_profile import LearningMemory
+
+        memory = LearningMemory(
+            memory_type="thinking_pattern",
+            content="最初は諦めそうになるが、励ましの言葉で粘り強く取り組める。",
+            created_at=datetime(2026, 2, 2, 10, 0, 0),
+        )
+
+        assert memory.tags == []
