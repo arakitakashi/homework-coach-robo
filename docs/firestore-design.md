@@ -1,8 +1,8 @@
 # Cloud Firestore 設計ドキュメント
 
-**Document Version**: 1.0
-**Last Updated**: 2026-01-28
-**Status**: 設計完了
+**Document Version**: 1.1
+**Last Updated**: 2026-02-03
+**Status**: 設計完了（学習プロファイル追加）
 
 ---
 
@@ -113,11 +113,15 @@ problems/{problem_id}
 ```typescript
 sessions/{session_id}/dialogue_turns/{turn_id}
   ├─ turnId: string
-  ├─ speaker: string ('child' | 'coach')
+  ├─ role: string ('child' | 'assistant')  // 発話者ロール
   ├─ timestamp: timestamp
-  ├─ transcript: string
-  ├─ emotion: string
-  ├─ questionType: string
+  ├─ content: string                        // 発話内容
+  ├─ questionType: string | null            // 質問タイプ（assistant の場合）
+  ├─ responseAnalysis: map | null           // 回答分析（child の場合）
+  │   ├─ understandingLevel: number (0-10)
+  │   ├─ isCorrectDirection: boolean
+  │   ├─ needsClarification: boolean
+  │   └─ keyInsights: array<string>
   └─ audioUrl: string (optional)
 ```
 
@@ -130,7 +134,47 @@ sessions/{session_id}/dialogue_turns/{turn_id}
 
 **重要:** セッション終了時にBigQueryに移行し、Firestoreからは削除
 
-#### E. 保護者向けリアルタイム通知
+#### E. 子供の学習プロファイル
+
+**保存データ:**
+```typescript
+users/{user_id}/learning_profile
+  ├─ childId: string
+  ├─ thinking: map                    // 思考の傾向
+  │   ├─ persistenceScore: number     // 粘り強さ (0-10)
+  │   ├─ independenceScore: number    // 自立性 (0-10)
+  │   ├─ reflectionQuality: number    // 振り返り力 (0-10)
+  │   ├─ hintDependency: number       // ヒント依存度 (0-1)
+  │   └─ updatedAt: timestamp
+  ├─ subjects: array<SubjectUnderstanding>  // 科目別理解度
+  ├─ totalSessions: number
+  ├─ totalProblemsSolved: number
+  ├─ createdAt: timestamp
+  └─ updatedAt: timestamp
+
+// SubjectUnderstanding の構造
+{
+  subject: string,              // 'math' | 'japanese' など
+  topic: string,                // 'addition' | 'kanji_grade1' など
+  level: number,                // 理解度 (0-10)
+  trend: string,                // 'improving' | 'stable' | 'declining'
+  weakPoints: array<string>,    // 苦手ポイント
+  strongPoints: array<string>,  // 得意ポイント
+  assessedAt: timestamp
+}
+```
+
+**更新頻度:** セッション終了時
+
+**用途:**
+- 子供の思考傾向の追跡
+- 科目別理解度の把握
+- 長期的な学習進捗の可視化
+- 保護者ダッシュボードへの表示
+
+**関連:** ADK MemoryBank と連携し、自然言語での記憶（LearningMemory）も保存
+
+#### F. 保護者向けリアルタイム通知
 
 **保存データ:**
 ```typescript
@@ -390,6 +434,7 @@ await batch.commit()
 |-----------|-----------|----------|------|
 | **セッション状態** | ✅ メイン | ❌ | リアルタイム更新が必要 |
 | **ユーザープロフィール** | ✅ メイン | ❌ | 即時参照が必要 |
+| **学習プロファイル** | ✅ メイン | ✅ 分析用 | セッション後に即時更新、長期分析にBigQuery |
 | **進行中の対話** | ✅ 一時保存 | ✅ 永久保存 | セッション中はFirestore、終了後にBigQuery |
 | **完了した対話履歴** | ❌ | ✅ メイン | 分析用、リアルタイム不要 |
 | **学習統計・集計** | ✅ キャッシュ | ✅ ソース | BigQueryで集計→Firestoreにキャッシュ |
@@ -433,6 +478,10 @@ Firestoreから対話履歴削除（セッション状態のみ保持）
     - プロフィール情報
     - 設定
     - 統計キャッシュ
+
+    /learning_profile (サブコレクション)
+      - 思考の傾向
+      - 科目別理解度
 
     /notifications
       /{notification_id}

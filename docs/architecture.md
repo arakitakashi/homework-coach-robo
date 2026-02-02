@@ -1,8 +1,8 @@
 # 宿題コーチロボット - 技術仕様書
 
-**Document Version**: 1.1
-**Last Updated**: 2026-01-29
-**Status**: MVP設計完了（技術スタック確定）
+**Document Version**: 1.2
+**Last Updated**: 2026-02-03
+**Status**: MVP設計完了（ADK 1.23.0+）
 
 ---
 
@@ -106,13 +106,13 @@ export const isSessionActiveAtom = atom(
 |------|-----------|------|
 | **Python** | 3.10+ | バックエンド開発言語 |
 | **FastAPI** | 0.115.0+ | Webフレームワーク（REST + WebSocket） |
-| **Google ADK** | 1.20.0+ | Agent Development Kit（対話エージェント） |
+| **Google ADK** | 1.23.0+ | Agent Development Kit（対話エージェント） |
 
 #### 主要ライブラリ
 
 ```python
 # requirements.txt
-google-adk>=1.20.0
+google-adk>=1.23.0
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 websockets>=12.0
@@ -153,7 +153,7 @@ class WebSocketManager:
   "multimodal": ["audio", "image", "text"],
   "streaming": true,
   "latency": "~1000ms (target)",
-  "sdk": "google-adk>=1.20.0"
+  "sdk": "google-adk>=1.23.0"
 }
 ```
 
