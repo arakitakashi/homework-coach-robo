@@ -39,3 +39,15 @@ class SessionSummary(BaseModel):
     hints_used: int = Field(..., ge=0, description="使用したヒント数")
     subjects_covered: list[str] = Field(..., description="取り組んだ科目")
     insights: list[str] = Field(default_factory=list, description="セッションからの気づき")
+
+
+class ChildLearningProfile(BaseModel):
+    """子供の学習プロファイル（Firestore永続化用）"""
+
+    child_id: str = Field(..., description="子供ID")
+    thinking: ThinkingTendencies = Field(..., description="思考の傾向")
+    subjects: list[SubjectUnderstanding] = Field(..., description="科目別理解度")
+    total_sessions: int = Field(..., ge=0, description="総セッション数")
+    total_problems_solved: int = Field(..., ge=0, description="総解決問題数")
+    created_at: datetime = Field(..., description="作成日時")
+    updated_at: datetime = Field(..., description="最終更新日時")
