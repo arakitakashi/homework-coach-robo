@@ -215,3 +215,76 @@ class TestSubjectUnderstanding:
 
         assert understanding.weak_points == []
         assert understanding.strong_points == []
+
+
+class TestSessionSummary:
+    """SessionSummary Pydanticモデルのテスト"""
+
+    def test_session_summary_creation(self):
+        """SessionSummaryを作成できる"""
+        from app.services.adk.dialogue.learning_profile import SessionSummary
+
+        summary = SessionSummary(
+            session_id="session-123",
+            date=datetime(2026, 2, 2, 10, 0, 0),
+            duration_seconds=1800,
+            problems_attempted=5,
+            problems_solved_independently=3,
+            hints_used=2,
+            subjects_covered=["math", "japanese"],
+            insights=["足し算の概念を理解した"],
+        )
+
+        assert summary.session_id == "session-123"
+        assert summary.duration_seconds == 1800
+        assert summary.problems_attempted == 5
+        assert summary.problems_solved_independently == 3
+        assert summary.hints_used == 2
+        assert summary.subjects_covered == ["math", "japanese"]
+        assert summary.insights == ["足し算の概念を理解した"]
+
+    def test_session_summary_default_values(self):
+        """SessionSummaryのデフォルト値"""
+        from app.services.adk.dialogue.learning_profile import SessionSummary
+
+        summary = SessionSummary(
+            session_id="session-123",
+            date=datetime(2026, 2, 2, 10, 0, 0),
+            duration_seconds=1800,
+            problems_attempted=5,
+            problems_solved_independently=3,
+            hints_used=2,
+            subjects_covered=["math"],
+        )
+
+        assert summary.insights == []
+
+    def test_session_summary_non_negative_values(self):
+        """数値フィールドは非負"""
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.learning_profile import SessionSummary
+
+        # 有効な値（0も許可）
+        summary = SessionSummary(
+            session_id="session-123",
+            date=datetime(2026, 2, 2, 10, 0, 0),
+            duration_seconds=0,
+            problems_attempted=0,
+            problems_solved_independently=0,
+            hints_used=0,
+            subjects_covered=[],
+        )
+        assert summary.duration_seconds == 0
+
+        # 負の値は無効
+        with pytest.raises(ValidationError):
+            SessionSummary(
+                session_id="session-123",
+                date=datetime(2026, 2, 2, 10, 0, 0),
+                duration_seconds=-1,
+                problems_attempted=5,
+                problems_solved_independently=3,
+                hints_used=2,
+                subjects_covered=["math"],
+            )
