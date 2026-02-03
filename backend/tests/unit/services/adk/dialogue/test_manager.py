@@ -85,9 +85,7 @@ class TestBuildQuestionPrompt:
         # 理解確認のキーワード
         assert "理解" in prompt or "問題" in prompt or "聞いて" in prompt
 
-    def test_build_question_prompt_understanding_check_empathetic(
-        self, manager, basic_context
-    ):
+    def test_build_question_prompt_understanding_check_empathetic(self, manager, basic_context):
         """共感トーンでの理解確認プロンプト"""
         prompt = manager.build_question_prompt(
             context=basic_context,
@@ -212,9 +210,7 @@ class TestAnalyzeResponse:
         return AsyncMock()
 
     @pytest.mark.asyncio
-    async def test_analyze_response_correct_understanding(
-        self, basic_context, mock_llm_client
-    ):
+    async def test_analyze_response_correct_understanding(self, basic_context, mock_llm_client):
         """正しい理解の場合のResponseAnalysisを返す"""
         from app.services.adk.dialogue.manager import SocraticDialogueManager
 
@@ -239,9 +235,7 @@ class TestAnalyzeResponse:
         assert "足し算の概念を理解している" in result.key_insights
 
     @pytest.mark.asyncio
-    async def test_analyze_response_misconception(
-        self, basic_context, mock_llm_client
-    ):
+    async def test_analyze_response_misconception(self, basic_context, mock_llm_client):
         """誤解がある場合のResponseAnalysisを返す"""
         from app.services.adk.dialogue.manager import SocraticDialogueManager
 
@@ -265,9 +259,7 @@ class TestAnalyzeResponse:
         assert result.needs_clarification is True
 
     @pytest.mark.asyncio
-    async def test_analyze_response_calls_llm_with_prompt(
-        self, basic_context, mock_llm_client
-    ):
+    async def test_analyze_response_calls_llm_with_prompt(self, basic_context, mock_llm_client):
         """LLMクライアントに正しいプロンプトを渡す"""
         from app.services.adk.dialogue.manager import SocraticDialogueManager
 
@@ -383,9 +375,7 @@ class TestDetermineTone:
             turns=[],
         )
 
-    def test_determine_tone_encouraging_for_correct_direction(
-        self, manager, basic_context
-    ):
+    def test_determine_tone_encouraging_for_correct_direction(self, manager, basic_context):
         """正しい方向に進んでいる場合は励ましトーン"""
         analysis = ResponseAnalysis(
             understanding_level=6,
@@ -411,9 +401,7 @@ class TestDetermineTone:
 
         assert result == DialogueTone.EMPATHETIC
 
-    def test_determine_tone_neutral_for_medium_understanding(
-        self, manager, basic_context
-    ):
+    def test_determine_tone_neutral_for_medium_understanding(self, manager, basic_context):
         """中程度の理解度では中立トーン"""
         analysis = ResponseAnalysis(
             understanding_level=5,
@@ -447,9 +435,7 @@ class TestGenerateQuestion:
         return AsyncMock()
 
     @pytest.mark.asyncio
-    async def test_generate_question_returns_llm_response(
-        self, basic_context, mock_llm_client
-    ):
+    async def test_generate_question_returns_llm_response(self, basic_context, mock_llm_client):
         """LLMの応答を返す"""
         from app.services.adk.dialogue.manager import SocraticDialogueManager
 
@@ -489,9 +475,7 @@ class TestGenerateQuestion:
         assert basic_context.problem in prompt
 
     @pytest.mark.asyncio
-    async def test_generate_question_tracks_question_history(
-        self, basic_context, mock_llm_client
-    ):
+    async def test_generate_question_tracks_question_history(self, basic_context, mock_llm_client):
         """生成した質問を履歴に追加する"""
         from app.services.adk.dialogue.manager import SocraticDialogueManager
 
@@ -529,9 +513,7 @@ class TestShouldMoveToNextPhase:
             turns=[],
         )
 
-    def test_should_not_move_when_understanding_is_improving(
-        self, manager, basic_context
-    ):
+    def test_should_not_move_when_understanding_is_improving(self, manager, basic_context):
         """理解度が改善している場合は次のフェーズに進まない"""
         analysis = ResponseAnalysis(
             understanding_level=6,
