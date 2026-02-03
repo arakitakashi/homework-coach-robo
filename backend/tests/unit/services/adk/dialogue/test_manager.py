@@ -360,3 +360,68 @@ class TestDetermineQuestionType:
         result = manager.determine_question_type(analysis, context)
 
         assert result == QuestionType.HINT
+
+
+class TestDetermineTone:
+    """determine_tone() メソッドのテスト"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    def test_determine_tone_encouraging_for_correct_direction(
+        self, manager, basic_context
+    ):
+        """正しい方向に進んでいる場合は励ましトーン"""
+        analysis = ResponseAnalysis(
+            understanding_level=6,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=["良い理解"],
+        )
+
+        result = manager.determine_tone(analysis, basic_context)
+
+        assert result == DialogueTone.ENCOURAGING
+
+    def test_determine_tone_empathetic_for_struggling(self, manager, basic_context):
+        """理解に苦しんでいる場合は共感トーン"""
+        analysis = ResponseAnalysis(
+            understanding_level=2,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        result = manager.determine_tone(analysis, basic_context)
+
+        assert result == DialogueTone.EMPATHETIC
+
+    def test_determine_tone_neutral_for_medium_understanding(
+        self, manager, basic_context
+    ):
+        """中程度の理解度では中立トーン"""
+        analysis = ResponseAnalysis(
+            understanding_level=5,
+            is_correct_direction=False,
+            needs_clarification=False,
+            key_insights=[],
+        )
+
+        result = manager.determine_tone(analysis, basic_context)
+
+        assert result == DialogueTone.NEUTRAL

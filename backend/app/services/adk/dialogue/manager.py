@@ -190,3 +190,28 @@ JSON以外のテキストは含めないでください。"""
 
         # その他は理解確認
         return QuestionType.UNDERSTANDING_CHECK
+
+    def determine_tone(
+        self,
+        analysis: ResponseAnalysis,
+        context: DialogueContext,
+    ) -> DialogueTone:
+        """対話トーンを決定する
+
+        Args:
+            analysis: 回答分析結果
+            context: 対話コンテキスト
+
+        Returns:
+            DialogueTone: 使用すべき対話トーン
+        """
+        # 正しい方向に進んでいる場合は励まし
+        if analysis.is_correct_direction:
+            return DialogueTone.ENCOURAGING
+
+        # 理解度が低い場合は共感
+        if analysis.understanding_level < 4:
+            return DialogueTone.EMPATHETIC
+
+        # その他は中立
+        return DialogueTone.NEUTRAL
