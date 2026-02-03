@@ -228,6 +228,7 @@ homework-coach-robo/
 | `coding-standards.md` | コーディング規約 |
 | `security-requirement.md` | セキュリティ要件 |
 | `file-structure-rules.md` | ファイル配置・命名規則 |
+| `frontend.md` | フロントエンド開発ルール（`/frontend`, `/frontend-design`スキル必須） |
 
 ## Available Skills
 
