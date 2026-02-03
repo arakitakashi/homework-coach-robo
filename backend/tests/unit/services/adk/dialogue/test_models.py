@@ -82,8 +82,9 @@ class TestResponseAnalysis:
 
     def test_response_analysis_understanding_level_range(self):
         """understanding_levelは0-10の範囲"""
-        from app.services.adk.dialogue.models import ResponseAnalysis
         from pydantic import ValidationError
+
+        from app.services.adk.dialogue.models import ResponseAnalysis
 
         # 有効な範囲
         analysis = ResponseAnalysis(
