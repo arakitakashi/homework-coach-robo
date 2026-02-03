@@ -68,3 +68,35 @@ class SocraticDialogueManager:
 子供への質問を1つだけ生成してください。"""
 
         return prompt
+
+    def build_analysis_prompt(
+        self,
+        child_response: str,
+        context: DialogueContext,
+    ) -> str:
+        """回答分析用プロンプトを構築する
+
+        Args:
+            child_response: 子供の回答
+            context: 対話コンテキスト
+
+        Returns:
+            LLMに渡すプロンプト文字列
+        """
+        prompt = f"""子供の回答を分析してください。
+
+問題: {context.problem}
+子供の回答: {child_response}
+
+以下の項目を分析し、JSON形式で回答してください：
+
+{{
+    "understanding_level": 0-10の整数（理解度。0=全く理解していない、10=完全に理解）,
+    "is_correct_direction": true/false（正しい方向に向かっているか）,
+    "needs_clarification": true/false（追加の説明が必要か）,
+    "key_insights": ["子供の回答から得られた重要な気づき"]
+}}
+
+JSON以外のテキストは含めないでください。"""
+
+        return prompt

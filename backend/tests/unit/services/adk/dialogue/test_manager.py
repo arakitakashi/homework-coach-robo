@@ -95,3 +95,96 @@ class TestBuildQuestionPrompt:
 
         # 共感的なトーンの指示が含まれている
         assert "共感" in prompt or "寄り添" in prompt or "優しく" in prompt
+
+    def test_build_question_prompt_thinking_guide(self, manager, basic_context):
+        """思考誘導タイプのプロンプトを構築できる"""
+        prompt = manager.build_question_prompt(
+            context=basic_context,
+            question_type=QuestionType.THINKING_GUIDE,
+            tone=DialogueTone.NEUTRAL,
+        )
+
+        # プロンプトは文字列
+        assert isinstance(prompt, str)
+        assert len(prompt) > 0
+
+        # 問題文が含まれている
+        assert basic_context.problem in prompt
+
+        # 思考誘導のキーワード
+        assert "思考" in prompt or "導" in prompt or "もし" in prompt
+
+    def test_build_question_prompt_hint(self, manager, basic_context):
+        """ヒントタイプのプロンプトを構築できる"""
+        prompt = manager.build_question_prompt(
+            context=basic_context,
+            question_type=QuestionType.HINT,
+            tone=DialogueTone.ENCOURAGING,
+        )
+
+        # ヒントのキーワード
+        assert "ヒント" in prompt or "前に" in prompt or "似た" in prompt
+
+
+class TestBuildAnalysisPrompt:
+    """build_analysis_prompt() メソッドのテスト"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    def test_build_analysis_prompt_contains_child_response(self, manager, basic_context):
+        """子供の回答がプロンプトに含まれる"""
+        child_response = "えっと、8かな？"
+
+        prompt = manager.build_analysis_prompt(
+            child_response=child_response,
+            context=basic_context,
+        )
+
+        assert isinstance(prompt, str)
+        assert child_response in prompt
+
+    def test_build_analysis_prompt_contains_problem(self, manager, basic_context):
+        """問題文がプロンプトに含まれる"""
+        prompt = manager.build_analysis_prompt(
+            child_response="わからない",
+            context=basic_context,
+        )
+
+        assert basic_context.problem in prompt
+
+    def test_build_analysis_prompt_requests_json_format(self, manager, basic_context):
+        """JSON形式での回答を要求する"""
+        prompt = manager.build_analysis_prompt(
+            child_response="3たす5は8だよ",
+            context=basic_context,
+        )
+
+        # JSONフォーマットに関する指示
+        assert "JSON" in prompt or "json" in prompt
+
+    def test_build_analysis_prompt_requests_analysis_fields(self, manager, basic_context):
+        """分析に必要なフィールドを要求する"""
+        prompt = manager.build_analysis_prompt(
+            child_response="うーん、難しい",
+            context=basic_context,
+        )
+
+        # ResponseAnalysisの各フィールド
+        assert "understanding_level" in prompt or "理解度" in prompt
+        assert "is_correct_direction" in prompt or "正しい方向" in prompt
