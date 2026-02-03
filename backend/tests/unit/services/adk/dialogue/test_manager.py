@@ -425,3 +425,198 @@ class TestDetermineTone:
         result = manager.determine_tone(analysis, basic_context)
 
         assert result == DialogueTone.NEUTRAL
+
+
+class TestGenerateQuestion:
+    """generate_question() メソッドのテスト"""
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    @pytest.fixture
+    def mock_llm_client(self):
+        """モック化されたLLMクライアント"""
+        return AsyncMock()
+
+    @pytest.mark.asyncio
+    async def test_generate_question_returns_llm_response(
+        self, basic_context, mock_llm_client
+    ):
+        """LLMの応答を返す"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        mock_llm_client.generate.return_value = "この問題は何を聞いていると思う？"
+
+        manager = SocraticDialogueManager(llm_client=mock_llm_client)
+        result = await manager.generate_question(
+            context=basic_context,
+            question_type=QuestionType.UNDERSTANDING_CHECK,
+            tone=DialogueTone.ENCOURAGING,
+        )
+
+        assert result == "この問題は何を聞いていると思う？"
+
+    @pytest.mark.asyncio
+    async def test_generate_question_calls_build_question_prompt(
+        self, basic_context, mock_llm_client
+    ):
+        """build_question_promptで生成したプロンプトをLLMに渡す"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        mock_llm_client.generate.return_value = "質問です"
+
+        manager = SocraticDialogueManager(llm_client=mock_llm_client)
+        await manager.generate_question(
+            context=basic_context,
+            question_type=QuestionType.THINKING_GUIDE,
+            tone=DialogueTone.NEUTRAL,
+        )
+
+        # LLMが呼び出されたことを確認
+        mock_llm_client.generate.assert_called_once()
+
+        # プロンプトに問題が含まれていることを確認
+        call_args = mock_llm_client.generate.call_args
+        prompt = call_args[0][0] if call_args[0] else call_args[1].get("prompt", "")
+        assert basic_context.problem in prompt
+
+    @pytest.mark.asyncio
+    async def test_generate_question_tracks_question_history(
+        self, basic_context, mock_llm_client
+    ):
+        """生成した質問を履歴に追加する"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        mock_llm_client.generate.return_value = "最初の質問"
+
+        manager = SocraticDialogueManager(llm_client=mock_llm_client)
+        await manager.generate_question(
+            context=basic_context,
+            question_type=QuestionType.UNDERSTANDING_CHECK,
+            tone=DialogueTone.ENCOURAGING,
+        )
+
+        # 履歴に追加されていることを確認
+        assert "最初の質問" in manager.question_history
+
+
+class TestShouldMoveToNextPhase:
+    """should_move_to_next_phase() メソッドのテスト"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    def test_should_not_move_when_understanding_is_improving(
+        self, manager, basic_context
+    ):
+        """理解度が改善している場合は次のフェーズに進まない"""
+        analysis = ResponseAnalysis(
+            understanding_level=6,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=["理解が進んでいる"],
+        )
+
+        result = manager.should_move_to_next_phase(analysis, basic_context)
+
+        assert result is False
+
+    def test_should_move_when_struggling_at_current_level(self, manager):
+        """現在のレベルで苦戦している場合は次のフェーズに進む"""
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        # 複数ターン経過後も理解度が低い
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[
+                DialogueTurn(
+                    role="assistant",
+                    content="質問1",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 0),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="わからない",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 10),
+                ),
+                DialogueTurn(
+                    role="assistant",
+                    content="質問2",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 20),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="うーん",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 30),
+                ),
+            ],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=2,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        result = manager.should_move_to_next_phase(analysis, context)
+
+        assert result is True
+
+    def test_should_not_move_beyond_max_hint_level(self, manager):
+        """最大ヒントレベルに達している場合は進まない"""
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=3,  # 最大レベル
+            tone=DialogueTone.ENCOURAGING,
+            turns=[
+                DialogueTurn(
+                    role="assistant",
+                    content="質問1",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 0),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="わからない",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 10),
+                ),
+            ],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=2,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        result = manager.should_move_to_next_phase(analysis, context)
+
+        assert result is False

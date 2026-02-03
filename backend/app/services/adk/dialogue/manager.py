@@ -67,6 +67,12 @@ class SocraticDialogueManager:
             llm_client: LLMクライアント（テスト時にモックを注入可能）
         """
         self._llm_client = llm_client
+        self._question_history: list[str] = []
+
+    @property
+    def question_history(self) -> list[str]:
+        """生成した質問の履歴を返す"""
+        return self._question_history
 
     def build_question_prompt(
         self,
@@ -194,7 +200,7 @@ JSON以外のテキストは含めないでください。"""
     def determine_tone(
         self,
         analysis: ResponseAnalysis,
-        context: DialogueContext,
+        context: DialogueContext,  # noqa: ARG002 - 将来の拡張用
     ) -> DialogueTone:
         """対話トーンを決定する
 
@@ -215,3 +221,67 @@ JSON以外のテキストは含めないでください。"""
 
         # その他は中立
         return DialogueTone.NEUTRAL
+
+    async def generate_question(
+        self,
+        context: DialogueContext,
+        question_type: QuestionType,
+        tone: DialogueTone,
+    ) -> str:
+        """質問を生成する
+
+        Args:
+            context: 対話コンテキスト
+            question_type: 質問タイプ
+            tone: 対話トーン
+
+        Returns:
+            生成された質問文字列
+
+        Raises:
+            ValueError: LLMクライアントが設定されていない場合
+        """
+        if self._llm_client is None:
+            raise ValueError("LLM client is not configured")
+
+        prompt = self.build_question_prompt(context, question_type, tone)
+        question = await self._llm_client.generate(prompt)
+
+        # 履歴に追加
+        self._question_history.append(question)
+
+        return question
+
+    # 最大ヒントレベル（3段階ヒントシステム）
+    MAX_HINT_LEVEL = 3
+    # 次のフェーズに進むための最小ターン数
+    MIN_TURNS_BEFORE_MOVE = 2
+
+    def should_move_to_next_phase(
+        self,
+        analysis: ResponseAnalysis,
+        context: DialogueContext,
+    ) -> bool:
+        """次のヒントレベルに進むべきか判定する
+
+        Args:
+            analysis: 回答分析結果
+            context: 対話コンテキスト
+
+        Returns:
+            次のフェーズに進むべきならTrue、そうでなければFalse
+        """
+        # 最大ヒントレベルに達している場合は進まない
+        if context.current_hint_level >= self.MAX_HINT_LEVEL:
+            return False
+
+        # 理解度が改善している場合は進まない
+        if analysis.is_correct_direction and analysis.understanding_level >= 4:
+            return False
+
+        # 十分なターン数があり、理解度が低い場合は次のフェーズへ
+        return (
+            len(context.turns) >= self.MIN_TURNS_BEFORE_MOVE
+            and analysis.understanding_level < 4
+            and not analysis.is_correct_direction
+        )
