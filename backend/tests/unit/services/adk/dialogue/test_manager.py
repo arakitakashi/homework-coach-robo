@@ -1,7 +1,7 @@
 """SocraticDialogueManager のテスト"""
 
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -341,7 +341,7 @@ class TestDetermineQuestionType:
 
         assert result == QuestionType.THINKING_GUIDE
 
-    def test_determine_question_type_needs_hint(self, manager, basic_context):
+    def test_determine_question_type_needs_hint(self, manager):
         """高ヒントレベルでclarification必要ならヒントを返す"""
         context = DialogueContext(
             session_id="test-session-123",

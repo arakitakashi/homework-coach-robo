@@ -1,7 +1,8 @@
 """学習プロファイル - データモデルのテスト"""
 
-import pytest
 from datetime import datetime
+
+import pytest
 
 
 class TestThinkingTendencies:
