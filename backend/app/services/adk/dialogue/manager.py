@@ -11,7 +11,30 @@ from app.services.adk.dialogue.models import (
 )
 
 if TYPE_CHECKING:
-    pass
+    from app.services.adk.dialogue.models import AnswerRequestAnalysis
+
+# 明示的な答えリクエストキーワード（正規表現パターン）
+_EXPLICIT_PATTERNS = [
+    r"答え.*教えて",
+    r"答え.*言って",
+    r"正解.*教えて",
+    r"正解.*言って",
+    r"正解は[？\?]?$",
+    r"答えは[？\?]?$",
+]
+
+# 暗示的な答えリクエストキーワード（正規表現パターン）
+_IMPLICIT_PATTERNS = [
+    r"できない",
+    r"むずかしい",
+    r"むりだ",
+    r"無理だ",
+    r"わからない",
+    r"分からない",
+    r"ギブアップ",
+    r"あきらめ",
+    r"諦め",
+]
 
 
 @runtime_checkable
@@ -285,3 +308,141 @@ JSON以外のテキストは含めないでください。"""
             and analysis.understanding_level < 4
             and not analysis.is_correct_direction
         )
+
+    # 明示的な答えリクエストキーワード（正規表現パターン）
+    _EXPLICIT_PATTERNS = [
+        r"答え.*教えて",
+        r"答え.*言って",
+        r"正解.*教えて",
+        r"正解.*言って",
+        r"正解は[？\?]?$",
+        r"答えは[？\?]?$",
+    ]
+
+    # 暗示的な答えリクエストキーワード（正規表現パターン）
+    _IMPLICIT_PATTERNS = [
+        r"できない",
+        r"むずかしい",
+        r"むりだ",
+        r"無理だ",
+        r"わからない",
+        r"分からない",
+        r"ギブアップ",
+        r"あきらめ",
+        r"諦め",
+    ]
+
+    def _detect_answer_request_keywords(
+        self,
+        child_response: str,
+    ) -> "AnswerRequestAnalysis":
+        """キーワードベースで答えリクエストを検出する
+
+        Args:
+            child_response: 子供の発話
+
+        Returns:
+            AnswerRequestAnalysis: 分析結果
+        """
+        import re
+
+        from app.services.adk.dialogue.models import (
+            AnswerRequestAnalysis,
+            AnswerRequestType,
+        )
+
+        detected_phrases: list[str] = []
+
+        # 明示的なリクエストをチェック
+        for pattern in self._EXPLICIT_PATTERNS:
+            match = re.search(pattern, child_response)
+            if match:
+                detected_phrases.append(match.group())
+                return AnswerRequestAnalysis(
+                    request_type=AnswerRequestType.EXPLICIT,
+                    confidence=0.9,
+                    detected_phrases=detected_phrases,
+                )
+
+        # 暗示的なリクエストをチェック
+        for pattern in self._IMPLICIT_PATTERNS:
+            match = re.search(pattern, child_response)
+            if match:
+                detected_phrases.append(match.group())
+                return AnswerRequestAnalysis(
+                    request_type=AnswerRequestType.IMPLICIT,
+                    confidence=0.7,
+                    detected_phrases=detected_phrases,
+                )
+
+        # リクエストなし
+        return AnswerRequestAnalysis(
+            request_type=AnswerRequestType.NONE,
+            confidence=1.0,
+            detected_phrases=[],
+        )
+
+    # 答えリクエスト検出用プロンプト
+    _ANSWER_REQUEST_DETECTION_PROMPT = """子供の発話から「答えを教えてほしい」意図を検出してください。
+
+子供の発話: {child_response}
+
+以下のJSON形式で回答してください：
+{{
+    "request_type": "none" | "explicit" | "implicit",
+    "confidence": 0.0-1.0,
+    "detected_phrases": ["検出されたフレーズ"]
+}}
+
+判定基準:
+- explicit: 「答え教えて」「答えを言って」「正解は？」など明示的な要求
+- implicit: 「できない」「むずかしい」「わからない」「ギブアップ」「もういい」など暗示的な要求
+- none: 答えリクエストではない通常の回答
+
+JSON以外のテキストは含めないでください。"""
+
+    async def detect_answer_request(
+        self,
+        child_response: str,
+    ) -> "AnswerRequestAnalysis":
+        """答えリクエストを検出する（キーワード優先、LLM補助）
+
+        Args:
+            child_response: 子供の発話
+
+        Returns:
+            AnswerRequestAnalysis: 分析結果
+        """
+        import json
+
+        from app.services.adk.dialogue.models import (
+            AnswerRequestAnalysis,
+            AnswerRequestType,
+        )
+
+        # まずキーワードベースで検出を試みる
+        keyword_result = self._detect_answer_request_keywords(child_response)
+        if keyword_result.request_type != AnswerRequestType.NONE:
+            return keyword_result
+
+        # LLMクライアントがない場合はキーワード結果をそのまま返す
+        if self._llm_client is None:
+            return keyword_result
+
+        # LLMで補助検出
+        prompt = self._ANSWER_REQUEST_DETECTION_PROMPT.format(child_response=child_response)
+        try:
+            llm_response = await self._llm_client.generate(prompt)
+            data = json.loads(llm_response)
+            return AnswerRequestAnalysis(
+                request_type=AnswerRequestType(data["request_type"]),
+                confidence=data["confidence"],
+                detected_phrases=data.get("detected_phrases", []),
+            )
+        except (json.JSONDecodeError, KeyError, ValueError):
+            # パースエラーの場合はNONEを返す
+            return AnswerRequestAnalysis(
+                request_type=AnswerRequestType.NONE,
+                confidence=0.5,
+                detected_phrases=[],
+            )

@@ -602,3 +602,136 @@ class TestShouldMoveToNextPhase:
         result = manager.should_move_to_next_phase(analysis, context)
 
         assert result is False
+
+
+class TestDetectAnswerRequestKeywords:
+    """_detect_answer_request_keywords() メソッドのテスト（キーワードベースの検出）"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    def test_detect_explicit_answer_request(self, manager):
+        """明示的な答えリクエストを検出できる"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        # 明示的なリクエストフレーズ
+        test_cases = [
+            "答え教えて",
+            "答えを教えてよ",
+            "正解は？",
+            "正解を言って",
+            "もう答え言って",
+        ]
+
+        for phrase in test_cases:
+            result = manager._detect_answer_request_keywords(phrase)
+            assert result.request_type == AnswerRequestType.EXPLICIT, f"Failed for: {phrase}"
+            assert result.confidence >= 0.8
+            assert len(result.detected_phrases) > 0
+
+    def test_detect_implicit_answer_request(self, manager):
+        """暗示的な答えリクエストを検出できる"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        # 暗示的なリクエストフレーズ
+        test_cases = [
+            "できない",
+            "むずかしい",
+            "わからない",
+            "ギブアップ",
+            "無理だよ",
+        ]
+
+        for phrase in test_cases:
+            result = manager._detect_answer_request_keywords(phrase)
+            assert result.request_type == AnswerRequestType.IMPLICIT, f"Failed for: {phrase}"
+            assert result.confidence >= 0.6
+            assert len(result.detected_phrases) > 0
+
+    def test_no_answer_request(self, manager):
+        """通常の回答はリクエストなしと判定される"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        # 通常の回答
+        test_cases = [
+            "3と5を足すんだと思う",
+            "8かな？",
+            "足し算だよね",
+            "うーん、考えてる",
+        ]
+
+        for phrase in test_cases:
+            result = manager._detect_answer_request_keywords(phrase)
+            assert result.request_type == AnswerRequestType.NONE, f"Failed for: {phrase}"
+            assert result.detected_phrases == []
+
+
+class TestDetectAnswerRequest:
+    """detect_answer_request() メソッドのテスト（LLM補助検出）"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    @pytest.fixture
+    def manager_with_llm(self):
+        """LLMクライアント付きSocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        mock_llm = AsyncMock()
+        return SocraticDialogueManager(llm_client=mock_llm)
+
+    @pytest.mark.asyncio
+    async def test_detect_answer_request_uses_keywords_first(self, manager_with_llm):
+        """キーワードマッチで検出できる場合はLLMを呼ばない"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        result = await manager_with_llm.detect_answer_request("答え教えて")
+
+        assert result.request_type == AnswerRequestType.EXPLICIT
+        # LLMは呼ばれない
+        manager_with_llm._llm_client.generate.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_detect_answer_request_falls_back_to_llm(self, manager_with_llm):
+        """キーワードマッチで検出できない場合はLLMを使用"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        # LLMの応答をモック
+        manager_with_llm._llm_client.generate.return_value = """{
+            "request_type": "implicit",
+            "confidence": 0.75,
+            "detected_phrases": ["もういいや"]
+        }"""
+
+        result = await manager_with_llm.detect_answer_request("もういいや、これ")
+
+        assert result.request_type == AnswerRequestType.IMPLICIT
+        assert result.confidence == 0.75
+        manager_with_llm._llm_client.generate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_detect_answer_request_without_llm_keywords_only(self, manager):
+        """LLMなしでもキーワード検出は動作する"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        result = await manager.detect_answer_request("正解は？")
+
+        assert result.request_type == AnswerRequestType.EXPLICIT
+
+    @pytest.mark.asyncio
+    async def test_detect_answer_request_without_llm_returns_none(self, manager):
+        """LLMなしでキーワードに一致しない場合はNONEを返す"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        result = await manager.detect_answer_request("もういいや、これ")
+
+        # LLMがないのでキーワードに一致しない曖昧な表現はNONE
+        assert result.request_type == AnswerRequestType.NONE
