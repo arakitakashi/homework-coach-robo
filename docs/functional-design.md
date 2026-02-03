@@ -1,8 +1,8 @@
 # 宿題コーチロボット - 機能設計書
 
-**Document Version**: 1.4
-**Last Updated**: 2026-01-29
-**Status**: MVP設計完了
+**Document Version**: 1.5
+**Last Updated**: 2026-02-03
+**Status**: MVP設計完了（ADK 1.23.0+、StateTracker実装注記追加）
 
 ---
 
@@ -102,6 +102,11 @@ graph TB
 - **フロントエンド**: 最小インスタンス0（コスト最適化）
 - **バックエンド**: 最小インスタンス0（開発環境）、1（本番環境、WebSocket維持）
 
+**StateTracker実装注記:**
+- 図中の「対話状態トラッカー」（StateTracker）は、ADK SessionServiceと連携する`DialogueContext`モデルとして実装
+- `DialogueContext.from_adk_session()`メソッドでADKセッションから状態を構築
+- 独自のStateTrackerクラスは不要（ADK SessionServiceに状態管理を委譲）
+
 ### 1.2 技術スタック（MVP）
 
 **フロントエンド**
@@ -175,7 +180,7 @@ graph TB
 - **フロントエンドパッケージ管理**: Bun（高速インストール・ビルトインツール）
 - **バックエンドパッケージ管理**: uv（Rust製高速Pythonパッケージマネージャ）
 - **主要依存関係**:
-  - `google-adk>=1.20.0`
+  - `google-adk>=1.23.0`
   - `fastapi>=0.115.0`
   - `google-cloud-speech>=2.20.0`
   - `google-cloud-texttospeech>=2.14.0`
@@ -3529,7 +3534,7 @@ CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT}
 
 #### requirements.txt
 ```txt
-google-adk>=1.20.0
+google-adk>=1.23.0
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 python-dotenv>=1.0.0
