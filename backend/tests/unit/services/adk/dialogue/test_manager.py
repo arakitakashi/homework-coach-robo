@@ -735,3 +735,387 @@ class TestDetectAnswerRequest:
 
         # LLMがないのでキーワードに一致しない曖昧な表現はNONE
         assert result.request_type == AnswerRequestType.NONE
+
+
+class TestBuildHintPrompt:
+    """build_hint_prompt() メソッドのテスト"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    def test_build_hint_prompt_level_1(self, manager, basic_context):
+        """レベル1: 問題理解の確認プロンプトを構築できる"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        prompt = manager.build_hint_prompt(
+            context=basic_context,
+            hint_level=HintLevel.PROBLEM_UNDERSTANDING,
+            tone=DialogueTone.ENCOURAGING,
+        )
+
+        # プロンプトは文字列
+        assert isinstance(prompt, str)
+        assert len(prompt) > 0
+
+        # 問題文が含まれている
+        assert basic_context.problem in prompt
+
+        # レベル1のキーワード（問題理解）
+        assert "問題" in prompt or "理解" in prompt or "聞いて" in prompt
+
+    def test_build_hint_prompt_level_2(self, manager, basic_context):
+        """レベル2: 既習事項の想起プロンプトを構築できる"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        basic_context.current_hint_level = 2
+
+        prompt = manager.build_hint_prompt(
+            context=basic_context,
+            hint_level=HintLevel.PRIOR_KNOWLEDGE,
+            tone=DialogueTone.NEUTRAL,
+        )
+
+        # レベル2のキーワード（既習事項）
+        assert "前" in prompt or "似た" in prompt or "やった" in prompt or "思い出" in prompt
+
+    def test_build_hint_prompt_level_3(self, manager, basic_context):
+        """レベル3: 部分的支援プロンプトを構築できる"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        basic_context.current_hint_level = 3
+
+        prompt = manager.build_hint_prompt(
+            context=basic_context,
+            hint_level=HintLevel.PARTIAL_SUPPORT,
+            tone=DialogueTone.EMPATHETIC,
+        )
+
+        # レベル3のキーワード（部分的支援）
+        assert "最初" in prompt or "ステップ" in prompt or "分解" in prompt or "一緒" in prompt
+
+        # 答えを教えない指示
+        assert "答え" in prompt and ("教え" in prompt or "言わ" in prompt)
+
+    def test_build_hint_prompt_with_answer_request(self, manager, basic_context):
+        """答えリクエストがある場合は励ましを追加"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        prompt = manager.build_hint_prompt(
+            context=basic_context,
+            hint_level=HintLevel.PROBLEM_UNDERSTANDING,
+            tone=DialogueTone.ENCOURAGING,
+            is_answer_request=True,
+        )
+
+        # 励ましの言葉が含まれている
+        assert "励まし" in prompt or "大丈夫" in prompt or "一緒" in prompt or "頑張" in prompt
+
+
+class TestGenerateHintResponse:
+    """generate_hint_response() メソッドのテスト"""
+
+    @pytest.fixture
+    def manager_with_llm(self):
+        """LLMクライアント付きSocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        mock_llm = AsyncMock()
+        return SocraticDialogueManager(llm_client=mock_llm)
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    @pytest.mark.asyncio
+    async def test_generate_hint_response_level_1(self, manager_with_llm, basic_context):
+        """レベル1のヒントレスポンスを生成できる"""
+        manager_with_llm._llm_client.generate.return_value = "この問題は何を聞いていると思う？"
+
+        response = await manager_with_llm.generate_hint_response(
+            context=basic_context,
+            is_answer_request=False,
+        )
+
+        assert response == "この問題は何を聞いていると思う？"
+        manager_with_llm._llm_client.generate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_generate_hint_response_level_2(self, manager_with_llm, basic_context):
+        """レベル2のヒントレスポンスを生成できる"""
+        basic_context.current_hint_level = 2
+        manager_with_llm._llm_client.generate.return_value = "前に似た問題をやったよね？"
+
+        response = await manager_with_llm.generate_hint_response(
+            context=basic_context,
+            is_answer_request=False,
+        )
+
+        assert response == "前に似た問題をやったよね？"
+
+    @pytest.mark.asyncio
+    async def test_generate_hint_response_level_3(self, manager_with_llm, basic_context):
+        """レベル3のヒントレスポンスを生成できる"""
+        basic_context.current_hint_level = 3
+        manager_with_llm._llm_client.generate.return_value = (
+            "最初のステップだけ一緒にやろう。3という数字があるよね。"
+        )
+
+        response = await manager_with_llm.generate_hint_response(
+            context=basic_context,
+            is_answer_request=False,
+        )
+
+        assert "最初" in response or "ステップ" in response
+
+    @pytest.mark.asyncio
+    async def test_generate_hint_response_with_answer_request(
+        self, manager_with_llm, basic_context
+    ):
+        """答えリクエスト時は励ましを含むレスポンスを生成する"""
+        manager_with_llm._llm_client.generate.return_value = (
+            "大丈夫だよ、一緒に考えよう！この問題は何を聞いていると思う？"
+        )
+
+        response = await manager_with_llm.generate_hint_response(
+            context=basic_context,
+            is_answer_request=True,
+        )
+
+        # プロンプトに励ましの指示が含まれていることを確認
+        call_args = manager_with_llm._llm_client.generate.call_args
+        prompt = call_args[0][0]
+        assert "大丈夫" in prompt or "一緒" in prompt or "励まし" in prompt
+
+    @pytest.mark.asyncio
+    async def test_generate_hint_response_without_llm_raises_error(self, basic_context):
+        """LLMクライアントがない場合はエラー"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        manager = SocraticDialogueManager()
+
+        with pytest.raises(ValueError, match="LLM client"):
+            await manager.generate_hint_response(context=basic_context)
+
+
+class TestAdvanceHintLevel:
+    """advance_hint_level() メソッドのテスト"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    def test_advance_hint_level_stays_at_1_when_improving(self, manager):
+        """理解度が改善している場合はレベル1のまま"""
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[
+                DialogueTurn(
+                    role="assistant",
+                    content="質問1",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 0),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="足し算かな",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 10),
+                ),
+            ],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=6,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=["足し算を理解"],
+        )
+
+        new_level = manager.advance_hint_level(context, analysis)
+
+        assert new_level == 1  # レベル維持
+
+    def test_advance_hint_level_from_1_to_2(self, manager):
+        """レベル1で苦戦している場合はレベル2へ"""
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[
+                DialogueTurn(
+                    role="assistant",
+                    content="質問1",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 0),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="わからない",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 10),
+                ),
+                DialogueTurn(
+                    role="assistant",
+                    content="質問2",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 20),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="うーん",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 30),
+                ),
+            ],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=2,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        new_level = manager.advance_hint_level(context, analysis)
+
+        assert new_level == 2
+
+    def test_advance_hint_level_from_2_to_3(self, manager):
+        """レベル2で苦戦している場合はレベル3へ"""
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=2,
+            tone=DialogueTone.EMPATHETIC,
+            turns=[
+                DialogueTurn(
+                    role="assistant",
+                    content="質問1",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 0),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="前のやつも忘れた",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 10),
+                ),
+                DialogueTurn(
+                    role="assistant",
+                    content="質問2",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 20),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="やっぱりわからない",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 30),
+                ),
+            ],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=2,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        new_level = manager.advance_hint_level(context, analysis)
+
+        assert new_level == 3
+
+    def test_advance_hint_level_caps_at_3(self, manager):
+        """最大レベル3を超えない"""
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=3,
+            tone=DialogueTone.EMPATHETIC,
+            turns=[
+                DialogueTurn(
+                    role="assistant",
+                    content="質問1",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 0),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="まだわからない",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 10),
+                ),
+                DialogueTurn(
+                    role="assistant",
+                    content="質問2",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 20),
+                ),
+                DialogueTurn(
+                    role="child",
+                    content="うーん",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 30),
+                ),
+            ],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=1,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        new_level = manager.advance_hint_level(context, analysis)
+
+        assert new_level == 3  # 最大レベル維持
+
+    def test_advance_hint_level_requires_minimum_turns(self, manager):
+        """最低ターン数に満たない場合は進行しない"""
+        from app.services.adk.dialogue.models import DialogueTurn
+
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[
+                DialogueTurn(
+                    role="assistant",
+                    content="質問1",
+                    timestamp=datetime(2026, 2, 4, 10, 0, 0),
+                ),
+                # 1ターンのみ（最低2ターン必要）
+            ],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=1,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        new_level = manager.advance_hint_level(context, analysis)
+
+        assert new_level == 1  # ターン数不足でレベル維持

@@ -446,3 +446,145 @@ JSON以外のテキストは含めないでください。"""
                 confidence=0.5,
                 detected_phrases=[],
             )
+
+    # ヒントレベル別の指示テンプレート
+    _HINT_LEVEL_INSTRUCTIONS = {
+        1: """【レベル1: 問題理解の確認】
+子供が問題を正しく理解しているか確認します。
+- 問題文の再読を促す
+- 何を求められているか質問する
+- 例: 「この問題は何を聞いているかな？」「問題をもう一度読んでみよう」""",
+        2: """【レベル2: 既習事項の想起】
+子供が関連する知識を思い出せるよう導きます。
+- 以前学んだ類似の概念を想起させる
+- 関連する知識への橋渡しをする
+- 例: 「前に似たような問題をやったよね」「○○のことを思い出してみて」""",
+        3: """【レベル3: 部分的支援】
+問題を小さく分解し、最初のステップのみ支援します。
+- 問題を複数の小さなステップに分ける
+- 最初のステップだけ一緒に考える
+- 最終的な答えは絶対に教えない
+- 例: 「まず最初のステップだけ一緒にやってみよう」""",
+    }
+
+    # 答えリクエスト時の励まし追加テンプレート
+    _ENCOURAGEMENT_FOR_ANSWER_REQUEST = """
+子供が「答えを教えて」と言っています。
+大丈夫、一緒に考えようという励ましの気持ちを込めて、優しく導いてください。
+直接答えを教えることは絶対にしないでください。"""
+
+    def build_hint_prompt(
+        self,
+        context: DialogueContext,
+        hint_level: int,
+        tone: DialogueTone,
+        is_answer_request: bool = False,
+    ) -> str:
+        """ヒントレベル別のプロンプトを構築する
+
+        Args:
+            context: 対話コンテキスト
+            hint_level: ヒントレベル（1-3またはHintLevel Enum）
+            tone: 対話トーン
+            is_answer_request: 答えリクエストがあったか
+
+        Returns:
+            LLMに渡すプロンプト文字列
+        """
+        # HintLevel Enumの場合はintに変換
+        level_value = int(hint_level)
+
+        tone_instruction = self._TONE_INSTRUCTIONS[tone]
+        hint_instruction = self._HINT_LEVEL_INSTRUCTIONS.get(
+            level_value,
+            self._HINT_LEVEL_INSTRUCTIONS[1],  # デフォルトはレベル1
+        )
+
+        prompt = f"""現在の問題: {context.problem}
+
+{hint_instruction}
+
+トーン: {tone_instruction}
+"""
+
+        if is_answer_request:
+            prompt += self._ENCOURAGEMENT_FOR_ANSWER_REQUEST
+
+        prompt += "\n子供への質問を1つだけ生成してください。"
+
+        return prompt
+
+    async def generate_hint_response(
+        self,
+        context: DialogueContext,
+        is_answer_request: bool = False,
+    ) -> str:
+        """ヒントレベルに応じたレスポンスを生成する
+
+        Args:
+            context: 対話コンテキスト
+            is_answer_request: 答えリクエストがあったか
+
+        Returns:
+            生成されたレスポンス文字列
+
+        Raises:
+            ValueError: LLMクライアントが設定されていない場合
+        """
+        if self._llm_client is None:
+            raise ValueError("LLM client is not configured")
+
+        # 現在のヒントレベルに応じたプロンプトを構築
+        prompt = self.build_hint_prompt(
+            context=context,
+            hint_level=context.current_hint_level,
+            tone=context.tone,
+            is_answer_request=is_answer_request,
+        )
+
+        # LLMでレスポンスを生成
+        response = await self._llm_client.generate(prompt)
+
+        # 履歴に追加
+        self._question_history.append(response)
+
+        return response
+
+    def advance_hint_level(
+        self,
+        context: DialogueContext,
+        analysis: ResponseAnalysis,
+    ) -> int:
+        """ヒントレベルを進行させるべきか判定し、新しいレベルを返す
+
+        ルール:
+        - 各レベルで最低2ターン対話してから次へ
+        - 理解度が改善傾向ならレベルを上げない
+        - 最大レベル3を超えない
+
+        Args:
+            context: 対話コンテキスト
+            analysis: 回答分析結果
+
+        Returns:
+            新しいヒントレベル（1-3）
+        """
+        current_level = context.current_hint_level
+
+        # 最大レベルに達している場合は維持
+        if current_level >= self.MAX_HINT_LEVEL:
+            return current_level
+
+        # 理解度が改善している場合は維持
+        if analysis.is_correct_direction and analysis.understanding_level >= 4:
+            return current_level
+
+        # 最低ターン数に満たない場合は維持
+        if len(context.turns) < self.MIN_TURNS_BEFORE_MOVE:
+            return current_level
+
+        # 苦戦している場合は次のレベルへ
+        if analysis.understanding_level < 4 and not analysis.is_correct_direction:
+            return min(current_level + 1, self.MAX_HINT_LEVEL)
+
+        return current_level
