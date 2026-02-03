@@ -1,6 +1,7 @@
 """SocraticDialogueManager のテスト"""
 
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -8,6 +9,7 @@ from app.services.adk.dialogue.models import (
     DialogueContext,
     DialogueTone,
     QuestionType,
+    ResponseAnalysis,
 )
 
 
@@ -188,3 +190,105 @@ class TestBuildAnalysisPrompt:
         # ResponseAnalysisの各フィールド
         assert "understanding_level" in prompt or "理解度" in prompt
         assert "is_correct_direction" in prompt or "正しい方向" in prompt
+
+
+class TestAnalyzeResponse:
+    """analyze_response() メソッドのテスト"""
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    @pytest.fixture
+    def mock_llm_client(self):
+        """モック化されたLLMクライアント"""
+        return AsyncMock()
+
+    @pytest.mark.asyncio
+    async def test_analyze_response_correct_understanding(
+        self, basic_context, mock_llm_client
+    ):
+        """正しい理解の場合のResponseAnalysisを返す"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        # LLMの応答をモック
+        mock_llm_client.generate.return_value = """{
+            "understanding_level": 8,
+            "is_correct_direction": true,
+            "needs_clarification": false,
+            "key_insights": ["足し算の概念を理解している"]
+        }"""
+
+        manager = SocraticDialogueManager(llm_client=mock_llm_client)
+        result = await manager.analyze_response(
+            child_response="8だよ！",
+            context=basic_context,
+        )
+
+        assert isinstance(result, ResponseAnalysis)
+        assert result.understanding_level == 8
+        assert result.is_correct_direction is True
+        assert result.needs_clarification is False
+        assert "足し算の概念を理解している" in result.key_insights
+
+    @pytest.mark.asyncio
+    async def test_analyze_response_misconception(
+        self, basic_context, mock_llm_client
+    ):
+        """誤解がある場合のResponseAnalysisを返す"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        # LLMの応答をモック（誤解のケース）
+        mock_llm_client.generate.return_value = """{
+            "understanding_level": 3,
+            "is_correct_direction": false,
+            "needs_clarification": true,
+            "key_insights": ["引き算と混同している可能性がある"]
+        }"""
+
+        manager = SocraticDialogueManager(llm_client=mock_llm_client)
+        result = await manager.analyze_response(
+            child_response="2かな？",
+            context=basic_context,
+        )
+
+        assert isinstance(result, ResponseAnalysis)
+        assert result.understanding_level == 3
+        assert result.is_correct_direction is False
+        assert result.needs_clarification is True
+
+    @pytest.mark.asyncio
+    async def test_analyze_response_calls_llm_with_prompt(
+        self, basic_context, mock_llm_client
+    ):
+        """LLMクライアントに正しいプロンプトを渡す"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        mock_llm_client.generate.return_value = """{
+            "understanding_level": 5,
+            "is_correct_direction": true,
+            "needs_clarification": false,
+            "key_insights": []
+        }"""
+
+        manager = SocraticDialogueManager(llm_client=mock_llm_client)
+        await manager.analyze_response(
+            child_response="うーん",
+            context=basic_context,
+        )
+
+        # LLMが呼び出されたことを確認
+        mock_llm_client.generate.assert_called_once()
+
+        # プロンプトに必要な情報が含まれていることを確認
+        call_args = mock_llm_client.generate.call_args
+        prompt = call_args[0][0] if call_args[0] else call_args[1].get("prompt", "")
+        assert basic_context.problem in prompt
+        assert "うーん" in prompt

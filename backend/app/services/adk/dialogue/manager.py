@@ -1,6 +1,26 @@
 """ソクラテス式対話マネージャ"""
 
-from app.services.adk.dialogue.models import DialogueContext, DialogueTone, QuestionType
+import json
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+from app.services.adk.dialogue.models import (
+    DialogueContext,
+    DialogueTone,
+    QuestionType,
+    ResponseAnalysis,
+)
+
+if TYPE_CHECKING:
+    pass
+
+
+@runtime_checkable
+class LLMClient(Protocol):
+    """LLMクライアントのプロトコル"""
+
+    async def generate(self, prompt: str) -> str:
+        """プロンプトからテキストを生成する"""
+        ...
 
 
 class SocraticDialogueManager:
@@ -39,6 +59,14 @@ class SocraticDialogueManager:
             "「前に似たような問題をやったよね？」のような質問が効果的です。"
         ),
     }
+
+    def __init__(self, llm_client: LLMClient | None = None) -> None:
+        """SocraticDialogueManagerを初期化する
+
+        Args:
+            llm_client: LLMクライアント（テスト時にモックを注入可能）
+        """
+        self._llm_client = llm_client
 
     def build_question_prompt(
         self,
@@ -100,3 +128,36 @@ class SocraticDialogueManager:
 JSON以外のテキストは含めないでください。"""
 
         return prompt
+
+    async def analyze_response(
+        self,
+        child_response: str,
+        context: DialogueContext,
+    ) -> ResponseAnalysis:
+        """子供の回答を分析する
+
+        Args:
+            child_response: 子供の回答
+            context: 対話コンテキスト
+
+        Returns:
+            ResponseAnalysis: 分析結果
+
+        Raises:
+            ValueError: LLMクライアントが設定されていない場合
+            json.JSONDecodeError: LLMの応答がJSON形式でない場合
+        """
+        if self._llm_client is None:
+            raise ValueError("LLM client is not configured")
+
+        prompt = self.build_analysis_prompt(child_response, context)
+        llm_response = await self._llm_client.generate(prompt)
+
+        # JSONをパースしてResponseAnalysisを構築
+        data = json.loads(llm_response)
+        return ResponseAnalysis(
+            understanding_level=data["understanding_level"],
+            is_correct_direction=data["is_correct_direction"],
+            needs_clarification=data["needs_clarification"],
+            key_insights=data.get("key_insights", []),
+        )
