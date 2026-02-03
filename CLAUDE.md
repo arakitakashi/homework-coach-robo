@@ -160,6 +160,7 @@ homework-coach-robo/
 - リポジトリ構造の定義
 - **リポジトリセットアップ**: モノレポ構造、CI/CD、開発環境構築完了
 - **技術検証（PoC）**: Google ADK + Gemini Live APIの動作確認完了
+- **ソクラテス式対話エンジン（基盤）**: データモデル、対話マネージャ実装完了
 
 ### 技術検証（PoC）の成果
 
@@ -176,11 +177,31 @@ homework-coach-robo/
 
 詳細は `.steering/20260131-gemini-live-api-poc/COMPLETED.md` を参照。
 
+### ソクラテス式対話エンジン
+
+`backend/app/services/adk/dialogue/` に対話エンジンの基盤を実装しました。
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `models.py` | データモデル（DialogueContext, DialogueTurn, ResponseAnalysis など） |
+| `learning_profile.py` | 学習プロファイル（ChildLearningProfile, LearningMemory など） |
+| `manager.py` | SocraticDialogueManager（プロンプト構築、回答分析、質問生成） |
+
+**主要機能:**
+- `build_question_prompt()`: 質問タイプ・トーンに応じたプロンプト生成
+- `analyze_response()`: 子供の回答をLLMで分析
+- `determine_question_type()`: 理解度に基づく次の質問タイプ決定
+- `determine_tone()`: 状況に応じた対話トーン決定
+- `generate_question()`: LLMで質問を生成
+- `should_move_to_next_phase()`: 次のヒントレベルへの遷移判定
+
+**テストカバレッジ**: 98%（70テスト）
+
 ### 次のステップ
 
 1. ~~リポジトリセットアップ~~ ✅ 完了
 2. ~~技術検証（PoC）~~ ✅ 完了
-3. **コア機能の実装**: ソクラテス式対話エンジン、3段階ヒントシステム（TDD実践）← 現在地
+3. **コア機能の実装**: ~~ソクラテス式対話エンジン基盤~~ ✅ 完了 → API統合、3段階ヒントシステム ← 現在地
 4. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
