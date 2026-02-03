@@ -161,3 +161,32 @@ JSON以外のテキストは含めないでください。"""
             needs_clarification=data["needs_clarification"],
             key_insights=data.get("key_insights", []),
         )
+
+    def determine_question_type(
+        self,
+        analysis: ResponseAnalysis,
+        context: DialogueContext,
+    ) -> QuestionType:
+        """次の質問タイプを決定する
+
+        Args:
+            analysis: 回答分析結果
+            context: 対話コンテキスト
+
+        Returns:
+            QuestionType: 次に行うべき質問タイプ
+        """
+        # 理解度が低い場合は理解確認
+        if analysis.understanding_level < 4:
+            return QuestionType.UNDERSTANDING_CHECK
+
+        # ヒントレベルが高く、clarificationが必要な場合はヒント
+        if context.current_hint_level >= 2 and analysis.needs_clarification:
+            return QuestionType.HINT
+
+        # 正しい方向に向かっている場合は思考誘導
+        if analysis.is_correct_direction:
+            return QuestionType.THINKING_GUIDE
+
+        # その他は理解確認
+        return QuestionType.UNDERSTANDING_CHECK

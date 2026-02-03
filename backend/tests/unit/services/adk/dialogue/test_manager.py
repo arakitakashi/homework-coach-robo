@@ -292,3 +292,71 @@ class TestAnalyzeResponse:
         prompt = call_args[0][0] if call_args[0] else call_args[1].get("prompt", "")
         assert basic_context.problem in prompt
         assert "うーん" in prompt
+
+
+class TestDetermineQuestionType:
+    """determine_question_type() メソッドのテスト"""
+
+    @pytest.fixture
+    def manager(self):
+        """SocraticDialogueManagerインスタンス"""
+        from app.services.adk.dialogue.manager import SocraticDialogueManager
+
+        return SocraticDialogueManager()
+
+    @pytest.fixture
+    def basic_context(self):
+        """基本的なDialogueContext"""
+        return DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=1,
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+
+    def test_determine_question_type_low_understanding(self, manager, basic_context):
+        """理解度が低い場合は理解確認を返す"""
+        analysis = ResponseAnalysis(
+            understanding_level=2,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        result = manager.determine_question_type(analysis, basic_context)
+
+        assert result == QuestionType.UNDERSTANDING_CHECK
+
+    def test_determine_question_type_medium_understanding(self, manager, basic_context):
+        """理解度が中程度で正しい方向なら思考誘導を返す"""
+        analysis = ResponseAnalysis(
+            understanding_level=5,
+            is_correct_direction=True,
+            needs_clarification=False,
+            key_insights=["部分的に理解している"],
+        )
+
+        result = manager.determine_question_type(analysis, basic_context)
+
+        assert result == QuestionType.THINKING_GUIDE
+
+    def test_determine_question_type_needs_hint(self, manager, basic_context):
+        """高ヒントレベルでclarification必要ならヒントを返す"""
+        context = DialogueContext(
+            session_id="test-session-123",
+            problem="3 + 5 = ?",
+            current_hint_level=2,  # ヒントレベル2
+            tone=DialogueTone.ENCOURAGING,
+            turns=[],
+        )
+        analysis = ResponseAnalysis(
+            understanding_level=4,
+            is_correct_direction=False,
+            needs_clarification=True,
+            key_insights=[],
+        )
+
+        result = manager.determine_question_type(analysis, context)
+
+        assert result == QuestionType.HINT
