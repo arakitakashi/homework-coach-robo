@@ -186,6 +186,8 @@ homework-coach-robo/
 | `models.py` | データモデル（DialogueContext, DialogueTurn, ResponseAnalysis など） |
 | `learning_profile.py` | 学習プロファイル（ChildLearningProfile, LearningMemory など） |
 | `manager.py` | SocraticDialogueManager（プロンプト構築、回答分析、質問生成） |
+| `gemini_client.py` | GeminiClient（Google Gemini API統合、LLMClientプロトコル準拠） |
+| `session_store.py` | SessionStore（インメモリセッション管理） |
 
 **主要機能:**
 - `build_question_prompt()`: 質問タイプ・トーンに応じたプロンプト生成
@@ -193,17 +195,23 @@ homework-coach-robo/
 - `determine_question_type()`: 理解度に基づく次の質問タイプ決定
 - `determine_tone()`: 状況に応じた対話トーン決定
 - `generate_question()`: LLMで質問を生成
+- `generate_hint_response()`: ヒントレベルに応じたレスポンス生成
 - `should_move_to_next_phase()`: 次のヒントレベルへの遷移判定
 
-**テストカバレッジ**: 98%（70テスト）
+**LLM統合:**
+- `GeminiClient`: Google Gemini API (`gemini-2.5-flash`) を使用
+- 環境変数 `GOOGLE_API_KEY` または `GEMINI_API_KEY` で設定
+- APIキー未設定時はテンプレートベースのフォールバック応答
+
+**テストカバレッジ**: 98%（201テスト）
 
 ### 次のステップ
 
 1. ~~リポジトリセットアップ~~ ✅ 完了
 2. ~~技術検証（PoC）~~ ✅ 完了
 3. ~~**コア機能の実装**: ソクラテス式対話エンジン基盤、API統合、3段階ヒントシステム~~ ✅ 完了
-4. **LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用 ← 現在地
-5. **永続化**: SessionStoreをRedis/Firestoreに置き換え
+4. ~~**LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用~~ ✅ 完了
+5. **永続化**: SessionStoreをRedis/Firestoreに置き換え ← 現在地
 6. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
