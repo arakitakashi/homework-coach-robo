@@ -200,7 +200,8 @@ homework-coach-robo/
 
 **LLM統合:**
 - `GeminiClient`: Google Gemini API (`gemini-2.5-flash`) を使用
-- 環境変数 `GOOGLE_API_KEY` または `GEMINI_API_KEY` で設定
+- 開発環境: `GOOGLE_API_KEY` または `GEMINI_API_KEY` で設定
+- 本番環境: Vertex AI 経由（`GOOGLE_GENAI_USE_VERTEXAI=TRUE`）
 - APIキー未設定時はテンプレートベースのフォールバック応答
 
 **テストカバレッジ**: 98%（201テスト）
@@ -211,7 +212,10 @@ homework-coach-robo/
 2. ~~技術検証（PoC）~~ ✅ 完了
 3. ~~**コア機能の実装**: ソクラテス式対話エンジン基盤、API統合、3段階ヒントシステム~~ ✅ 完了
 4. ~~**LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用~~ ✅ 完了
-5. **永続化**: SessionStoreをRedis/Firestoreに置き換え ← 現在地
+5. **永続化・ADK統合** ← 現在地
+   - `FirestoreSessionService` の実装（ADK `SessionService` 準拠）
+   - ADK `MemoryBank` との学習プロファイル連携
+   - Redis はキャッシュ専用（TTS音声、レート制限）
 6. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
