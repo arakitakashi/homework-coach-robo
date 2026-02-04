@@ -1,4 +1,4 @@
-"""Google Gemini APIクライアント"""
+"""Google Gemini APIクライアント（Vertex AI モード）"""
 
 import os
 
@@ -10,45 +10,62 @@ class GeminiClient:
     """Google Gemini APIクライアント（LLMClientプロトコル準拠）
 
     このクラスはSocraticDialogueManagerのLLMClientプロトコルに準拠し、
-    Google Gemini APIを使用してテキスト生成を行います。
+    Vertex AI経由でGoogle Gemini APIを使用してテキスト生成を行います。
+
+    開発環境・本番環境ともにVertex AIを使用することで、
+    環境間の差異をなくし、一貫した動作を保証します。
 
     Attributes:
         DEFAULT_MODEL: デフォルトで使用するGeminiモデル
+        DEFAULT_LOCATION: デフォルトのリージョン
     """
 
     DEFAULT_MODEL = "gemini-2.5-flash"
+    DEFAULT_LOCATION = "us-central1"
 
     def __init__(
         self,
-        api_key: str | None = None,
+        project: str | None = None,
+        location: str | None = None,
         model: str | None = None,
         system_instruction: str | None = None,
     ) -> None:
-        """GeminiClientを初期化する
+        """GeminiClientを初期化する（Vertex AIモード）
 
         Args:
-            api_key: Google API Key。Noneの場合は環境変数から取得
-                     （GOOGLE_API_KEY優先、なければGEMINI_API_KEY）
+            project: Google CloudプロジェクトID。Noneの場合は環境変数から取得
+                     （GOOGLE_CLOUD_PROJECT）
+            location: リージョン。Noneの場合は環境変数またはデフォルト値
+                     （GOOGLE_CLOUD_LOCATION、デフォルト: us-central1）
             model: 使用するモデル名。Noneの場合はDEFAULT_MODEL
             system_instruction: システム指示（オプション）
 
         Raises:
-            ValueError: APIキーが見つからない場合
+            ValueError: プロジェクトIDが見つからない場合
         """
-        # APIキーの解決
-        resolved_api_key = (
-            api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        # プロジェクトIDの解決
+        self._project = project or os.environ.get("GOOGLE_CLOUD_PROJECT")
+
+        if not self._project:
+            raise ValueError(
+                "Google Cloud project is required. "
+                "Set GOOGLE_CLOUD_PROJECT environment variable or pass project parameter."
+            )
+
+        # リージョンの解決
+        self._location = (
+            location or os.environ.get("GOOGLE_CLOUD_LOCATION") or self.DEFAULT_LOCATION
         )
 
-        if not resolved_api_key:
-            raise ValueError("API key is required. Set GOOGLE_API_KEY environment variable.")
-
-        self._api_key = resolved_api_key
         self._model = model or self.DEFAULT_MODEL
         self._system_instruction = system_instruction
 
-        # Gemini クライアントを初期化
-        self._client = genai.Client(api_key=self._api_key)
+        # Vertex AI モードでクライアントを初期化
+        self._client = genai.Client(
+            vertexai=True,
+            project=self._project,
+            location=self._location,
+        )
 
     async def generate(self, prompt: str) -> str:
         """プロンプトからテキストを生成する
