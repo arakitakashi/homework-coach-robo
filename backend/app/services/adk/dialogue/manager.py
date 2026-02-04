@@ -11,7 +11,30 @@ from app.services.adk.dialogue.models import (
 )
 
 if TYPE_CHECKING:
-    pass
+    from app.services.adk.dialogue.models import AnswerRequestAnalysis
+
+# 明示的な答えリクエストキーワード（正規表現パターン）
+_EXPLICIT_PATTERNS = [
+    r"答え.*教えて",
+    r"答え.*言って",
+    r"正解.*教えて",
+    r"正解.*言って",
+    r"正解は[？\?]?$",
+    r"答えは[？\?]?$",
+]
+
+# 暗示的な答えリクエストキーワード（正規表現パターン）
+_IMPLICIT_PATTERNS = [
+    r"できない",
+    r"むずかしい",
+    r"むりだ",
+    r"無理だ",
+    r"わからない",
+    r"分からない",
+    r"ギブアップ",
+    r"あきらめ",
+    r"諦め",
+]
 
 
 @runtime_checkable
@@ -285,3 +308,283 @@ JSON以外のテキストは含めないでください。"""
             and analysis.understanding_level < 4
             and not analysis.is_correct_direction
         )
+
+    # 明示的な答えリクエストキーワード（正規表現パターン）
+    _EXPLICIT_PATTERNS = [
+        r"答え.*教えて",
+        r"答え.*言って",
+        r"正解.*教えて",
+        r"正解.*言って",
+        r"正解は[？\?]?$",
+        r"答えは[？\?]?$",
+    ]
+
+    # 暗示的な答えリクエストキーワード（正規表現パターン）
+    _IMPLICIT_PATTERNS = [
+        r"できない",
+        r"むずかしい",
+        r"むりだ",
+        r"無理だ",
+        r"わからない",
+        r"分からない",
+        r"ギブアップ",
+        r"あきらめ",
+        r"諦め",
+    ]
+
+    def _detect_answer_request_keywords(
+        self,
+        child_response: str,
+    ) -> "AnswerRequestAnalysis":
+        """キーワードベースで答えリクエストを検出する
+
+        Args:
+            child_response: 子供の発話
+
+        Returns:
+            AnswerRequestAnalysis: 分析結果
+        """
+        import re
+
+        from app.services.adk.dialogue.models import (
+            AnswerRequestAnalysis,
+            AnswerRequestType,
+        )
+
+        detected_phrases: list[str] = []
+
+        # 明示的なリクエストをチェック
+        for pattern in self._EXPLICIT_PATTERNS:
+            match = re.search(pattern, child_response)
+            if match:
+                detected_phrases.append(match.group())
+                return AnswerRequestAnalysis(
+                    request_type=AnswerRequestType.EXPLICIT,
+                    confidence=0.9,
+                    detected_phrases=detected_phrases,
+                )
+
+        # 暗示的なリクエストをチェック
+        for pattern in self._IMPLICIT_PATTERNS:
+            match = re.search(pattern, child_response)
+            if match:
+                detected_phrases.append(match.group())
+                return AnswerRequestAnalysis(
+                    request_type=AnswerRequestType.IMPLICIT,
+                    confidence=0.7,
+                    detected_phrases=detected_phrases,
+                )
+
+        # リクエストなし
+        return AnswerRequestAnalysis(
+            request_type=AnswerRequestType.NONE,
+            confidence=1.0,
+            detected_phrases=[],
+        )
+
+    # 答えリクエスト検出用プロンプト
+    _ANSWER_REQUEST_DETECTION_PROMPT = """子供の発話から「答えを教えてほしい」意図を検出してください。
+
+子供の発話: {child_response}
+
+以下のJSON形式で回答してください：
+{{
+    "request_type": "none" | "explicit" | "implicit",
+    "confidence": 0.0-1.0,
+    "detected_phrases": ["検出されたフレーズ"]
+}}
+
+判定基準:
+- explicit: 「答え教えて」「答えを言って」「正解は？」など明示的な要求
+- implicit: 「できない」「むずかしい」「わからない」「ギブアップ」「もういい」など暗示的な要求
+- none: 答えリクエストではない通常の回答
+
+JSON以外のテキストは含めないでください。"""
+
+    async def detect_answer_request(
+        self,
+        child_response: str,
+    ) -> "AnswerRequestAnalysis":
+        """答えリクエストを検出する（キーワード優先、LLM補助）
+
+        Args:
+            child_response: 子供の発話
+
+        Returns:
+            AnswerRequestAnalysis: 分析結果
+        """
+        import json
+
+        from app.services.adk.dialogue.models import (
+            AnswerRequestAnalysis,
+            AnswerRequestType,
+        )
+
+        # まずキーワードベースで検出を試みる
+        keyword_result = self._detect_answer_request_keywords(child_response)
+        if keyword_result.request_type != AnswerRequestType.NONE:
+            return keyword_result
+
+        # LLMクライアントがない場合はキーワード結果をそのまま返す
+        if self._llm_client is None:
+            return keyword_result
+
+        # LLMで補助検出
+        prompt = self._ANSWER_REQUEST_DETECTION_PROMPT.format(child_response=child_response)
+        try:
+            llm_response = await self._llm_client.generate(prompt)
+            data = json.loads(llm_response)
+            return AnswerRequestAnalysis(
+                request_type=AnswerRequestType(data["request_type"]),
+                confidence=data["confidence"],
+                detected_phrases=data.get("detected_phrases", []),
+            )
+        except (json.JSONDecodeError, KeyError, ValueError):
+            # パースエラーの場合はNONEを返す
+            return AnswerRequestAnalysis(
+                request_type=AnswerRequestType.NONE,
+                confidence=0.5,
+                detected_phrases=[],
+            )
+
+    # ヒントレベル別の指示テンプレート
+    _HINT_LEVEL_INSTRUCTIONS = {
+        1: """【レベル1: 問題理解の確認】
+子供が問題を正しく理解しているか確認します。
+- 問題文の再読を促す
+- 何を求められているか質問する
+- 例: 「この問題は何を聞いているかな？」「問題をもう一度読んでみよう」""",
+        2: """【レベル2: 既習事項の想起】
+子供が関連する知識を思い出せるよう導きます。
+- 以前学んだ類似の概念を想起させる
+- 関連する知識への橋渡しをする
+- 例: 「前に似たような問題をやったよね」「○○のことを思い出してみて」""",
+        3: """【レベル3: 部分的支援】
+問題を小さく分解し、最初のステップのみ支援します。
+- 問題を複数の小さなステップに分ける
+- 最初のステップだけ一緒に考える
+- 最終的な答えは絶対に教えない
+- 例: 「まず最初のステップだけ一緒にやってみよう」""",
+    }
+
+    # 答えリクエスト時の励まし追加テンプレート
+    _ENCOURAGEMENT_FOR_ANSWER_REQUEST = """
+子供が「答えを教えて」と言っています。
+大丈夫、一緒に考えようという励ましの気持ちを込めて、優しく導いてください。
+直接答えを教えることは絶対にしないでください。"""
+
+    def build_hint_prompt(
+        self,
+        context: DialogueContext,
+        hint_level: int,
+        tone: DialogueTone,
+        is_answer_request: bool = False,
+    ) -> str:
+        """ヒントレベル別のプロンプトを構築する
+
+        Args:
+            context: 対話コンテキスト
+            hint_level: ヒントレベル（1-3またはHintLevel Enum）
+            tone: 対話トーン
+            is_answer_request: 答えリクエストがあったか
+
+        Returns:
+            LLMに渡すプロンプト文字列
+        """
+        # HintLevel Enumの場合はintに変換
+        level_value = int(hint_level)
+
+        tone_instruction = self._TONE_INSTRUCTIONS[tone]
+        hint_instruction = self._HINT_LEVEL_INSTRUCTIONS.get(
+            level_value,
+            self._HINT_LEVEL_INSTRUCTIONS[1],  # デフォルトはレベル1
+        )
+
+        prompt = f"""現在の問題: {context.problem}
+
+{hint_instruction}
+
+トーン: {tone_instruction}
+"""
+
+        if is_answer_request:
+            prompt += self._ENCOURAGEMENT_FOR_ANSWER_REQUEST
+
+        prompt += "\n子供への質問を1つだけ生成してください。"
+
+        return prompt
+
+    async def generate_hint_response(
+        self,
+        context: DialogueContext,
+        is_answer_request: bool = False,
+    ) -> str:
+        """ヒントレベルに応じたレスポンスを生成する
+
+        Args:
+            context: 対話コンテキスト
+            is_answer_request: 答えリクエストがあったか
+
+        Returns:
+            生成されたレスポンス文字列
+
+        Raises:
+            ValueError: LLMクライアントが設定されていない場合
+        """
+        if self._llm_client is None:
+            raise ValueError("LLM client is not configured")
+
+        # 現在のヒントレベルに応じたプロンプトを構築
+        prompt = self.build_hint_prompt(
+            context=context,
+            hint_level=context.current_hint_level,
+            tone=context.tone,
+            is_answer_request=is_answer_request,
+        )
+
+        # LLMでレスポンスを生成
+        response = await self._llm_client.generate(prompt)
+
+        # 履歴に追加
+        self._question_history.append(response)
+
+        return response
+
+    def advance_hint_level(
+        self,
+        context: DialogueContext,
+        analysis: ResponseAnalysis,
+    ) -> int:
+        """ヒントレベルを進行させるべきか判定し、新しいレベルを返す
+
+        ルール:
+        - 各レベルで最低2ターン対話してから次へ
+        - 理解度が改善傾向ならレベルを上げない
+        - 最大レベル3を超えない
+
+        Args:
+            context: 対話コンテキスト
+            analysis: 回答分析結果
+
+        Returns:
+            新しいヒントレベル（1-3）
+        """
+        current_level = context.current_hint_level
+
+        # 最大レベルに達している場合は維持
+        if current_level >= self.MAX_HINT_LEVEL:
+            return current_level
+
+        # 理解度が改善している場合は維持
+        if analysis.is_correct_direction and analysis.understanding_level >= 4:
+            return current_level
+
+        # 最低ターン数に満たない場合は維持
+        if len(context.turns) < self.MIN_TURNS_BEFORE_MOVE:
+            return current_level
+
+        # 苦戦している場合は次のレベルへ
+        if analysis.understanding_level < 4 and not analysis.is_correct_direction:
+            return min(current_level + 1, self.MAX_HINT_LEVEL)
+
+        return current_level

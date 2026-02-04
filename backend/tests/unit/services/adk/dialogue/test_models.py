@@ -382,3 +382,135 @@ class TestFromAdkSession:
         assert context.problem == ""
         assert context.current_hint_level == 1
         assert context.tone == DialogueTone.ENCOURAGING
+
+
+class TestHintLevel:
+    """HintLevel Enumのテスト"""
+
+    def test_hint_level_has_problem_understanding(self):
+        """問題理解の確認レベルが存在する"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        assert HintLevel.PROBLEM_UNDERSTANDING == 1
+
+    def test_hint_level_has_prior_knowledge(self):
+        """既習事項の想起レベルが存在する"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        assert HintLevel.PRIOR_KNOWLEDGE == 2
+
+    def test_hint_level_has_partial_support(self):
+        """部分的支援レベルが存在する"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        assert HintLevel.PARTIAL_SUPPORT == 3
+
+    def test_hint_level_is_int_enum(self):
+        """HintLevelはint Enumである"""
+        from app.services.adk.dialogue.models import HintLevel
+
+        assert isinstance(HintLevel.PROBLEM_UNDERSTANDING.value, int)
+        assert isinstance(HintLevel.PROBLEM_UNDERSTANDING, int)
+
+
+class TestAnswerRequestType:
+    """AnswerRequestType Enumのテスト"""
+
+    def test_answer_request_type_has_none(self):
+        """リクエストなしタイプが存在する"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        assert AnswerRequestType.NONE.value == "none"
+
+    def test_answer_request_type_has_explicit(self):
+        """明示的リクエストタイプが存在する"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        assert AnswerRequestType.EXPLICIT.value == "explicit"
+
+    def test_answer_request_type_has_implicit(self):
+        """暗示的リクエストタイプが存在する"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        assert AnswerRequestType.IMPLICIT.value == "implicit"
+
+    def test_answer_request_type_is_string_enum(self):
+        """AnswerRequestTypeはstr Enumである"""
+        from app.services.adk.dialogue.models import AnswerRequestType
+
+        assert isinstance(AnswerRequestType.NONE.value, str)
+        assert isinstance(AnswerRequestType.NONE, str)
+
+
+class TestAnswerRequestAnalysis:
+    """AnswerRequestAnalysis Pydanticモデルのテスト"""
+
+    def test_answer_request_analysis_creation(self):
+        """AnswerRequestAnalysisを作成できる"""
+        from app.services.adk.dialogue.models import (
+            AnswerRequestAnalysis,
+            AnswerRequestType,
+        )
+
+        analysis = AnswerRequestAnalysis(
+            request_type=AnswerRequestType.EXPLICIT,
+            confidence=0.95,
+            detected_phrases=["答え教えて"],
+        )
+
+        assert analysis.request_type == AnswerRequestType.EXPLICIT
+        assert analysis.confidence == 0.95
+        assert analysis.detected_phrases == ["答え教えて"]
+
+    def test_answer_request_analysis_confidence_range(self):
+        """confidenceは0.0-1.0の範囲"""
+        from pydantic import ValidationError
+
+        from app.services.adk.dialogue.models import (
+            AnswerRequestAnalysis,
+            AnswerRequestType,
+        )
+
+        # 有効な範囲
+        analysis = AnswerRequestAnalysis(
+            request_type=AnswerRequestType.NONE,
+            confidence=0.0,
+            detected_phrases=[],
+        )
+        assert analysis.confidence == 0.0
+
+        analysis = AnswerRequestAnalysis(
+            request_type=AnswerRequestType.NONE,
+            confidence=1.0,
+            detected_phrases=[],
+        )
+        assert analysis.confidence == 1.0
+
+        # 無効な範囲
+        with pytest.raises(ValidationError):
+            AnswerRequestAnalysis(
+                request_type=AnswerRequestType.NONE,
+                confidence=-0.1,
+                detected_phrases=[],
+            )
+
+        with pytest.raises(ValidationError):
+            AnswerRequestAnalysis(
+                request_type=AnswerRequestType.NONE,
+                confidence=1.1,
+                detected_phrases=[],
+            )
+
+    def test_answer_request_analysis_default_phrases(self):
+        """detected_phrasesはデフォルトで空リスト"""
+        from app.services.adk.dialogue.models import (
+            AnswerRequestAnalysis,
+            AnswerRequestType,
+        )
+
+        analysis = AnswerRequestAnalysis(
+            request_type=AnswerRequestType.IMPLICIT,
+            confidence=0.7,
+        )
+
+        assert analysis.detected_phrases == []
