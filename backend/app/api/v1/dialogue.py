@@ -60,6 +60,10 @@ async def create_session(request: CreateSessionRequest) -> SessionResponse:
     context = store.get_session(session_id)
     created_at = store.get_created_at(session_id)
 
+    # 作成直後なので必ず存在する
+    assert context is not None
+    assert created_at is not None
+
     return SessionResponse(
         session_id=session_id,
         problem=context.problem,
@@ -87,6 +91,9 @@ async def get_session(session_id: str) -> SessionResponse:
         )
 
     created_at = store.get_created_at(session_id)
+
+    # contextが存在する場合、created_atも必ず存在する
+    assert created_at is not None
 
     return SessionResponse(
         session_id=session_id,
