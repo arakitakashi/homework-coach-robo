@@ -201,8 +201,10 @@ homework-coach-robo/
 
 1. ~~リポジトリセットアップ~~ ✅ 完了
 2. ~~技術検証（PoC）~~ ✅ 完了
-3. **コア機能の実装**: ~~ソクラテス式対話エンジン基盤~~ ✅ 完了 → API統合、3段階ヒントシステム ← 現在地
-4. **パイロットテスト**: 小規模グループでのβテスト
+3. ~~**コア機能の実装**: ソクラテス式対話エンジン基盤、API統合、3段階ヒントシステム~~ ✅ 完了
+4. **LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用 ← 現在地
+5. **永続化**: SessionStoreをRedis/Firestoreに置き換え
+6. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 
@@ -229,6 +231,8 @@ homework-coach-robo/
 | `security-requirement.md` | セキュリティ要件 |
 | `file-structure-rules.md` | ファイル配置・命名規則 |
 | `frontend.md` | フロントエンド開発ルール（`/frontend`, `/frontend-design`スキル必須） |
+| `auto-format-hooks.md` | 自動フォーマット（Ruff/Biome）との共存方法 |
+| `pr-checklist.md` | PR作成前のローカルCIチェックリスト |
 
 ## Available Skills
 
