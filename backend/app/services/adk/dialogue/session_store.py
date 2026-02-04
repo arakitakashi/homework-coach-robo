@@ -21,8 +21,8 @@ class SessionStore:
     def create_session(
         self,
         problem: str,
-        child_grade: int,
-        character_type: str | None = None,
+        child_grade: int,  # noqa: ARG002 - 将来のフェーズで使用予定
+        character_type: str | None = None,  # noqa: ARG002 - 将来のフェーズで使用予定
     ) -> str:
         """新しいセッションを作成する
 
