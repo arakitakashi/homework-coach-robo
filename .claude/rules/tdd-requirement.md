@@ -54,6 +54,46 @@
 
 ---
 
+## フロントエンドテストの注意事項
+
+### Vitestのimportルール
+
+`vitest.config.ts`で`globals: true`を設定していても、TypeScriptの型チェックでは認識されない。
+**使用する全ての関数を明示的にimportすること。**
+
+```typescript
+// ✅ 正しい
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+
+// ❌ CI失敗の原因
+import { describe, expect, it, vi } from "vitest"
+beforeEach(() => { ... }) // → 「Cannot find name 'beforeEach'」
+```
+
+### Jotaiを使ったコンポーネントのテスト
+
+テスト間で状態が共有されないよう、**テストごとにストアを分離**する。
+
+```typescript
+import { Provider, createStore } from "jotai"
+
+const TestWrapper = ({ children }: { children: ReactNode }) => {
+  const store = useMemo(() => createStore(), [])
+  return <Provider store={store}>{children}</Provider>
+}
+```
+
+### モック型キャストのパターン
+
+モックオブジェクトの型が元の型と互換性がない場合、`unknown`を経由。
+
+```typescript
+// ✅ テストコードでのみ許容
+const mockWs = result.current.socket as unknown as MockWebSocket
+```
+
+---
+
 ## スキル参照
 
 実装開始時は必ず `/tdd` スキルを参照すること。
