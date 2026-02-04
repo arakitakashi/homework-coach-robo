@@ -8,6 +8,7 @@ export function HintIndicator({ currentLevel }: HintIndicatorProps) {
 	const levels = [1, 2, 3] as const
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: fieldsetは不適切。これはフォーム要素グループではなく、視覚的なグループ化のためのrole="group"
 		<div className="flex items-center gap-2" role="group" aria-label="ヒントレベル">
 			{levels.map((level) => (
 				<TreasureBox key={level} level={level} isOpen={currentLevel >= level} />

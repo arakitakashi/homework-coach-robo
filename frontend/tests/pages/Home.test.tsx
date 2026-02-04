@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // ホームページコンポーネントをテスト用にインポート
 // 実際のページはServer Componentなので、Client Component版を作成してテスト

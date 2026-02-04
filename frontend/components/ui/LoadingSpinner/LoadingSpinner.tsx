@@ -16,6 +16,7 @@ export function LoadingSpinner({
 	"aria-label": ariaLabel = "Loading",
 }: LoadingSpinnerProps) {
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: outputは計算結果用。ローディング状態にはrole="status"が適切
 		<div
 			role="status"
 			aria-label={ariaLabel}

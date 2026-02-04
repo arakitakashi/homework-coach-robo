@@ -105,7 +105,7 @@ describe("useWebSocket", () => {
 		})
 
 		const audioData = new ArrayBuffer(1024)
-		const mockWs = result.current.socket as MockWebSocket
+		const mockWs = result.current.socket as unknown as MockWebSocket
 		act(() => {
 			result.current.sendAudio(audioData)
 		})
@@ -139,7 +139,7 @@ describe("useWebSocket", () => {
 		})
 
 		// Simulate receiving a message
-		const mockWs = result.current.socket as MockWebSocket
+		const mockWs = result.current.socket as unknown as MockWebSocket
 		act(() => {
 			mockWs.simulateMessage(JSON.stringify({ type: "transcript", text: "Hello" }))
 		})
