@@ -45,12 +45,12 @@ def get_session_store() -> SessionStore:
 def get_llm_client() -> LLMClient | None:
     """LLMクライアントを取得する（依存性注入用）
 
-    環境変数からAPIキーを取得し、GeminiClientを生成します。
-    APIキーが設定されていない場合はNoneを返します。
+    環境変数からプロジェクトIDを取得し、Vertex AI経由でGeminiClientを生成します。
+    プロジェクトIDが設定されていない場合はNoneを返します（フォールバック動作）。
     """
-    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
-    if api_key:
-        return GeminiClient(api_key=api_key)
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    if project:
+        return GeminiClient(project=project)
     return None
 
 

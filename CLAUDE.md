@@ -199,12 +199,32 @@ homework-coach-robo/
 - `should_move_to_next_phase()`: 次のヒントレベルへの遷移判定
 
 **LLM統合:**
-- `GeminiClient`: Google Gemini API (`gemini-2.5-flash`) を使用
-- 開発環境: `GOOGLE_API_KEY` または `GEMINI_API_KEY` で設定
-- 本番環境: Vertex AI 経由（`GOOGLE_GENAI_USE_VERTEXAI=TRUE`）
-- APIキー未設定時はテンプレートベースのフォールバック応答
+- `GeminiClient`: Vertex AI 経由で Gemini API (`gemini-2.5-flash`) を使用
+- 開発/本番ともに Vertex AI を使用（Application Default Credentials）
+- プロジェクトID未設定時はテンプレートベースのフォールバック応答
 
-**テストカバレッジ**: 98%（201テスト）
+**環境変数:**
+| 変数名 | 必須 | 説明 |
+|--------|------|------|
+| `GOOGLE_CLOUD_PROJECT` | ✅ | GCPプロジェクトID |
+| `GOOGLE_CLOUD_LOCATION` | ❌ | リージョン（デフォルト: us-central1） |
+
+**ローカル開発セットアップ:**
+```bash
+# 1. gcloud CLI をインストール（未インストールの場合）
+# https://cloud.google.com/sdk/docs/install
+
+# 2. 認証情報を設定
+gcloud auth application-default login
+
+# 3. プロジェクトIDを設定
+export GOOGLE_CLOUD_PROJECT=your-project-id
+
+# 4. バックエンドを起動
+cd backend && uv run uvicorn app.main:app --reload
+```
+
+**テストカバレッジ**: 98%（202テスト）
 
 ### 次のステップ
 
