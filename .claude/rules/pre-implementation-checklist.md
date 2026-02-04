@@ -107,6 +107,40 @@ mkdir -p .steering/YYYYMMDD-<work-description>
 
 ---
 
+## 🚨 PR作成前の必須チェック（CI失敗防止）
+
+**PRを作成する前に、以下のコマンドを必ずローカルで実行すること。**
+
+### フロントエンド（frontend/）
+
+```bash
+cd frontend
+bun lint      # Biome lint
+bun typecheck # TypeScript type check
+bun test      # Vitest（bunx vitest run）
+```
+
+### バックエンド（backend/）
+
+```bash
+cd backend
+uv run ruff check .  # Ruff lint
+uv run mypy .        # Type check
+uv run pytest        # pytest
+```
+
+**すべてのチェックがパスするまでPRを作成しない。**
+
+### よくあるCI失敗パターン
+
+| パターン | 原因 | 対策 |
+|---------|------|------|
+| Lint失敗 | フォーマット未適用 | `bun lint --write` で自動修正 |
+| Type Check失敗 | import漏れ、型不整合 | エラーメッセージを確認して修正 |
+| Test失敗 | 環境差異、モック不足 | ローカルでテスト実行を確認 |
+
+---
+
 ## 禁止事項
 
 1. **mainブランチでの直接作業** - 絶対禁止

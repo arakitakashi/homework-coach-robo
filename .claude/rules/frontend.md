@@ -202,6 +202,77 @@ describe('useVoiceRecorder', () => {
 });
 ```
 
+### ⚠️ Vitestのimportルール（重要）
+
+`vitest.config.ts`で`globals: true`を設定していても、**TypeScriptの型チェックでは認識されない**。
+テストファイルでは使用する全ての関数を**明示的にimport**すること。
+
+```typescript
+// ✅ 正しい: 全て明示的にimport
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+// ❌ 間違い: beforeEachを使っているがimportしていない
+import { describe, expect, it, vi } from "vitest"
+// → TypeScript type checkで「Cannot find name 'beforeEach'」エラー
+```
+
+### Jotaiのテストパターン
+
+Jotaiを使ったコンポーネントのテストでは、**テストごとにストアを分離**する。
+
+```typescript
+import { Provider, createStore } from "jotai"
+import { useMemo, type ReactNode } from "react"
+
+// テスト用ラッパー
+const TestWrapper = ({ children }: { children: ReactNode }) => {
+  const store = useMemo(() => createStore(), [])
+  return <Provider store={store}>{children}</Provider>
+}
+
+// 使用例
+it("状態が正しく更新される", () => {
+  render(<MyComponent />, { wrapper: TestWrapper })
+  // ...
+})
+```
+
+### モック型キャストのパターン（テスト限定）
+
+モックオブジェクトの型が元の型と互換性がない場合、`unknown`を経由してキャスト。
+
+```typescript
+// ✅ 正しい: unknownを経由
+const mockWs = result.current.socket as unknown as MockWebSocket
+
+// ❌ 間違い: 直接キャスト（型エラー）
+const mockWs = result.current.socket as MockWebSocket
+```
+
+**注意**: これは**テストコード限定**のパターン。本番コードでは型設計を見直すべき。
+
+---
+
+## Biomeのa11yルールに関する注意
+
+Biomeの`useSemanticElements`ルールは、セマンティックHTML要素への置き換えを推奨するが、
+**必ずしも全てのケースで適切ではない**。
+
+### 正当なbiome-ignoreの例
+
+```typescript
+// role="group"は視覚的グループ化のため。fieldsetはフォーム要素用で不適切
+// biome-ignore lint/a11y/useSemanticElements: fieldsetは不適切。フォーム要素グループではない
+<div role="group" aria-label="ヒントレベル">
+
+// role="status"はローディング状態用。outputは計算結果用で不適切
+// biome-ignore lint/a11y/useSemanticElements: outputは不適切。計算結果ではない
+<div role="status" aria-label="読み込み中">
+```
+
+**ルール**: リンター警告は盲目的に従わず、**セマンティクスを理解した上で判断**する。
+必要に応じて理由を明記してignore。
+
 ---
 
 ## 禁止事項

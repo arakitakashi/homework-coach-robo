@@ -222,13 +222,25 @@ homework-coach-robo/
 
 | ルール | 内容 |
 |--------|------|
-| `pre-implementation-checklist.md` | 実装前チェック（ブランチ、ステアリングディレクトリ） |
+| `pre-implementation-checklist.md` | 実装前チェック（ブランチ、ステアリングディレクトリ）、**PR前CI必須チェック** |
 | `steering-workflow.md` | ワークフロー（requirements/design/tasklist作成） |
-| `tdd-requirement.md` | TDD必須（Red-Green-Refactor、カバレッジ80%） |
+| `tdd-requirement.md` | TDD必須（Red-Green-Refactor、カバレッジ80%）、**Vitest importルール** |
 | `coding-standards.md` | コーディング規約 |
 | `security-requirement.md` | セキュリティ要件 |
 | `file-structure-rules.md` | ファイル配置・命名規則 |
-| `frontend.md` | フロントエンド開発ルール（`/frontend`, `/frontend-design`スキル必須） |
+| `frontend.md` | フロントエンド開発ルール、**Biome a11yルール、Jotaiテストパターン** |
+
+### 🔴 PR作成前の必須コマンド
+
+```bash
+# フロントエンド
+cd frontend && bun lint && bun typecheck && bun test
+
+# バックエンド
+cd backend && uv run ruff check . && uv run mypy . && uv run pytest
+```
+
+**CIで実行される全チェックをローカルで事前実行すること。**
 
 ## Available Skills
 
