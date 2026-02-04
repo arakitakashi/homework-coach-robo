@@ -898,7 +898,7 @@ class TestGenerateHintResponse:
             "大丈夫だよ、一緒に考えよう！この問題は何を聞いていると思う？"
         )
 
-        response = await manager_with_llm.generate_hint_response(
+        await manager_with_llm.generate_hint_response(
             context=basic_context,
             is_answer_request=True,
         )
