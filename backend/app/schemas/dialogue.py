@@ -78,6 +78,10 @@ class GenerateHintRequest(BaseModel):
         le=3,
         description="強制的に指定するヒントレベル（未指定時は現在レベル）",
     )
+    is_answer_request: bool = Field(
+        default=False,
+        description="答えリクエストへの対応かどうか",
+    )
 
 
 class HintResponse(BaseModel):
