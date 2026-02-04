@@ -18,6 +18,30 @@ class QuestionType(str, Enum):
     HINT = "hint"  # ヒント
 
 
+class HintLevel(int, Enum):
+    """ヒントレベル（3段階）"""
+
+    PROBLEM_UNDERSTANDING = 1  # 問題理解の確認
+    PRIOR_KNOWLEDGE = 2  # 既習事項の想起
+    PARTIAL_SUPPORT = 3  # 部分的支援
+
+
+class AnswerRequestType(str, Enum):
+    """答えリクエストのタイプ"""
+
+    NONE = "none"  # リクエストなし
+    EXPLICIT = "explicit"  # 明示的（「答え教えて」）
+    IMPLICIT = "implicit"  # 暗示的（「できない」「むずかしい」）
+
+
+class AnswerRequestAnalysis(BaseModel):
+    """答えリクエストの分析結果"""
+
+    request_type: AnswerRequestType = Field(..., description="リクエストタイプ")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="信頼度（0.0-1.0）")
+    detected_phrases: list[str] = Field(default_factory=list, description="検出されたフレーズ")
+
+
 class DialogueTone(str, Enum):
     """対話トーン"""
 
