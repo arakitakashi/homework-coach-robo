@@ -43,5 +43,4 @@ htmlcov/
 .env.local
 !.env.example
 
-# uv
-uv.lock
+# uv cache (lock file should be committed)
