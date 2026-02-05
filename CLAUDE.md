@@ -344,7 +344,7 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 
 `frontend/` に Next.js 16 ベースのフロントエンドを実装中です。
 
-**進捗: 約70-75% 完了**
+**進捗: 約85-90% 完了**
 
 #### 完了済みコンポーネント
 
@@ -353,32 +353,40 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 | **ページ** | `src/app/page.tsx` | ホーム（キャラクター選択UI） |
 | | `src/app/session/page.tsx` | セッションページ（対話インターフェース） |
 | **UI** | `CharacterDisplay` | ロボットキャラクター（状態別アニメーション） |
-| | `VoiceInterface` | 録音ボタン＋音量レベル表示 |
+| | `VoiceInterface` | 録音ボタン＋音量レベル表示（プレゼンテーションコンポーネント） |
 | | `DialogueHistory` | 対話履歴（吹き出し形式） |
 | | `ProgressDisplay` | 学習進捗（ポイント表示） |
 | | `HintIndicator` | 宝箱型ヒントレベル表示 |
-| | `Button`, `Card`, `LoadingSpinner`, `ErrorMessage` | 基本UIコンポーネント |
+| | `Button`, `Card`, `LoadingSpinner`, `ErrorMessage`, `TextInput` | 基本UIコンポーネント |
 | **状態管理** | `store/atoms/dialogue.ts` | 対話履歴、ヒントレベル、キャラクター状態 |
 | | `store/atoms/session.ts` | セッション、学習進捗、ポイント計算 |
 | **フック** | `useVoiceRecorder` | Web Audio API録音（PCM 16-bit変換） |
 | | `useAudioPlayer` | 音声再生（AudioContext管理） |
 | | `useWebSocket` | WebSocket通信（JSON/ArrayBuffer対応） |
+| | `useVoiceStream` | 音声ストリーミング統合（WebSocket + AudioWorklet） |
+| | `useSession` | セッション管理（作成/削除） |
+| | `useDialogue` | 対話管理（SSEストリーミング） |
+| **APIクライアント** | `SessionClient` | セッションCRUD操作 |
+| | `DialogueClient` | SSEストリーミング対話 |
+| | `VoiceWebSocketClient` | WebSocket音声通信 |
+| **AudioWorklet** | `pcm-recorder-processor.js` | 録音用Processor（16kHz 16-bit） |
+| | `pcm-player-processor.js` | 再生用Processor（24kHz） |
 | **型定義** | `types/` | dialogue, session, audio, websocket |
 
-#### 未実装（残り25-30%）
+#### 未実装（残り10-15%）
 
 | 項目 | 状況 | 説明 |
 |------|------|------|
-| **APIクライアント** | ❌ 未実装 | `lib/api/index.ts` は空 |
-| **SSEクライアント** | ❌ 未実装 | バックエンドはSSE、フロントはWebSocketフックのみ |
-| **バックエンド接続** | ❌ 未実装 | 録音機能はあるが送信なし |
+| **音声入力有効化** | ⏸️ 実装済み・無効 | useVoiceStream実装済み、MVP期間は無効 |
 | **追加キャラクター** | ⏸️ 低優先度 | 魔法使い、宇宙飛行士、動物（選択UIは実装済み） |
+| **E2Eテスト** | ❌ 未実装 | 実際のバックエンドとの統合テスト |
 
 #### テストカバレッジ
 
-- 14テストファイル（コンポーネント9、フック3、ページ2）
+- 22テストファイル、172テスト
+- Statements: 89.35%, Lines: 90.01%, Functions: 90.99%
 - Vitest + Testing Library
-- 適切なモック（MediaDevices, AudioContext, WebSocket）
+- 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
 #### 技術スタック
 
@@ -392,11 +400,26 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 | Vitest | テスト |
 | Biome | リンター/フォーマッター |
 
+#### 音声入力アーキテクチャ
+
+```
+SessionContent
+└── useVoiceStream (hook)
+    ├── VoiceWebSocketClient (WebSocket管理)
+    │   └── WebSocket → Backend → Gemini Live API
+    ├── AudioWorklet (録音)
+    │   └── PCM Recorder Processor (16kHz 16-bit)
+    └── AudioWorklet (再生)
+        └── PCM Player Processor (24kHz)
+```
+
+詳細は `.steering/20260206-voice-input-implementation/COMPLETED.md` を参照。
+
 #### 次に実装すべき項目
 
-1. **SSEクライアント** - `lib/api/dialogueClient.ts`
-2. **セッションAPI** - セッション作成/管理
-3. **SessionContent統合** - SSEクライアントをページに接続
+1. **音声入力有効化** - `isVoiceEnabled`フラグをtrue
+2. **E2Eテスト** - バックエンドとの統合テスト
+3. **追加キャラクター** - 魔法使い、宇宙飛行士、動物の実装
 
 ### インフラストラクチャ（IaC）
 
