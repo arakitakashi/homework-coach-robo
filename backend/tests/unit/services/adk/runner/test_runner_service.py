@@ -23,13 +23,15 @@ class TestAgentRunnerServiceInit:
         mock_session_service = MagicMock()
         mock_memory_service = MagicMock()
 
-        with patch("app.services.adk.runner.runner_service.Runner"):
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                service = AgentRunnerService(
-                    session_service=mock_session_service,
-                    memory_service=mock_memory_service,
-                )
-                assert service._session_service == mock_session_service
+        with (
+            patch("app.services.adk.runner.runner_service.Runner"),
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            service = AgentRunnerService(
+                session_service=mock_session_service,
+                memory_service=mock_memory_service,
+            )
+            assert service._session_service == mock_session_service
 
     def test_accepts_memory_service(self) -> None:
         """MemoryServiceを受け入れる"""
@@ -38,13 +40,15 @@ class TestAgentRunnerServiceInit:
         mock_session_service = MagicMock()
         mock_memory_service = MagicMock()
 
-        with patch("app.services.adk.runner.runner_service.Runner"):
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                service = AgentRunnerService(
-                    session_service=mock_session_service,
-                    memory_service=mock_memory_service,
-                )
-                assert service._memory_service == mock_memory_service
+        with (
+            patch("app.services.adk.runner.runner_service.Runner"),
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            service = AgentRunnerService(
+                session_service=mock_session_service,
+                memory_service=mock_memory_service,
+            )
+            assert service._memory_service == mock_memory_service
 
     def test_creates_runner_with_services(self) -> None:
         """Runnerを正しく初期化する"""
@@ -75,28 +79,32 @@ class TestAgentRunnerServiceInit:
         """デフォルトのapp_nameを使用する"""
         from app.services.adk.runner.runner_service import AgentRunnerService
 
-        with patch("app.services.adk.runner.runner_service.Runner") as MockRunner:
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                AgentRunnerService(
-                    session_service=MagicMock(),
-                    memory_service=MagicMock(),
-                )
-                call_kwargs = MockRunner.call_args[1]
-                assert call_kwargs["app_name"] == "homework-coach"
+        with (
+            patch("app.services.adk.runner.runner_service.Runner") as MockRunner,
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            AgentRunnerService(
+                session_service=MagicMock(),
+                memory_service=MagicMock(),
+            )
+            call_kwargs = MockRunner.call_args[1]
+            assert call_kwargs["app_name"] == "homework-coach"
 
     def test_accepts_custom_app_name(self) -> None:
         """カスタムapp_nameを受け入れる"""
         from app.services.adk.runner.runner_service import AgentRunnerService
 
-        with patch("app.services.adk.runner.runner_service.Runner") as MockRunner:
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                AgentRunnerService(
-                    session_service=MagicMock(),
-                    memory_service=MagicMock(),
-                    app_name="custom-app",
-                )
-                call_kwargs = MockRunner.call_args[1]
-                assert call_kwargs["app_name"] == "custom-app"
+        with (
+            patch("app.services.adk.runner.runner_service.Runner") as MockRunner,
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            AgentRunnerService(
+                session_service=MagicMock(),
+                memory_service=MagicMock(),
+                app_name="custom-app",
+            )
+            call_kwargs = MockRunner.call_args[1]
+            assert call_kwargs["app_name"] == "custom-app"
 
 
 class TestAgentRunnerServiceRun:
@@ -213,69 +221,77 @@ class TestAgentRunnerServiceExtractText:
         """イベントからテキストを抽出する"""
         from app.services.adk.runner.runner_service import AgentRunnerService
 
-        with patch("app.services.adk.runner.runner_service.Runner"):
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                service = AgentRunnerService(
-                    session_service=MagicMock(),
-                    memory_service=MagicMock(),
-                )
+        with (
+            patch("app.services.adk.runner.runner_service.Runner"),
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            service = AgentRunnerService(
+                session_service=MagicMock(),
+                memory_service=MagicMock(),
+            )
 
-                mock_event = MagicMock()
-                mock_event.content.parts = [MagicMock(text="テスト回答")]
+            mock_event = MagicMock()
+            mock_event.content.parts = [MagicMock(text="テスト回答")]
 
-                result = service.extract_text(mock_event)
-                assert result == "テスト回答"
+            result = service.extract_text(mock_event)
+            assert result == "テスト回答"
 
     def test_returns_none_for_no_content(self) -> None:
         """コンテンツがない場合はNoneを返す"""
         from app.services.adk.runner.runner_service import AgentRunnerService
 
-        with patch("app.services.adk.runner.runner_service.Runner"):
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                service = AgentRunnerService(
-                    session_service=MagicMock(),
-                    memory_service=MagicMock(),
-                )
+        with (
+            patch("app.services.adk.runner.runner_service.Runner"),
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            service = AgentRunnerService(
+                session_service=MagicMock(),
+                memory_service=MagicMock(),
+            )
 
-                mock_event = MagicMock()
-                mock_event.content = None
+            mock_event = MagicMock()
+            mock_event.content = None
 
-                result = service.extract_text(mock_event)
-                assert result is None
+            result = service.extract_text(mock_event)
+            assert result is None
 
     def test_returns_none_for_no_parts(self) -> None:
         """パーツがない場合はNoneを返す"""
         from app.services.adk.runner.runner_service import AgentRunnerService
 
-        with patch("app.services.adk.runner.runner_service.Runner"):
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                service = AgentRunnerService(
-                    session_service=MagicMock(),
-                    memory_service=MagicMock(),
-                )
+        with (
+            patch("app.services.adk.runner.runner_service.Runner"),
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            service = AgentRunnerService(
+                session_service=MagicMock(),
+                memory_service=MagicMock(),
+            )
 
-                mock_event = MagicMock()
-                mock_event.content.parts = None
+            mock_event = MagicMock()
+            mock_event.content.parts = None
 
-                result = service.extract_text(mock_event)
-                assert result is None
+            result = service.extract_text(mock_event)
+            assert result is None
 
     def test_joins_multiple_text_parts(self) -> None:
         """複数のテキストパーツを結合する"""
         from app.services.adk.runner.runner_service import AgentRunnerService
 
-        with patch("app.services.adk.runner.runner_service.Runner"):
-            with patch("app.services.adk.runner.runner_service.create_socratic_agent"):
-                service = AgentRunnerService(
-                    session_service=MagicMock(),
-                    memory_service=MagicMock(),
-                )
+        with (
+            patch("app.services.adk.runner.runner_service.Runner"),
+            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+        ):
+            service = AgentRunnerService(
+                session_service=MagicMock(),
+                memory_service=MagicMock(),
+            )
 
-                mock_event = MagicMock()
-                mock_event.content.parts = [
-                    MagicMock(text="パート1"),
-                    MagicMock(text="パート2"),
-                ]
+            mock_event = MagicMock()
+            mock_event.content.parts = [
+                MagicMock(text="パート1"),
+                MagicMock(text="パート2"),
+            ]
 
-                result = service.extract_text(mock_event)
-                assert result == "パート1 パート2"
+            result = service.extract_text(mock_event)
+            assert result == "パート1 パート2"
