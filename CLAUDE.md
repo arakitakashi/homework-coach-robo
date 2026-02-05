@@ -161,6 +161,7 @@ homework-coach-robo/
 - **リポジトリセットアップ**: モノレポ構造、CI/CD、開発環境構築完了
 - **技術検証（PoC）**: Google ADK + Gemini Live APIの動作確認完了
 - **ソクラテス式対話エンジン（基盤）**: データモデル、対話マネージャ実装完了
+- **FirestoreSessionService**: ADK BaseSessionService準拠のセッション永続化実装完了
 - **インフラストラクチャ（IaC）**: Terraformモジュール、Cloud Build、Docker設定完了
 
 ### 技術検証（PoC）の成果
@@ -225,7 +226,33 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 98%（202テスト）
+**テストカバレッジ**: 97%（238テスト）
+
+### Firestore Session Persistence
+
+`backend/app/services/adk/sessions/` に ADK 準拠のセッション永続化サービスを実装しました。
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `converters.py` | ADK Session/Event ↔ Firestore dict 変換関数 |
+| `firestore_session_service.py` | FirestoreSessionService（ADK BaseSessionService準拠） |
+
+**主要機能:**
+- `create_session()`: セッション作成（3層状態の分離保存）
+- `get_session()`: セッション取得（3層状態のマージ）
+- `list_sessions()`: セッション一覧取得
+- `delete_session()`: セッション削除（サブコレクション含む）
+- `append_event()`: イベント追加（temp:*除去、partial非永続化）
+
+**Firestoreコレクション構造:**
+```
+/sessions/{session_id}              - セッションメタデータと状態
+/sessions/{session_id}/events/{id}  - イベント
+/app_state/{app_name}               - アプリスコープの状態
+/user_state/{app_name}/users/{id}   - ユーザースコープの状態
+```
+
+詳細は `.steering/20260205-firestore-session-persistence/COMPLETED.md` を参照。
 
 ### インフラストラクチャ（IaC）
 
@@ -289,13 +316,11 @@ terraform apply
 2. ~~技術検証（PoC）~~ ✅ 完了
 3. ~~**コア機能の実装**: ソクラテス式対話エンジン基盤、API統合、3段階ヒントシステム~~ ✅ 完了
 4. ~~**LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用~~ ✅ 完了
-5. ~~**インフラストラクチャ（IaC）**: Terraform、Cloud Build、Docker~~ ✅ 完了
-6. **永続化・ADK統合** ← 現在地
-   - `FirestoreSessionService` の実装（ADK `SessionService` 準拠）
+5. ~~**FirestoreSessionService**: ADK SessionService準拠の永続化~~ ✅ 完了
+6. **ADK MemoryBank統合** ← 現在地
    - ADK `MemoryBank` との学習プロファイル連携
    - Redis はキャッシュ専用（TTS音声、レート制限）
-7. **インフラデプロイ**: GCPプロジェクト作成、terraform apply
-8. **パイロットテスト**: 小規模グループでのβテスト
+7. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 
