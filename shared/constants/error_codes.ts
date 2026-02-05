@@ -25,7 +25,6 @@ export const ErrorCodes = {
 	// 外部サービスエラー (5xxx)
 	GEMINI_API_ERROR: "E5001",
 	FIRESTORE_ERROR: "E5002",
-	REDIS_ERROR: "E5003",
 
 	// サーバーエラー (9xxx)
 	INTERNAL_ERROR: "E9001",

@@ -45,7 +45,6 @@ graph TB
     subgraph Data["データ層 (Google Cloud)"]
         Firestore["Cloud Firestore<br/>(リアルタイムデータ)"]
         BigQuery["BigQuery<br/>(学習データ永続化)"]
-        Redis["Memorystore Redis<br/>(キャッシュ)"]
     end
 
     %% フロントエンド → バックエンド
@@ -73,8 +72,6 @@ graph TB
     %% データアクセス
     SessionService --> Firestore
     BQService --> BigQuery
-    SocraticEngine --> Redis
-    TTS --> Redis
 
     %% スタイル
     classDef frontend fill:#e1f5ff,stroke:#01579b,stroke-width:2px
@@ -87,7 +84,7 @@ graph TB
     class Backend,FastAPI,WSHandler,SessionService,BQService,Auth backend
     class Dialogue,ADKRunner,Agent,SocraticEngine,HintSystem,StateTracker dialogue
     class AIML,GeminiLive,STT,TTS,Emotion aiml
-    class Data,Firestore,BigQuery,Redis data
+    class Data,Firestore,BigQuery data
 ```
 
 **主要な通信フロー:**
@@ -96,7 +93,6 @@ graph TB
 2. **音声出力フロー**: Gemini Live API → ADK Events → WebSocket → クライアント
 3. **セッション管理**: SessionService ↔ Firestore（リアルタイム保存）
 4. **学習データ永続化**: セッション終了時 → BigQueryDataService → BigQuery
-5. **キャッシュ**: よく使うフレーズ・音声データ → Redis
 
 **Cloud Run設定方針:**
 - **フロントエンド**: 最小インスタンス0（コスト最適化）
@@ -158,9 +154,6 @@ graph TB
   - ユーザープロフィール
   - 設定情報
   - リアルタイム進捗
-- **キャッシュ**: Cloud Memorystore for Redis
-  - よく使うフレーズの音声キャッシュ
-  - セッション状態の一時保存
 - **問題バンク**: Cloud Firestore Collections
   - 問題データの階層構造管理
 
@@ -1986,15 +1979,13 @@ sequenceDiagram
     participant S as Session
     participant FS as Firestore
     participant BQ as BigQuery
-    participant Cache as Redis
 
-    Note over S,Cache: セッション進行中
+    Note over S,BQ: セッション進行中
 
     S->>FS: 状態更新（1秒ごと）
     S->>FS: 対話ターン追加
-    S->>Cache: よく使うフレーズキャッシュ
 
-    Note over S,Cache: セッション終了時
+    Note over S,BQ: セッション終了時
 
     S->>FS: 最終状態保存
     S->>BQ: dialogue_sessions挿入
@@ -3381,8 +3372,6 @@ GOOGLE_GENAI_USE_VERTEXAI=TRUE
 # データベース
 FIRESTORE_DATABASE=(default)
 BIGQUERY_DATASET=homework_coach_staging
-REDIS_HOST=10.x.x.x  # Memorystore Redis IP
-REDIS_PORT=6379
 
 # ADK/Gemini設定
 DEMO_AGENT_MODEL=gemini-2.5-flash-native-audio-preview
@@ -3466,19 +3455,7 @@ gcloud firestore indexes composite create \
   --field-config field-path=createdAt,order=DESCENDING
 ```
 
-#### 12.2.3 Cloud Memorystore for Redis
-
-```bash
-# Redis インスタンス作成
-gcloud redis instances create homework-coach-cache \
-  --size=1 \
-  --region=asia-northeast1 \
-  --zone=asia-northeast1-a \
-  --tier=basic \
-  --redis-version=redis_7_0
-```
-
-#### 12.2.4 Secret Manager設定
+#### 12.2.3 Secret Manager設定
 
 ```bash
 # シークレット作成
@@ -3543,7 +3520,6 @@ google-cloud-bigquery>=3.10.0
 google-cloud-speech>=2.20.0
 google-cloud-texttospeech>=2.14.0
 google-cloud-secret-manager>=2.16.0
-redis>=5.0.0
 ```
 
 #### frontend/Dockerfile
@@ -3864,10 +3840,6 @@ DEMO_AGENT_MODEL=gemini-2.5-flash-native-audio-preview
 
 # BigQuery
 BIGQUERY_DATASET=homework_coach_dev
-
-# Redis（Memorystore）
-REDIS_HOST=localhost
-REDIS_PORT=6379
 
 # アプリケーション設定
 PORT=8080

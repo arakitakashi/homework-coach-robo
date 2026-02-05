@@ -32,7 +32,7 @@ jobs:
         run: uv python install 3.10
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --frozen
 
       - name: Run Ruff lint
         run: uv run ruff check .
@@ -55,7 +55,7 @@ jobs:
         run: uv python install 3.10
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --frozen
 
       - name: Run mypy
         run: uv run mypy app/
@@ -76,7 +76,7 @@ jobs:
         run: uv python install 3.10
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --frozen
 
       - name: Run tests
         run: uv run pytest -v --cov=app --cov-report=xml

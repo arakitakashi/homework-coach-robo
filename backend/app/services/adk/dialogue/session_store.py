@@ -10,7 +10,7 @@ class SessionStore:
     """インメモリセッションストア
 
     セッション（DialogueContext）を管理するシンプルなストア。
-    MVPフェーズではインメモリで十分。後続フェーズでRedis/Firestoreに置き換え可能。
+    本番環境ではFirestoreSessionServiceを使用。このクラスはテスト・開発用途。
     """
 
     def __init__(self) -> None:
