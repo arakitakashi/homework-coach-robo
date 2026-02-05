@@ -62,18 +62,9 @@ resource "google_project_iam_member" "backend_storage" {
 }
 
 # Cloud Speech-to-Text access
-resource "google_project_iam_member" "backend_speech" {
-  project = var.project_id
-  role    = "roles/speech.client"
-  member  = "serviceAccount:${google_service_account.backend.email}"
-}
+# NOTE: Speech-to-Text API doesn't require specific IAM role - API enablement is sufficient
 
-# Cloud Text-to-Speech access
-resource "google_project_iam_member" "backend_tts" {
-  project = var.project_id
-  role    = "roles/texttospeech.client"
-  member  = "serviceAccount:${google_service_account.backend.email}"
-}
+# NOTE: Text-to-Speech API doesn't require specific IAM role - API enablement is sufficient
 
 # Vertex AI access (for Gemini)
 resource "google_project_iam_member" "backend_vertex_ai" {
@@ -82,12 +73,7 @@ resource "google_project_iam_member" "backend_vertex_ai" {
   member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
-# Cloud Vision API access
-resource "google_project_iam_member" "backend_vision" {
-  project = var.project_id
-  role    = "roles/vision.user"
-  member  = "serviceAccount:${google_service_account.backend.email}"
-}
+# NOTE: Vision API doesn't require specific IAM role - API enablement is sufficient
 
 # Cloud Logging access
 resource "google_project_iam_member" "backend_logging" {

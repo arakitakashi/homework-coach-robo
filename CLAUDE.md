@@ -71,7 +71,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Frontend**: Next.js 16 (App Router) + Bun + Biome
 - **Backend**: FastAPI + Python 3.10+ + uv + Ruff
 - **Infrastructure**: Google Cloud Run
-- **Database**: Cloud Firestore (リアルタイムデータ), BigQuery (分析用データ), Redis (キャッシュ)
+- **Database**: Cloud Firestore (リアルタイムデータ), BigQuery (分析用データ)
+- **Session Management**: Vertex AI / ADK SessionService
 - **AI/ML**: Google ADK + Gemini Live API
 - **STT**: Cloud Speech-to-Text API
 - **TTS**: Cloud Text-to-Speech API
@@ -235,6 +236,7 @@ cd backend && uv run uvicorn app.main:app --reload
 
 ```
 infrastructure/terraform/
+├── bootstrap/                 # State Bucket + API有効化（ローカルstate）
 ├── shared/                    # Provider設定
 ├── modules/
 │   ├── vpc/                   # VPC + VPC Connector
@@ -242,12 +244,13 @@ infrastructure/terraform/
 │   ├── secret_manager/        # Secret定義
 │   ├── firestore/             # Database + Indexes
 │   ├── bigquery/              # Dataset + Tables
-│   ├── redis/                 # Memorystore
 │   ├── cloud_storage/         # Assets Bucket + CDN
 │   └── cloud_run/             # Backend/Frontend Services
 └── environments/
     └── dev/                   # 開発環境設定
 ```
+
+**注意**: Redis モジュールは除外。セッション管理は Vertex AI / ADK で対応。
 
 #### Cloud Run 設定
 
@@ -265,15 +268,16 @@ infrastructure/terraform/
 #### インフラデプロイ手順
 
 ```bash
-# 1. GCPプロジェクト作成後、terraform.tfvarsを更新
-cd infrastructure/terraform/environments/dev
+# 1. GCPプロジェクト作成後、bootstrap/terraform.tfvarsを更新
+cd infrastructure/terraform/bootstrap
 # project_id を実際のプロジェクトIDに変更
 
-# 2. State Bucket作成
-gsutil mb -l asia-northeast1 gs://homework-coach-terraform-state
-gsutil versioning set on gs://homework-coach-terraform-state
+# 2. Bootstrap実行（State Bucket + API有効化）
+terraform init
+terraform apply
 
-# 3. インフラデプロイ
+# 3. メインインフラデプロイ
+cd ../environments/dev
 terraform init
 terraform plan
 terraform apply
@@ -290,11 +294,10 @@ terraform apply
 3. ~~**コア機能の実装**: ソクラテス式対話エンジン基盤、API統合、3段階ヒントシステム~~ ✅ 完了
 4. ~~**LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用~~ ✅ 完了
 5. ~~**インフラストラクチャ（IaC）**: Terraform、Cloud Build、Docker~~ ✅ 完了
-6. **永続化・ADK統合** ← 現在地
+6. **永続化・ADK統合**
    - `FirestoreSessionService` の実装（ADK `SessionService` 準拠）
    - ADK `MemoryBank` との学習プロファイル連携
-   - Redis はキャッシュ専用（TTS音声、レート制限）
-7. **インフラデプロイ**: GCPプロジェクト作成、terraform apply
+7. **インフラデプロイ**: GCPプロジェクト作成、terraform apply ← 現在地
 8. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針

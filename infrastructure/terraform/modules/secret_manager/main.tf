@@ -2,20 +2,7 @@
 # Creates secret placeholders for application secrets.
 # Secret values should be set manually or via CI/CD after infrastructure provisioning.
 
-# Redis URL secret
-resource "google_secret_manager_secret" "redis_url" {
-  secret_id = "${var.name_prefix}-redis-url"
-  project   = var.project_id
-
-  labels = {
-    environment = var.environment
-    managed_by  = "terraform"
-  }
-
-  replication {
-    auto {}
-  }
-}
+# NOTE: Redis URL secret removed - session management handled by Vertex AI / ADK
 
 # Firebase/Firestore configuration (if needed)
 resource "google_secret_manager_secret" "firebase_config" {
@@ -64,13 +51,6 @@ resource "google_secret_manager_secret" "jwt_secret" {
 }
 
 # IAM binding for backend service account to access secrets
-resource "google_secret_manager_secret_iam_member" "backend_redis_url" {
-  secret_id = google_secret_manager_secret.redis_url.secret_id
-  project   = var.project_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${var.backend_service_account_email}"
-}
-
 resource "google_secret_manager_secret_iam_member" "backend_firebase_config" {
   secret_id = google_secret_manager_secret.firebase_config.secret_id
   project   = var.project_id

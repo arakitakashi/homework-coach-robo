@@ -39,17 +39,7 @@ output "bigquery_dataset_id" {
   value       = module.bigquery.dataset_id
 }
 
-# Redis
-output "redis_host" {
-  description = "The Redis instance host"
-  value       = module.redis.host
-  sensitive   = true
-}
-
-output "redis_port" {
-  description = "The Redis instance port"
-  value       = module.redis.port
-}
+# NOTE: Redis removed - session management handled by Vertex AI / ADK
 
 # Cloud Storage
 output "assets_bucket_name" {

@@ -41,7 +41,6 @@ resource "google_project_service" "required_apis" {
     "artifactregistry.googleapis.com",
     "firestore.googleapis.com",
     "bigquery.googleapis.com",
-    "redis.googleapis.com",
     "secretmanager.googleapis.com",
     "servicenetworking.googleapis.com",
     "vpcaccess.googleapis.com",
@@ -114,21 +113,8 @@ module "bigquery" {
   depends_on = [module.iam]
 }
 
-# Redis Module
-module "redis" {
-  source = "../../modules/redis"
-
-  project_id             = var.project_id
-  region                 = var.region
-  name_prefix            = var.name_prefix
-  environment            = var.environment
-  tier                   = var.redis_tier
-  memory_size_gb         = var.redis_memory_gb
-  network_id             = module.vpc.network_id
-  private_vpc_connection = module.vpc.private_vpc_connection
-
-  depends_on = [module.vpc]
-}
+# NOTE: Redis module removed - session management handled by Vertex AI / ADK
+# Redis can be added later if needed for TTS caching or rate limiting
 
 # Cloud Storage Module
 module "cloud_storage" {
@@ -163,10 +149,6 @@ module "cloud_run" {
 
   # Pass secret references to backend
   backend_secrets = {
-    REDIS_URL = {
-      secret_id = module.secret_manager.redis_url_secret_id
-      version   = "latest"
-    }
     JWT_SECRET = {
       secret_id = module.secret_manager.jwt_secret_id
       version   = "latest"
