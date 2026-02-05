@@ -125,7 +125,6 @@ google-cloud-vision>=3.5.0
 firebase-admin>=6.0.0
 python-dotenv>=1.0.0
 pydantic>=2.0.0
-redis>=5.0.0
 ```
 
 #### WebSocket実装
@@ -319,29 +318,6 @@ CLUSTER BY user_id, problem_id;
 - 習熟度レポート生成
 - つまずきポイント分析
 
-#### Cloud Memorystore for Redis
-
-```python
-# キャッシュ戦略
-{
-  "tts_cache": {
-    "key": "tts:ja-JP:phrase_hash",
-    "ttl": 86400,  # 24時間
-    "max_size": "1GB"
-  },
-  "session_state": {
-    "key": "session:session_id",
-    "ttl": 3600,  # 1時間
-    "data": "対話状態の一時キャッシュ"
-  },
-  "user_profile": {
-    "key": "user:user_id:profile",
-    "ttl": 1800,  # 30分
-    "data": "ユーザー設定の高速アクセス"
-  }
-}
-```
-
 ### 1.5 認証・セキュリティ
 
 #### Firebase Authentication
@@ -366,7 +342,6 @@ CLUSTER BY user_id, problem_id;
 GEMINI_API_KEY=secret:gemini-api-key
 FIREBASE_SERVICE_ACCOUNT=secret:firebase-service-account
 DATABASE_URL=secret:database-url
-REDIS_URL=secret:redis-url
 ```
 
 ### 1.6 インフラストラクチャ
@@ -824,9 +799,6 @@ async def delete_user_data(user_id: str):
         SET user_id = 'DELETED', anonymized = TRUE
         WHERE user_id = '{user_id}'
     """)
-
-    # Redisキャッシュ削除
-    await redis.delete(f"user:{user_id}:*")
 ```
 
 ### 3.5 音声処理制約
@@ -958,7 +930,7 @@ class LLMOptimizer:
 ```python
 class TTSOptimizer:
     def pre_generate_common_phrases(self):
-        """よく使うフレーズを事前生成してRedisにキャッシュ"""
+        """よく使うフレーズを事前生成してキャッシュ"""
         common_phrases = [
             'すごいね！',
             'いい感じだよ',
@@ -1001,7 +973,6 @@ class ImageOptimizer {
 |--------------|-----------|
 | **フロントエンド** | 512 Mi |
 | **バックエンド** | 1 Gi |
-| **Redis** | 1 Gi |
 
 #### CPU使用率
 
@@ -1073,7 +1044,6 @@ target_concurrency: 80  # 1インスタンスあたり80並行リクエスト
 
 - **Firestore**: 自動スケール（最大10,000 writes/秒）
 - **BigQuery**: ペタバイト級スケール対応
-- **Redis**: 垂直スケール（メモリ増加）
 
 ---
 
@@ -1092,8 +1062,7 @@ target_concurrency: 80  # 1インスタンスあたり80並行リクエスト
 | **Gemini API** | 10K requests | $20 |
 | **Cloud Speech-to-Text** | 100時間 | $14 |
 | **Cloud Text-to-Speech** | 100時間 | $40 |
-| **Redis (Memorystore)** | 1GB | $40 |
-| **合計** | - | **$136.10** |
+| **合計** | - | **$96.10** |
 
 ### 7.2 コスト最適化戦略
 
