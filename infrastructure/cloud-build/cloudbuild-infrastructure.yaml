@@ -1,0 +1,88 @@
+# Cloud Build - Infrastructure
+# Runs Terraform to apply infrastructure changes
+
+steps:
+  # Step 1: Install Terraform
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'install-terraform'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        apt-get update && apt-get install -y wget unzip
+        wget https://releases.hashicorp.com/terraform/${_TERRAFORM_VERSION}/terraform_${_TERRAFORM_VERSION}_linux_amd64.zip
+        unzip terraform_${_TERRAFORM_VERSION}_linux_amd64.zip
+        mv terraform /usr/local/bin/
+        terraform version
+    waitFor: ['-']
+
+  # Step 2: Terraform Init
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'terraform-init'
+    entrypoint: 'bash'
+    dir: 'infrastructure/terraform/environments/${_ENVIRONMENT}'
+    args:
+      - '-c'
+      - |
+        /usr/local/bin/terraform init -backend-config="bucket=${_STATE_BUCKET}"
+    waitFor: ['install-terraform']
+
+  # Step 3: Terraform Validate
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'terraform-validate'
+    entrypoint: 'bash'
+    dir: 'infrastructure/terraform/environments/${_ENVIRONMENT}'
+    args:
+      - '-c'
+      - |
+        /usr/local/bin/terraform validate
+    waitFor: ['terraform-init']
+
+  # Step 4: Terraform Plan
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'terraform-plan'
+    entrypoint: 'bash'
+    dir: 'infrastructure/terraform/environments/${_ENVIRONMENT}'
+    args:
+      - '-c'
+      - |
+        /usr/local/bin/terraform plan \
+          -var="project_id=${PROJECT_ID}" \
+          -out=tfplan
+    waitFor: ['terraform-validate']
+
+  # Step 5: Terraform Apply (only if AUTO_APPLY is true)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'terraform-apply'
+    entrypoint: 'bash'
+    dir: 'infrastructure/terraform/environments/${_ENVIRONMENT}'
+    args:
+      - '-c'
+      - |
+        if [ "${_AUTO_APPLY}" = "true" ]; then
+          /usr/local/bin/terraform apply -auto-approve tfplan
+        else
+          echo "Auto-apply is disabled. Review the plan and run manually."
+        fi
+    waitFor: ['terraform-plan']
+
+# Substitutions
+substitutions:
+  _ENVIRONMENT: 'dev'
+  _TERRAFORM_VERSION: '1.6.0'
+  _STATE_BUCKET: 'homework-coach-terraform-state'
+  _AUTO_APPLY: 'false'  # Set to 'true' to auto-apply changes
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_MEDIUM'
+
+# Build timeout
+timeout: '1800s'  # 30 minutes
+
+# Tags for build identification
+tags:
+  - 'infrastructure'
+  - 'terraform'
+  - 'homework-coach'
