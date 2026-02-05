@@ -163,6 +163,7 @@ homework-coach-robo/
 - **ソクラテス式対話エンジン（基盤）**: データモデル、対話マネージャ実装完了
 - **FirestoreSessionService**: ADK BaseSessionService準拠のセッション永続化実装完了
 - **FirestoreMemoryService**: ADK BaseMemoryService準拠のメモリ永続化実装完了
+- **インフラストラクチャ（IaC）**: Terraformモジュール、Cloud Build、Docker設定完了
 
 ### 技術検証（PoC）の成果
 
@@ -273,6 +274,61 @@ cd backend && uv run uvicorn app.main:app --reload
 ```
 
 詳細は `.steering/20260205-adk-memory-bank-integration/COMPLETED.md` を参照。
+=======
+### インフラストラクチャ（IaC）
+
+`infrastructure/` ディレクトリにGCPインフラのIaC実装があります。
+
+#### Terraform モジュール構成
+
+```
+infrastructure/terraform/
+├── shared/                    # Provider設定
+├── modules/
+│   ├── vpc/                   # VPC + VPC Connector
+│   ├── iam/                   # Service Accounts + Roles
+│   ├── secret_manager/        # Secret定義
+│   ├── firestore/             # Database + Indexes
+│   ├── bigquery/              # Dataset + Tables
+│   ├── redis/                 # Memorystore
+│   ├── cloud_storage/         # Assets Bucket + CDN
+│   └── cloud_run/             # Backend/Frontend Services
+└── environments/
+    └── dev/                   # 開発環境設定
+```
+
+#### Cloud Run 設定
+
+| Service | CPU | Memory | Min | Max | Timeout |
+|---------|-----|--------|-----|-----|---------|
+| Frontend | 1 | 512Mi | 0 (dev) / 1 (prod) | 10 | 60s |
+| Backend | 2 | 1Gi | 0 (dev) / 1 (prod) | 20 | 300s |
+
+#### Docker & CI/CD
+
+- `infrastructure/docker/backend/Dockerfile` - FastAPI + uv
+- `infrastructure/docker/frontend/Dockerfile` - Next.js + Bun
+- `infrastructure/cloud-build/` - Cloud Build パイプライン
+
+#### インフラデプロイ手順
+
+```bash
+# 1. GCPプロジェクト作成後、terraform.tfvarsを更新
+cd infrastructure/terraform/environments/dev
+# project_id を実際のプロジェクトIDに変更
+
+# 2. State Bucket作成
+gsutil mb -l asia-northeast1 gs://homework-coach-terraform-state
+gsutil versioning set on gs://homework-coach-terraform-state
+
+# 3. インフラデプロイ
+terraform init
+terraform plan
+terraform apply
+
+# 4. Secret値を手動設定（Secret Manager）
+```
+詳細は `.steering/20260205-infrastructure-implementation/COMPLETED.md` を参照。
 
 ### 次のステップ
 
