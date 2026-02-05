@@ -1,6 +1,9 @@
 """対話APIエンドポイント"""
 
-from fastapi import APIRouter, HTTPException, status
+import logging
+import os
+
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.schemas.dialogue import (
     AnalyzeRequest,
@@ -14,15 +17,17 @@ from app.schemas.dialogue import (
     QuestionResponse,
     SessionResponse,
 )
-from app.services.adk.dialogue.manager import SocraticDialogueManager
+from app.services.adk.dialogue.gemini_client import GeminiClient
+from app.services.adk.dialogue.manager import LLMClient, SocraticDialogueManager
 from app.services.adk.dialogue.models import DialogueTone, QuestionType
 from app.services.adk.dialogue.session_store import SessionStore
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/dialogue", tags=["dialogue"])
 
-# シングルトンのセッションストアとマネージャ（MVPフェーズ）
+# シングルトンのセッションストア（MVPフェーズ）
 _session_store = SessionStore()
-_dialogue_manager = SocraticDialogueManager()
 
 # ヒントレベル名のマッピング
 _HINT_LEVEL_NAMES = {
@@ -37,9 +42,23 @@ def get_session_store() -> SessionStore:
     return _session_store
 
 
-def get_dialogue_manager() -> SocraticDialogueManager:
-    """対話マネージャを取得する"""
-    return _dialogue_manager
+def get_llm_client() -> LLMClient | None:
+    """LLMクライアントを取得する（依存性注入用）
+
+    環境変数からプロジェクトIDを取得し、Vertex AI経由でGeminiClientを生成します。
+    プロジェクトIDが設定されていない場合はNoneを返します（フォールバック動作）。
+    """
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    if project:
+        return GeminiClient(project=project)
+    return None
+
+
+def get_dialogue_manager(
+    llm_client: LLMClient | None = Depends(get_llm_client),
+) -> SocraticDialogueManager:
+    """対話マネージャを取得する（依存性注入用）"""
+    return SocraticDialogueManager(llm_client=llm_client)
 
 
 @router.post(
@@ -127,10 +146,15 @@ async def delete_session(session_id: str) -> None:
     response_model=AnalyzeResponse,
     summary="子供の回答を分析する",
 )
-async def analyze_response(session_id: str, request: AnalyzeRequest) -> AnalyzeResponse:
+async def analyze_response(
+    session_id: str,
+    request: AnalyzeRequest,
+    manager: SocraticDialogueManager = Depends(get_dialogue_manager),
+) -> AnalyzeResponse:
     """子供の回答を分析し、次のアクションを推奨する"""
+    import json
+
     store = get_session_store()
-    manager = get_dialogue_manager()
     context = store.get_session(session_id)
 
     if context is None:
@@ -142,11 +166,23 @@ async def analyze_response(session_id: str, request: AnalyzeRequest) -> AnalyzeR
     # 答えリクエストを検出（キーワードベースのみ、LLMなし）
     answer_request = manager._detect_answer_request_keywords(request.child_response)
 
-    # MVPフェーズ: シンプルなルールベースの分析
-    # LLM統合は後続フェーズで実装
-    understanding_level = 5  # デフォルト中間値
+    # デフォルト値（フォールバック用）
+    understanding_level = 5
     is_correct_direction = True
     needs_clarification = False
+    key_insights: list[str] = []
+
+    # LLMクライアントがある場合はLLMで分析
+    if manager._llm_client is not None:
+        try:
+            analysis = await manager.analyze_response(request.child_response, context)
+            understanding_level = analysis.understanding_level
+            is_correct_direction = analysis.is_correct_direction
+            needs_clarification = analysis.needs_clarification
+            key_insights = analysis.key_insights
+        except (ValueError, json.JSONDecodeError, RuntimeError) as e:
+            # LLMエラー時はフォールバック
+            logger.warning(f"LLM analysis failed, using fallback: {e}")
 
     # 質問タイプとトーンを決定
     recommended_question_type = QuestionType.UNDERSTANDING_CHECK.value
@@ -159,7 +195,7 @@ async def analyze_response(session_id: str, request: AnalyzeRequest) -> AnalyzeR
         understanding_level=understanding_level,
         is_correct_direction=is_correct_direction,
         needs_clarification=needs_clarification,
-        key_insights=[],
+        key_insights=key_insights,
         recommended_question_type=recommended_question_type,
         recommended_tone=recommended_tone,
         should_advance_hint_level=should_advance,
@@ -173,7 +209,11 @@ async def analyze_response(session_id: str, request: AnalyzeRequest) -> AnalyzeR
     response_model=QuestionResponse,
     summary="質問を生成する",
 )
-async def generate_question(session_id: str, request: GenerateQuestionRequest) -> QuestionResponse:
+async def generate_question(
+    session_id: str,
+    request: GenerateQuestionRequest,
+    manager: SocraticDialogueManager = Depends(get_dialogue_manager),
+) -> QuestionResponse:
     """次の質問を生成する"""
     store = get_session_store()
     context = store.get_session(session_id)
@@ -185,23 +225,32 @@ async def generate_question(session_id: str, request: GenerateQuestionRequest) -
         )
 
     # 質問タイプとトーンを決定（指定されていない場合はデフォルト）
-    question_type = request.question_type or QuestionType.UNDERSTANDING_CHECK.value
-    tone = request.tone or DialogueTone.ENCOURAGING.value
+    question_type_str = request.question_type or QuestionType.UNDERSTANDING_CHECK.value
+    tone_str = request.tone or DialogueTone.ENCOURAGING.value
 
-    # MVPフェーズ: テンプレートベースの質問生成
-    # LLM統合は後続フェーズで実装
+    # テンプレート（フォールバック用）
     question_templates = {
         QuestionType.UNDERSTANDING_CHECK.value: "この問題は何を聞いていると思う？",
         QuestionType.THINKING_GUIDE.value: "もし○○だったらどうなるかな？",
         QuestionType.HINT.value: "前に似たような問題をやったよね？",
     }
 
-    question = question_templates.get(question_type, "この問題について考えてみよう")
+    # LLMクライアントがある場合はLLMで生成
+    question = question_templates.get(question_type_str, "この問題について考えてみよう")
+
+    if manager._llm_client is not None:
+        try:
+            question_type = QuestionType(question_type_str)
+            tone = DialogueTone(tone_str)
+            question = await manager.generate_question(context, question_type, tone)
+        except (ValueError, RuntimeError) as e:
+            # LLMエラー時はフォールバック
+            logger.warning(f"LLM question generation failed, using fallback: {e}")
 
     return QuestionResponse(
         question=question,
-        question_type=question_type,
-        tone=tone,
+        question_type=question_type_str,
+        tone=tone_str,
     )
 
 
@@ -210,7 +259,11 @@ async def generate_question(session_id: str, request: GenerateQuestionRequest) -
     response_model=HintResponse,
     summary="ヒントを生成する",
 )
-async def generate_hint(session_id: str, request: GenerateHintRequest) -> HintResponse:
+async def generate_hint(
+    session_id: str,
+    request: GenerateHintRequest,
+    manager: SocraticDialogueManager = Depends(get_dialogue_manager),
+) -> HintResponse:
     """ヒントを生成する"""
     store = get_session_store()
     context = store.get_session(session_id)
@@ -224,7 +277,7 @@ async def generate_hint(session_id: str, request: GenerateHintRequest) -> HintRe
     # ヒントレベルを決定
     hint_level = request.force_level or context.current_hint_level
 
-    # MVPフェーズ: テンプレートベースのヒント生成
+    # テンプレート（フォールバック用）
     hint_templates = {
         1: "この問題は何を聞いていると思う？",
         2: "前に似たような問題をやったよね？思い出してみよう。",
@@ -232,13 +285,29 @@ async def generate_hint(session_id: str, request: GenerateHintRequest) -> HintRe
     }
 
     hint = hint_templates.get(hint_level, "一緒に考えてみよう")
+    is_answer_request_response = False
+
+    # LLMクライアントがある場合はLLMで生成
+    if manager._llm_client is not None:
+        try:
+            # ヒントレベルをコンテキストに反映
+            context.current_hint_level = hint_level
+            hint = await manager.generate_hint_response(
+                context,
+                is_answer_request=request.is_answer_request,
+            )
+            is_answer_request_response = request.is_answer_request
+        except (ValueError, RuntimeError) as e:
+            # LLMエラー時はフォールバック
+            logger.warning(f"LLM hint generation failed, using fallback: {e}")
+
     hint_level_name = _HINT_LEVEL_NAMES.get(hint_level, "不明")
 
     return HintResponse(
         hint=hint,
         hint_level=hint_level,
         hint_level_name=hint_level_name,
-        is_answer_request_response=False,
+        is_answer_request_response=is_answer_request_response,
     )
 
 
@@ -249,12 +318,11 @@ async def generate_hint(session_id: str, request: GenerateHintRequest) -> HintRe
 )
 async def analyze_answer_request(
     request: AnswerRequestAnalysisRequest,
+    manager: SocraticDialogueManager = Depends(get_dialogue_manager),
 ) -> AnswerRequestAnalysisResponse:
     """子供の発言から答えリクエストを検出する（セッション不要）"""
-    manager = get_dialogue_manager()
-
-    # キーワードベースの検出
-    analysis = manager._detect_answer_request_keywords(request.child_response)
+    # キーワードベースの検出（LLMクライアントがあればLLM補助も使用）
+    analysis = await manager.detect_answer_request(request.child_response)
 
     return AnswerRequestAnalysisResponse(
         request_type=analysis.request_type.value,

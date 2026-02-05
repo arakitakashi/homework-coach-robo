@@ -187,6 +187,8 @@ homework-coach-robo/
 | `models.py` | データモデル（DialogueContext, DialogueTurn, ResponseAnalysis など） |
 | `learning_profile.py` | 学習プロファイル（ChildLearningProfile, LearningMemory など） |
 | `manager.py` | SocraticDialogueManager（プロンプト構築、回答分析、質問生成） |
+| `gemini_client.py` | GeminiClient（Google Gemini API統合、LLMClientプロトコル準拠） |
+| `session_store.py` | SessionStore（インメモリセッション管理） |
 
 **主要機能:**
 - `build_question_prompt()`: 質問タイプ・トーンに応じたプロンプト生成
@@ -194,9 +196,36 @@ homework-coach-robo/
 - `determine_question_type()`: 理解度に基づく次の質問タイプ決定
 - `determine_tone()`: 状況に応じた対話トーン決定
 - `generate_question()`: LLMで質問を生成
+- `generate_hint_response()`: ヒントレベルに応じたレスポンス生成
 - `should_move_to_next_phase()`: 次のヒントレベルへの遷移判定
 
-**テストカバレッジ**: 98%（70テスト）
+**LLM統合:**
+- `GeminiClient`: Vertex AI 経由で Gemini API (`gemini-2.5-flash`) を使用
+- 開発/本番ともに Vertex AI を使用（Application Default Credentials）
+- プロジェクトID未設定時はテンプレートベースのフォールバック応答
+
+**環境変数:**
+| 変数名 | 必須 | 説明 |
+|--------|------|------|
+| `GOOGLE_CLOUD_PROJECT` | ✅ | GCPプロジェクトID |
+| `GOOGLE_CLOUD_LOCATION` | ❌ | リージョン（デフォルト: us-central1） |
+
+**ローカル開発セットアップ:**
+```bash
+# 1. gcloud CLI をインストール（未インストールの場合）
+# https://cloud.google.com/sdk/docs/install
+
+# 2. 認証情報を設定
+gcloud auth application-default login
+
+# 3. プロジェクトIDを設定
+export GOOGLE_CLOUD_PROJECT=your-project-id
+
+# 4. バックエンドを起動
+cd backend && uv run uvicorn app.main:app --reload
+```
+
+**テストカバレッジ**: 98%（202テスト）
 
 ### インフラストラクチャ（IaC）
 
@@ -259,10 +288,13 @@ terraform apply
 1. ~~リポジトリセットアップ~~ ✅ 完了
 2. ~~技術検証（PoC）~~ ✅ 完了
 3. ~~**コア機能の実装**: ソクラテス式対話エンジン基盤、API統合、3段階ヒントシステム~~ ✅ 完了
-4. ~~**インフラストラクチャ（IaC）**: Terraform、Cloud Build、Docker~~ ✅ 完了
-5. **インフラデプロイ**: GCPプロジェクト作成、terraform apply ← 現在地
-6. **LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用
-7. **永続化**: SessionStoreをFirestoreに置き換え（ADK SessionService準拠）
+4. ~~**LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用~~ ✅ 完了
+5. ~~**インフラストラクチャ（IaC）**: Terraform、Cloud Build、Docker~~ ✅ 完了
+6. **永続化・ADK統合** ← 現在地
+   - `FirestoreSessionService` の実装（ADK `SessionService` 準拠）
+   - ADK `MemoryBank` との学習プロファイル連携
+   - Redis はキャッシュ専用（TTS音声、レート制限）
+7. **インフラデプロイ**: GCPプロジェクト作成、terraform apply
 8. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
