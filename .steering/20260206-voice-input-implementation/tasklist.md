@@ -43,5 +43,5 @@ Note: AudioWorkletはWorkerコンテキストで実行されるため、ユニ�
 
 - [x] COMPLETED.md 作成
 - [x] CLAUDE.md 更新
-- [ ] コミット作成
+- [x] コミット作成
 - [ ] PR作成
