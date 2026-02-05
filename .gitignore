@@ -65,3 +65,10 @@ htmlcov/
 *.p12
 *-service-account.json
 firebase-adminsdk-*.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
