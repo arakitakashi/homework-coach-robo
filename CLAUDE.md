@@ -162,6 +162,7 @@ homework-coach-robo/
 - **技術検証（PoC）**: Google ADK + Gemini Live APIの動作確認完了
 - **ソクラテス式対話エンジン（基盤）**: データモデル、対話マネージャ実装完了
 - **FirestoreSessionService**: ADK BaseSessionService準拠のセッション永続化実装完了
+- **FirestoreMemoryService**: ADK BaseMemoryService準拠のメモリ永続化実装完了
 - **インフラストラクチャ（IaC）**: Terraformモジュール、Cloud Build、Docker設定完了
 
 ### 技術検証（PoC）の成果
@@ -226,7 +227,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 97%（238テスト）
+**テストカバレッジ**: 97%（267テスト）
 
 ### Firestore Session Persistence
 
@@ -254,6 +255,26 @@ cd backend && uv run uvicorn app.main:app --reload
 
 詳細は `.steering/20260205-firestore-session-persistence/COMPLETED.md` を参照。
 
+### Firestore Memory Service
+
+`backend/app/services/adk/memory/` に ADK 準拠のメモリ永続化サービスを実装しました。
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `converters.py` | ADK Event ↔ Firestore dict 変換関数 |
+| `firestore_memory_service.py` | FirestoreMemoryService（ADK BaseMemoryService準拠） |
+
+**主要機能:**
+- `add_session_to_memory()`: セッションのイベントを記憶に追加
+- `search_memory()`: キーワードベースの記憶検索
+
+**Firestoreコレクション構造:**
+```
+/memories/{app_name}/users/{user_id}/entries/{entry_id}
+```
+
+詳細は `.steering/20260205-adk-memory-bank-integration/COMPLETED.md` を参照。
+=======
 ### インフラストラクチャ（IaC）
 
 `infrastructure/` ディレクトリにGCPインフラのIaC実装があります。
@@ -307,7 +328,6 @@ terraform apply
 
 # 4. Secret値を手動設定（Secret Manager）
 ```
-
 詳細は `.steering/20260205-infrastructure-implementation/COMPLETED.md` を参照。
 
 ### 次のステップ
@@ -317,10 +337,12 @@ terraform apply
 3. ~~**コア機能の実装**: ソクラテス式対話エンジン基盤、API統合、3段階ヒントシステム~~ ✅ 完了
 4. ~~**LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用~~ ✅ 完了
 5. ~~**FirestoreSessionService**: ADK SessionService準拠の永続化~~ ✅ 完了
-6. **ADK MemoryBank統合** ← 現在地
-   - ADK `MemoryBank` との学習プロファイル連携
+6. ~~**FirestoreMemoryService**: ADK MemoryService準拠の永続化~~ ✅ 完了
+7. **ADK Runner統合** ← 現在地
+   - SessionService + MemoryService を ADK Runner に統合
+   - 学習プロファイルとの連携
    - Redis はキャッシュ専用（TTS音声、レート制限）
-7. **パイロットテスト**: 小規模グループでのβテスト
+8. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 
