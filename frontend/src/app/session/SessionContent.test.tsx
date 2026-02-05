@@ -30,6 +30,21 @@ let mockCreateSessionError: Error | null = null
 let mockDialogueText = ""
 let mockDialogueError: string | null = null
 
+// useVoiceStreamをモック
+vi.mock("@/lib/hooks/useVoiceStream", () => ({
+	useVoiceStream: () => ({
+		connectionState: "disconnected",
+		isRecording: false,
+		error: null,
+		connect: vi.fn(),
+		disconnect: vi.fn(),
+		startRecording: vi.fn(),
+		stopRecording: vi.fn(),
+		sendText: vi.fn(),
+		clearError: vi.fn(),
+	}),
+}))
+
 // SessionClientをモック
 vi.mock("@/lib/api", () => {
 	class MockSessionClient {

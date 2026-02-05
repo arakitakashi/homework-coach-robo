@@ -2,7 +2,7 @@
 
 import { useAtom } from "jotai"
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
 	CharacterDisplay,
 	DialogueHistory,
@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/Card"
 import { ErrorMessage } from "@/components/ui/ErrorMessage"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { TextInput } from "@/components/ui/TextInput"
-import { useDialogue, useSession } from "@/lib/hooks"
+import { useDialogue, useSession, useVoiceStream } from "@/lib/hooks"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
 import { learningProgressAtom } from "@/store/atoms/session"
 import type { CharacterType, DialogueTurn } from "@/types"
@@ -38,6 +38,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [characterState] = useAtom(characterStateAtom)
 	const [learningProgress] = useAtom(learningProgressAtom)
 
+	// 音声入力の有効化状態（MVP期間は無効）
+	const [isVoiceEnabled] = useState(false)
+
 	// セッション管理フック
 	const {
 		session,
@@ -55,6 +58,14 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		error: dialogueError,
 		clearError: clearDialogueError,
 	} = useDialogue()
+
+	// 音声ストリーミングフック
+	const {
+		connectionState: voiceConnectionState,
+		isRecording,
+		startRecording,
+		stopRecording,
+	} = useVoiceStream()
 
 	// 初期化時にセッションを作成
 	useEffect(() => {
@@ -82,10 +93,13 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		[sendMessage],
 	)
 
-	const handleAudioData = useCallback((_data: ArrayBuffer) => {
-		// 音声データを受け取ったときの処理（将来実装）
-		// 現在はテキスト入力で代替
-	}, [])
+	const handleToggleRecording = useCallback(async () => {
+		if (isRecording) {
+			stopRecording()
+		} else {
+			await startRecording()
+		}
+	}, [isRecording, startRecording, stopRecording])
 
 	const handleRetry = useCallback(() => {
 		clearSessionError()
@@ -121,6 +135,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 
 	// セッションが存在する場合のメインUI
 	const isConnected = !!session
+	const isVoiceConnected = isVoiceEnabled && voiceConnectionState === "connected"
 
 	return (
 		<main className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-purple-50">
@@ -175,7 +190,13 @@ export function SessionContent({ characterType }: SessionContentProps) {
 					<p className="mb-2 text-center text-sm text-gray-500">
 						（おんせいにゅうりょくはじゅんびちゅう）
 					</p>
-					<VoiceInterface onAudioData={handleAudioData} isConnected={isConnected} />
+					<VoiceInterface
+						isRecording={isRecording}
+						audioLevel={0}
+						isConnected={isVoiceConnected}
+						isPlaying={false}
+						onToggleRecording={handleToggleRecording}
+					/>
 				</div>
 			</div>
 		</main>

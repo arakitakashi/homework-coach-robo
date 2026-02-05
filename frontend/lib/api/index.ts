@@ -5,6 +5,8 @@ export { DialogueClient } from "./dialogueClient"
 export type { SessionClientOptions } from "./sessionClient"
 export { SessionClient } from "./sessionClient"
 export type {
+	ADKContentPart,
+	ADKEvent,
 	CreateSessionRequest,
 	DoneEvent,
 	ErrorEvent,
@@ -12,4 +14,9 @@ export type {
 	SessionApiResponse,
 	SSEEventType,
 	TextEvent,
+	TranscriptionEvent,
+	VoiceConnectionState,
+	VoiceTextMessage,
+	VoiceWebSocketOptions,
 } from "./types"
+export { VoiceWebSocketClient } from "./voiceWebSocket"

@@ -1,29 +1,25 @@
 "use client"
 
-import { useCallback } from "react"
-import { useAudioPlayer, useVoiceRecorder } from "@/lib/hooks"
-
 interface VoiceInterfaceProps {
-	onAudioData: (data: ArrayBuffer) => void
+	/** 録音中フラグ */
+	isRecording: boolean
+	/** オーディオレベル（0-1） */
+	audioLevel: number
+	/** 接続状態 */
 	isConnected: boolean
+	/** 再生中フラグ */
+	isPlaying: boolean
+	/** 録音トグルコールバック */
+	onToggleRecording: () => void
 }
 
-export function VoiceInterface({ onAudioData, isConnected }: VoiceInterfaceProps) {
-	const { recordingState, audioLevel, startRecording, stopRecording } = useVoiceRecorder({
-		onAudioData,
-	})
-	const { isPlaying } = useAudioPlayer()
-
-	const isRecording = recordingState === "recording"
-
-	const handleToggleRecording = useCallback(async () => {
-		if (isRecording) {
-			stopRecording()
-		} else {
-			await startRecording()
-		}
-	}, [isRecording, startRecording, stopRecording])
-
+export function VoiceInterface({
+	isRecording,
+	audioLevel,
+	isConnected,
+	isPlaying,
+	onToggleRecording,
+}: VoiceInterfaceProps) {
 	const getStatusText = () => {
 		if (!isConnected) return "接続中..."
 		if (isPlaying) return "聞いているよ"
@@ -39,7 +35,14 @@ export function VoiceInterface({ onAudioData, isConnected }: VoiceInterfaceProps
 	return (
 		<div className="flex flex-col items-center gap-4">
 			{/* Audio Level Visualizer */}
-			<div className="relative h-2 w-48 overflow-hidden rounded-full bg-gray-200">
+			<div
+				className="relative h-2 w-48 overflow-hidden rounded-full bg-gray-200"
+				role="progressbar"
+				aria-valuenow={Math.round(audioLevel * 100)}
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-label="音声レベル"
+			>
 				<div
 					className="absolute left-0 top-0 h-full bg-blue-500 transition-all duration-100"
 					style={{ width: `${audioLevel * 100}%` }}
@@ -52,7 +55,7 @@ export function VoiceInterface({ onAudioData, isConnected }: VoiceInterfaceProps
 			{/* Record Button */}
 			<button
 				type="button"
-				onClick={handleToggleRecording}
+				onClick={onToggleRecording}
 				disabled={!isConnected}
 				aria-label={getButtonLabel()}
 				aria-pressed={isRecording}

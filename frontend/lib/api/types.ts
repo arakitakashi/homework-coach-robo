@@ -57,3 +57,75 @@ export interface SessionApiResponse {
 	/** 作成日時（ISO 8601形式） */
 	created_at: string
 }
+
+// ============================================
+// Voice WebSocket API 型定義
+// ============================================
+
+/** WebSocket接続状態 */
+export type VoiceConnectionState = "disconnected" | "connecting" | "connected" | "error"
+
+/** トランスクリプションイベント */
+export interface TranscriptionEvent {
+	/** トランスクリプションテキスト */
+	text: string
+	/** 完了フラグ */
+	finished: boolean
+}
+
+/** ADKイベント - サーバーからのWebSocketメッセージ */
+export interface ADKEvent {
+	/** イベント発行者 */
+	author?: string
+	/** ターン完了フラグ */
+	turnComplete?: boolean
+	/** 中断フラグ */
+	interrupted?: boolean
+	/** 入力トランスクリプション（ユーザーの音声） */
+	inputTranscription?: TranscriptionEvent
+	/** 出力トランスクリプション（AIの音声） */
+	outputTranscription?: TranscriptionEvent
+	/** コンテンツ */
+	content?: {
+		parts: ADKContentPart[]
+	}
+}
+
+/** ADKコンテンツパート */
+export interface ADKContentPart {
+	/** テキスト */
+	text?: string
+	/** インラインデータ（音声など） */
+	inlineData?: {
+		mimeType: string
+		data: string
+	}
+}
+
+/** クライアントからサーバーへのテキストメッセージ */
+export interface VoiceTextMessage {
+	type: "text"
+	text: string
+}
+
+/** VoiceWebSocketClientのオプション */
+export interface VoiceWebSocketOptions {
+	/** ベースURL（ws:// または wss://） */
+	baseUrl: string
+	/** ユーザーID */
+	userId: string
+	/** セッションID */
+	sessionId: string
+	/** 音声データ受信コールバック */
+	onAudioData: (data: ArrayBuffer) => void
+	/** トランスクリプション受信コールバック */
+	onTranscription: (text: string, isUser: boolean, finished: boolean) => void
+	/** ターン完了コールバック */
+	onTurnComplete: () => void
+	/** 中断コールバック */
+	onInterrupted: () => void
+	/** エラーコールバック */
+	onError: (error: string) => void
+	/** 接続状態変更コールバック */
+	onConnectionChange: (state: VoiceConnectionState) => void
+}
