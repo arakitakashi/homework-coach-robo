@@ -164,8 +164,9 @@ homework-coach-robo/
 - **FirestoreSessionService**: ADK BaseSessionService準拠のセッション永続化実装完了
 - **FirestoreMemoryService**: ADK BaseMemoryService準拠のメモリ永続化実装完了
 - **ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService実装完了
+- **対話API統合**: SSEストリーミングエンドポイント（`/api/v1/dialogue/run`）実装完了
+- **フロントエンドUI**: コンポーネント、状態管理、カスタムフック実装完了（70-75%）
 - **インフラストラクチャ（IaC）**: Terraformモジュール、Cloud Build、Docker設定完了
-
 ### 技術検証（PoC）の成果
 
 `poc/` ディレクトリに技術検証の実装があります。
@@ -228,7 +229,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 97%（291テスト）
+**テストカバレッジ**: 96%（309テスト）
 
 ### Firestore Session Persistence
 
@@ -357,6 +358,99 @@ AgentRunnerService
 
 詳細は `.steering/20260205-adk-runner-integration/COMPLETED.md` を参照。
 
+### Dialogue API Integration
+
+`backend/app/api/v1/dialogue_runner.py` に SSE ストリーミングエンドポイントを実装しました。
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `schemas/dialogue_runner.py` | SSEイベントスキーマ（Request, Text, Error, Done） |
+| `api/v1/dialogue_runner.py` | ストリーミングエンドポイント（FastAPI Depends + SSE） |
+
+**APIエンドポイント:**
+```
+POST /api/v1/dialogue/run
+Content-Type: application/json
+Accept: text/event-stream
+
+Request:
+{
+  "user_id": "string",
+  "session_id": "string",
+  "message": "string"
+}
+
+Response (SSE):
+event: text
+data: {"text": "..."}
+
+event: done
+data: {"session_id": "..."}
+
+event: error
+data: {"error": "...", "code": "INTERNAL_ERROR"}
+```
+
+詳細は `.steering/20260205-dialogue-api-integration/COMPLETED.md` を参照。
+
+### Frontend Implementation（進行中）
+
+`frontend/` に Next.js 16 ベースのフロントエンドを実装中です。
+
+**進捗: 約70-75% 完了**
+
+#### 完了済みコンポーネント
+
+| カテゴリ | コンポーネント | 説明 |
+|---------|--------------|------|
+| **ページ** | `src/app/page.tsx` | ホーム（キャラクター選択UI） |
+| | `src/app/session/page.tsx` | セッションページ（対話インターフェース） |
+| **UI** | `CharacterDisplay` | ロボットキャラクター（状態別アニメーション） |
+| | `VoiceInterface` | 録音ボタン＋音量レベル表示 |
+| | `DialogueHistory` | 対話履歴（吹き出し形式） |
+| | `ProgressDisplay` | 学習進捗（ポイント表示） |
+| | `HintIndicator` | 宝箱型ヒントレベル表示 |
+| | `Button`, `Card`, `LoadingSpinner`, `ErrorMessage` | 基本UIコンポーネント |
+| **状態管理** | `store/atoms/dialogue.ts` | 対話履歴、ヒントレベル、キャラクター状態 |
+| | `store/atoms/session.ts` | セッション、学習進捗、ポイント計算 |
+| **フック** | `useVoiceRecorder` | Web Audio API録音（PCM 16-bit変換） |
+| | `useAudioPlayer` | 音声再生（AudioContext管理） |
+| | `useWebSocket` | WebSocket通信（JSON/ArrayBuffer対応） |
+| **型定義** | `types/` | dialogue, session, audio, websocket |
+
+#### 未実装（残り25-30%）
+
+| 項目 | 状況 | 説明 |
+|------|------|------|
+| **APIクライアント** | ❌ 未実装 | `lib/api/index.ts` は空 |
+| **SSEクライアント** | ❌ 未実装 | バックエンドはSSE、フロントはWebSocketフックのみ |
+| **バックエンド接続** | ❌ 未実装 | 録音機能はあるが送信なし |
+| **追加キャラクター** | ⏸️ 低優先度 | 魔法使い、宇宙飛行士、動物（選択UIは実装済み） |
+
+#### テストカバレッジ
+
+- 14テストファイル（コンポーネント9、フック3、ページ2）
+- Vitest + Testing Library
+- 適切なモック（MediaDevices, AudioContext, WebSocket）
+
+#### 技術スタック
+
+| 技術 | バージョン |
+|------|----------|
+| Next.js | 16 (App Router) |
+| Bun | 最新 |
+| TypeScript | strict mode |
+| Tailwind CSS | v4 |
+| Jotai | 状態管理 |
+| Vitest | テスト |
+| Biome | リンター/フォーマッター |
+
+#### 次に実装すべき項目
+
+1. **SSEクライアント** - `lib/api/dialogueClient.ts`
+2. **セッションAPI** - セッション作成/管理
+3. **SessionContent統合** - SSEクライアントをページに接続
+
 ### 次のステップ
 
 1. ~~リポジトリセットアップ~~ ✅ 完了
@@ -366,11 +460,15 @@ AgentRunnerService
 5. ~~**FirestoreSessionService**: ADK SessionService準拠の永続化~~ ✅ 完了
 6. ~~**FirestoreMemoryService**: ADK MemoryService準拠の永続化~~ ✅ 完了
 7. ~~**ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService~~ ✅ 完了
-8. **API統合** ← 現在地
-   - FastAPI エンドポイント実装（`/api/v1/dialogue/run`）
-   - WebSocket/SSE によるストリーミングレスポンス
-   - Redis キャッシュ（TTS音声、レート制限）
-9. **パイロットテスト**: 小規模グループでのβテスト
+8. ~~**API統合**: SSEストリーミングエンドポイント実装~~ ✅ 完了
+9. **フロントエンド実装**（進行中 70-75%）← 現在地
+   - ~~UIコンポーネント~~ ✅ 完了
+   - ~~状態管理（Jotai）~~ ✅ 完了
+   - ~~カスタムフック~~ ✅ 完了
+   - SSEクライアント実装 ← 次のタスク
+   - バックエンド接続統合
+10. **E2Eテスト**: 実際のADK Runnerとの統合テスト
+11. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 
