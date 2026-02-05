@@ -163,6 +163,7 @@ homework-coach-robo/
 - **ソクラテス式対話エンジン（基盤）**: データモデル、対話マネージャ実装完了
 - **FirestoreSessionService**: ADK BaseSessionService準拠のセッション永続化実装完了
 - **FirestoreMemoryService**: ADK BaseMemoryService準拠のメモリ永続化実装完了
+- **ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService実装完了
 
 ### 技術検証（PoC）の成果
 
@@ -226,7 +227,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 97%（267テスト）
+**テストカバレッジ**: 97%（291テスト）
 
 ### Firestore Session Persistence
 
@@ -274,6 +275,32 @@ cd backend && uv run uvicorn app.main:app --reload
 
 詳細は `.steering/20260205-adk-memory-bank-integration/COMPLETED.md` を参照。
 
+### ADK Runner Service
+
+`backend/app/services/adk/runner/` に ADK Runner を使用したエージェント実行サービスを実装しました。
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `agent.py` | SOCRATIC_SYSTEM_PROMPT, create_socratic_agent() |
+| `runner_service.py` | AgentRunnerService（SessionService/MemoryService統合） |
+
+**主要機能:**
+- `create_socratic_agent()`: 3段階ヒントシステム原則を組み込んだADK Agent作成
+- `AgentRunnerService.run()`: 非同期イベントストリームでエージェント実行
+- `AgentRunnerService.extract_text()`: イベントからテキスト抽出
+
+**アーキテクチャ:**
+```
+AgentRunnerService
+├── Runner (ADK)
+│   ├── SocraticDialogueAgent
+│   ├── FirestoreSessionService
+│   └── FirestoreMemoryService
+└── types (google.genai)
+```
+
+詳細は `.steering/20260205-adk-runner-integration/COMPLETED.md` を参照。
+
 ### 次のステップ
 
 1. ~~リポジトリセットアップ~~ ✅ 完了
@@ -282,11 +309,12 @@ cd backend && uv run uvicorn app.main:app --reload
 4. ~~**LLM統合**: 回答分析、質問生成、ヒント生成にLLMを活用~~ ✅ 完了
 5. ~~**FirestoreSessionService**: ADK SessionService準拠の永続化~~ ✅ 完了
 6. ~~**FirestoreMemoryService**: ADK MemoryService準拠の永続化~~ ✅ 完了
-7. **ADK Runner統合** ← 現在地
-   - SessionService + MemoryService を ADK Runner に統合
-   - 学習プロファイルとの連携
-   - Redis はキャッシュ専用（TTS音声、レート制限）
-8. **パイロットテスト**: 小規模グループでのβテスト
+7. ~~**ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService~~ ✅ 完了
+8. **API統合** ← 現在地
+   - FastAPI エンドポイント実装（`/api/v1/dialogue/run`）
+   - WebSocket/SSE によるストリーミングレスポンス
+   - Redis キャッシュ（TTS音声、レート制限）
+9. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 
