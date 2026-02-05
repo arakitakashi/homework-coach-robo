@@ -72,6 +72,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Backend**: FastAPI + Python 3.10+ + uv + Ruff
 - **Infrastructure**: Google Cloud Run
 - **Database**: Cloud Firestore (リアルタイムデータ), BigQuery (分析用データ)
+- **Session Management**: Vertex AI / ADK SessionService
 - **AI/ML**: Google ADK + Gemini Live API
 - **STT**: Cloud Speech-to-Text API
 - **TTS**: Cloud Text-to-Speech API
@@ -165,6 +166,7 @@ homework-coach-robo/
 - **FirestoreMemoryService**: ADK BaseMemoryService準拠のメモリ永続化実装完了
 - **ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService実装完了
 - **対話API統合**: SSEストリーミングエンドポイント（`/api/v1/dialogue/run`）実装完了
+- **インフラストラクチャ（IaC）**: Terraformモジュール、Cloud Build、Docker設定完了
 - **フロントエンドUI**: コンポーネント、状態管理、カスタムフック実装完了（70-75%）
 
 ### 技術検証（PoC）の成果
@@ -396,6 +398,65 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 2. **セッションAPI** - セッション作成/管理
 3. **SessionContent統合** - SSEクライアントをページに接続
 
+### インフラストラクチャ（IaC）
+
+`infrastructure/` ディレクトリにGCPインフラのIaC実装があります。
+
+#### Terraform モジュール構成
+
+```
+infrastructure/terraform/
+├── bootstrap/                 # State Bucket + API有効化（ローカルstate）
+├── shared/                    # Provider設定
+├── modules/
+│   ├── vpc/                   # VPC + VPC Connector
+│   ├── iam/                   # Service Accounts + Roles
+│   ├── secret_manager/        # Secret定義
+│   ├── firestore/             # Database + Indexes
+│   ├── bigquery/              # Dataset + Tables
+│   ├── cloud_storage/         # Assets Bucket + CDN
+│   └── cloud_run/             # Backend/Frontend Services
+└── environments/
+    └── dev/                   # 開発環境設定
+```
+
+**注意**: Redis モジュールは除外。セッション管理は Vertex AI / ADK で対応。
+
+#### Cloud Run 設定
+
+| Service | CPU | Memory | Min | Max | Timeout |
+|---------|-----|--------|-----|-----|---------|
+| Frontend | 1 | 512Mi | 0 (dev) / 1 (prod) | 10 | 60s |
+| Backend | 2 | 1Gi | 0 (dev) / 1 (prod) | 20 | 300s |
+
+#### Docker & CI/CD
+
+- `infrastructure/docker/backend/Dockerfile` - FastAPI + uv
+- `infrastructure/docker/frontend/Dockerfile` - Next.js + Bun
+- `infrastructure/cloud-build/` - Cloud Build パイプライン
+
+#### インフラデプロイ手順
+
+```bash
+# 1. GCPプロジェクト作成後、bootstrap/terraform.tfvarsを更新
+cd infrastructure/terraform/bootstrap
+# project_id を実際のプロジェクトIDに変更
+
+# 2. Bootstrap実行（State Bucket + API有効化）
+terraform init
+terraform apply
+
+# 3. メインインフラデプロイ
+cd ../environments/dev
+terraform init
+terraform plan
+terraform apply
+
+# 4. Secret値を手動設定（Secret Manager）
+```
+
+詳細は `.steering/20260205-infrastructure-implementation/COMPLETED.md` を参照。
+
 ### 次のステップ
 
 1. ~~リポジトリセットアップ~~ ✅ 完了
@@ -406,14 +467,16 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 6. ~~**FirestoreMemoryService**: ADK MemoryService準拠の永続化~~ ✅ 完了
 7. ~~**ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService~~ ✅ 完了
 8. ~~**API統合**: SSEストリーミングエンドポイント実装~~ ✅ 完了
-9. **フロントエンド実装**（進行中 70-75%）← 現在地
-   - ~~UIコンポーネント~~ ✅ 完了
-   - ~~状態管理（Jotai）~~ ✅ 完了
-   - ~~カスタムフック~~ ✅ 完了
-   - SSEクライアント実装 ← 次のタスク
-   - バックエンド接続統合
-10. **E2Eテスト**: 実際のADK Runnerとの統合テスト
-11. **パイロットテスト**: 小規模グループでのβテスト
+9. ~~**インフラストラクチャ（IaC）**: Terraform、Cloud Build、Docker~~ ✅ 完了
+10. **フロントエンド実装**（進行中 70-75%）← 現在地
+    - ~~UIコンポーネント~~ ✅ 完了
+    - ~~状態管理（Jotai）~~ ✅ 完了
+    - ~~カスタムフック~~ ✅ 完了
+    - SSEクライアント実装 ← 次のタスク
+    - バックエンド接続統合
+11. **インフラデプロイ**: GCPプロジェクト作成、terraform apply
+12. **E2Eテスト**: 実際のADK Runnerとの統合テスト
+13. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 
