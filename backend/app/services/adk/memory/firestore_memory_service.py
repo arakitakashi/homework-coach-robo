@@ -5,7 +5,7 @@ from google.adk.memory.base_memory_service import (
     SearchMemoryResponse,
 )
 from google.adk.sessions.session import Session
-from google.cloud import firestore
+from google.cloud import firestore  # type: ignore[attr-defined]
 from typing_extensions import override
 
 from app.services.adk.memory.converters import (
