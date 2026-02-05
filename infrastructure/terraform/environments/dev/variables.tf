@@ -36,17 +36,7 @@ variable "frontend_min_instances" {
   default     = 0
 }
 
-variable "redis_tier" {
-  description = "Redis tier (dev default: BASIC)"
-  type        = string
-  default     = "BASIC"
-}
-
-variable "redis_memory_gb" {
-  description = "Redis memory in GB (dev default: 1)"
-  type        = number
-  default     = 1
-}
+# NOTE: Redis variables removed - session management handled by Vertex AI / ADK
 
 variable "enable_cdn" {
   description = "Enable Cloud CDN (dev default: false)"

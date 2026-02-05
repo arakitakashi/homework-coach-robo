@@ -61,10 +61,7 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "GCP_REGION"
         value = var.region
       }
-      env {
-        name  = "PORT"
-        value = "8080"
-      }
+      # NOTE: PORT is automatically set by Cloud Run (8080)
 
       # Secret environment variables
       dynamic "env" {
@@ -166,20 +163,17 @@ resource "google_cloud_run_v2_service" "frontend" {
         name  = "NEXT_PUBLIC_API_URL"
         value = var.backend_url != "" ? var.backend_url : "https://${var.name_prefix}-backend-${var.project_id}.${var.region}.run.app"
       }
-      env {
-        name  = "PORT"
-        value = "3000"
-      }
+      # NOTE: PORT is automatically set by Cloud Run (8080)
 
       ports {
-        container_port = 3000
+        container_port = 8080
       }
 
       # Health check
       startup_probe {
         http_get {
           path = "/api/health"
-          port = 3000
+          port = 8080
         }
         initial_delay_seconds = 5
         period_seconds        = 10
@@ -190,7 +184,7 @@ resource "google_cloud_run_v2_service" "frontend" {
       liveness_probe {
         http_get {
           path = "/api/health"
-          port = 3000
+          port = 8080
         }
         period_seconds    = 30
         failure_threshold = 3

@@ -1,14 +1,6 @@
 # Secret Manager Module Outputs
 
-output "redis_url_secret_id" {
-  description = "The ID of the Redis URL secret"
-  value       = google_secret_manager_secret.redis_url.secret_id
-}
-
-output "redis_url_secret_name" {
-  description = "The resource name of the Redis URL secret"
-  value       = google_secret_manager_secret.redis_url.name
-}
+# NOTE: Redis URL outputs removed - session management handled by Vertex AI / ADK
 
 output "firebase_config_secret_id" {
   description = "The ID of the Firebase config secret"
