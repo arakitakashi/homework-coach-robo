@@ -38,8 +38,8 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [characterState] = useAtom(characterStateAtom)
 	const [learningProgress] = useAtom(learningProgressAtom)
 
-	// 音声入力の有効化状態（MVP期間は無効）
-	const [isVoiceEnabled] = useState(false)
+	// 音声入力の有効化状態
+	const [isVoiceEnabled] = useState(true)
 
 	// セッション管理フック
 	const {
