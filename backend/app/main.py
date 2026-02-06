@@ -1,5 +1,7 @@
 """宿題コーチロボット - バックエンドAPIエントリーポイント"""
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,9 +17,19 @@ app = FastAPI(
 app.include_router(api_v1_router)
 
 # CORS設定
+# 環境変数CORS_ORIGINSで追加のオリジンを指定可能（カンマ区切り）
+cors_origins = [
+    "http://localhost:3000",  # ローカル開発
+    "https://homework-coach-frontend-652907685934.asia-northeast1.run.app",  # 本番
+]
+# 環境変数から追加のオリジンを取得
+extra_origins = os.environ.get("CORS_ORIGINS", "")
+if extra_origins:
+    cors_origins.extend(origin.strip() for origin in extra_origins.split(",") if origin.strip())
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # フロントエンド開発サーバー
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
