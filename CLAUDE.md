@@ -167,7 +167,9 @@ homework-coach-robo/
 - **ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService実装完了
 - **対話API統合**: SSEストリーミングエンドポイント（`/api/v1/dialogue/run`）実装完了
 - **インフラストラクチャ（IaC）**: Terraformモジュール、Cloud Build、Docker設定完了
-- **フロントエンドUI**: コンポーネント、状態管理、カスタムフック実装完了（70-75%）
+- **フロントエンドUI**: コンポーネント、状態管理、カスタムフック、SSEクライアント、音声入力実装完了
+- **インフラデプロイ**: GCPプロジェクト（homework-coach-robo）にTerraformでデプロイ完了
+- **アプリケーションデプロイ**: Backend/Frontend を Cloud Run にデプロイ完了
 
 ### 技術検証（PoC）の成果
 
@@ -340,11 +342,11 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 
 詳細は `.steering/20260205-dialogue-api-integration/COMPLETED.md` を参照。
 
-### Frontend Implementation（進行中）
+### Frontend Implementation（完了）
 
-`frontend/` に Next.js 16 ベースのフロントエンドを実装中です。
+`frontend/` に Next.js 16 ベースのフロントエンドを実装しました。
 
-**進捗: 約85-90% 完了**
+**進捗: 約95% 完了（コア機能実装完了）**
 
 #### 完了済みコンポーネント
 
@@ -417,9 +419,9 @@ SessionContent
 
 #### 次に実装すべき項目
 
-1. **音声入力有効化** - `isVoiceEnabled`フラグをtrue
-2. **E2Eテスト** - バックエンドとの統合テスト
-3. **追加キャラクター** - 魔法使い、宇宙飛行士、動物の実装
+1. **E2Eテスト** - バックエンドとの統合テスト
+2. **音声入力有効化** - `isVoiceEnabled`フラグをtrue（MVP後）
+3. **追加キャラクター** - 魔法使い、宇宙飛行士、動物の実装（MVP後）
 
 ### インフラストラクチャ（IaC）
 
@@ -480,6 +482,21 @@ terraform apply
 
 詳細は `.steering/20260205-infrastructure-implementation/COMPLETED.md` を参照。
 
+### デプロイ済み環境（Dev）
+
+GCPプロジェクト `homework-coach-robo` にデプロイ済みです。
+
+| サービス | URL | 状態 |
+|---------|-----|------|
+| **Frontend** | https://homework-coach-frontend-652907685934.asia-northeast1.run.app | ✅ 稼働中 |
+| **Backend** | https://homework-coach-backend-652907685934.asia-northeast1.run.app | ✅ 稼働中 |
+
+**ヘルスチェック:**
+- Backend `/health`: `{"status":"healthy"}`
+- Frontend `/api/health`: `{"status":"ok"}`
+
+詳細は `.steering/20260206-application-deploy/COMPLETED.md` を参照。
+
 ### 次のステップ
 
 1. ~~リポジトリセットアップ~~ ✅ 完了
@@ -491,15 +508,16 @@ terraform apply
 7. ~~**ADK Runner統合**: SocraticDialogueAgent + AgentRunnerService~~ ✅ 完了
 8. ~~**API統合**: SSEストリーミングエンドポイント実装~~ ✅ 完了
 9. ~~**インフラストラクチャ（IaC）**: Terraform、Cloud Build、Docker~~ ✅ 完了
-10. **フロントエンド実装**（進行中 70-75%）← 現在地
+10. ~~**フロントエンド実装**~~ ✅ 完了
     - ~~UIコンポーネント~~ ✅ 完了
     - ~~状態管理（Jotai）~~ ✅ 完了
     - ~~カスタムフック~~ ✅ 完了
-    - SSEクライアント実装 ← 次のタスク
-    - バックエンド接続統合
-11. **インフラデプロイ**: GCPプロジェクト作成、terraform apply
-12. **E2Eテスト**: 実際のADK Runnerとの統合テスト
-13. **パイロットテスト**: 小規模グループでのβテスト
+    - ~~SSEクライアント実装~~ ✅ 完了
+    - ~~音声入力実装~~ ✅ 完了
+11. ~~**インフラデプロイ**~~ ✅ 完了
+12. ~~**アプリケーションデプロイ**~~ ✅ 完了
+13. **E2Eテスト** ← 現在地
+14. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 
