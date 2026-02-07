@@ -1,11 +1,27 @@
-name: CD
+name: Deploy (Manual)
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'デプロイ対象サービス'
+        required: true
+        type: choice
+        default: 'both'
+        options:
+          - both
+          - backend
+          - frontend
+      environment:
+        description: 'デプロイ先環境'
+        required: true
+        type: choice
+        default: 'dev'
+        options:
+          - dev
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -14,18 +30,26 @@ env:
   ARTIFACT_REGISTRY: asia-northeast1-docker.pkg.dev/homework-coach-robo/homework-coach-docker
 
 jobs:
+  # --- CI Checks ---
   ci-backend:
     name: CI Backend
+    if: inputs.service == 'backend' || inputs.service == 'both'
     uses: ./.github/workflows/ci-backend.yml
 
   ci-frontend:
     name: CI Frontend
+    if: inputs.service == 'frontend' || inputs.service == 'both'
     uses: ./.github/workflows/ci-frontend.yml
 
+  # --- Deploy ---
   deploy-backend:
     name: Deploy Backend
     runs-on: ubuntu-latest
     needs: ci-backend
+    if: |
+      always() &&
+      (inputs.service == 'backend' || inputs.service == 'both') &&
+      needs.ci-backend.result == 'success'
     permissions:
       contents: read
       id-token: write
@@ -70,10 +94,24 @@ jobs:
             --allow-unauthenticated \
             --quiet
 
+      - name: Verify deployment
+        run: |
+          URL=$(gcloud run services describe homework-coach-backend \
+            --region=${{ env.GCP_REGION }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --format='value(status.url)')
+          echo "Backend URL: $URL"
+          curl -sf "$URL/health" || (echo "Health check failed" && exit 1)
+
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
     needs: [ci-frontend, deploy-backend]
+    if: |
+      always() &&
+      (inputs.service == 'frontend' || inputs.service == 'both') &&
+      needs.ci-frontend.result == 'success' &&
+      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
     permissions:
       contents: read
       id-token: write
@@ -127,3 +165,12 @@ jobs:
             --project=${{ env.GCP_PROJECT_ID }} \
             --allow-unauthenticated \
             --quiet
+
+      - name: Verify deployment
+        run: |
+          URL=$(gcloud run services describe homework-coach-frontend \
+            --region=${{ env.GCP_REGION }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --format='value(status.url)')
+          echo "Frontend URL: $URL"
+          curl -sf "$URL/api/health" || (echo "Health check failed" && exit 1)

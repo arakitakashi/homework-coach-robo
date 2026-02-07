@@ -459,6 +459,11 @@ infrastructure/terraform/
 - `infrastructure/docker/backend/Dockerfile` - FastAPI + uv
 - `infrastructure/docker/frontend/Dockerfile` - Next.js + Bun
 - `infrastructure/cloud-build/` - Cloud Build パイプライン
+- `.github/workflows/cd.yml` - 自動デプロイ（push to main）
+- `.github/workflows/deploy.yml` - マニュアルデプロイ（workflow_dispatch）
+
+**CI/CDの前提条件:** Workload Identity Federation (WIF) の設定が必要。
+詳細は `docs/architecture.md` の「2.3 CI/CDパイプライン > 前提条件」を参照。
 
 #### インフラデプロイ手順
 
@@ -478,6 +483,10 @@ terraform plan
 terraform apply
 
 # 4. Secret値を手動設定（Secret Manager）
+
+# 5. WIF設定（GitHub Actions連携）
+# → .steering/20260206-github-actions-cicd/gcp-wif-setup.md の手順を実行
+# → GitHub Secrets に GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT を設定
 ```
 
 詳細は `.steering/20260205-infrastructure-implementation/COMPLETED.md` を参照。
