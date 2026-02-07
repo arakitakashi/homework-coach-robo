@@ -29,8 +29,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Gemini Live API対応モデル
-LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
+# Vertex AI Live API対応モデル
+# Vertex AI: gemini-live-2.5-flash-native-audio
+# Gemini API (非Vertex): gemini-2.5-flash-native-audio-preview-12-2025
+LIVE_MODEL = "gemini-live-2.5-flash-native-audio"
 
 # デフォルトのアプリ名
 DEFAULT_APP_NAME = "homework-coach"
