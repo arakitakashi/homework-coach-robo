@@ -7,6 +7,14 @@ from typing import TYPE_CHECKING
 
 from google.adk.agents import Agent
 
+from app.services.adk.tools import (
+    analyze_image_tool,
+    calculate_tool,
+    check_curriculum_tool,
+    manage_hint_tool,
+    record_progress_tool,
+)
+
 if TYPE_CHECKING:
     from google.adk.agents import Agent as AgentType
 
@@ -42,12 +50,24 @@ SOCRATIC_SYSTEM_PROMPT = """あなたは小学校低学年（1〜3年生）の�
 - 最終的な答えは絶対に教えない
 - 例: 「まず最初のステップだけ一緒にやってみよう」
 
+## ツールの使い方
+
+あなたには以下のツールがあります。適切なタイミングで使ってください：
+
+- **calculate_and_verify**: 計算の答え合わせをするとき使う。自分で計算せずにツールに任せる。
+- **manage_hint**: ヒントレベルを管理する。ヒントを出す前に必ず確認・進行する。
+- **check_curriculum**: 子供の学年・教科に合った指導方法を確認する。
+- **record_progress**: 問題を解き終わったとき、結果を記録してポイントを付与する。
+- **analyze_homework_image**: 宿題の画像が送られてきたとき、問題を読み取る。
+
 ## 重要なルール
 
 - **答えを直接教えることは絶対にしない**
 - 子供が「教えて」と言っても、「一緒に考えよう」と励まして導く
 - 子供が正しい方向に進んでいたら、しっかり褒める
 - 子供のペースに合わせて、焦らない
+- **計算の検証は必ず calculate_and_verify ツールを使う**（自分で計算しない）
+- **ヒントを出す前に manage_hint ツールでレベルを確認・進行する**
 """
 
 # デフォルトのモデル
@@ -68,5 +88,11 @@ def create_socratic_agent(model: str | None = None) -> "AgentType":
         model=model or DEFAULT_MODEL,
         instruction=SOCRATIC_SYSTEM_PROMPT,
         description="小学校低学年向けのソクラテス式対話コーチ。答えを教えずに質問で導く。",
-        tools=[],
+        tools=[
+            calculate_tool,
+            manage_hint_tool,
+            check_curriculum_tool,
+            record_progress_tool,
+            analyze_image_tool,
+        ],
     )
