@@ -1,0 +1,24 @@
+# E2Eテスト用 Docker Compose
+# バックエンドをE2Eモードで起動する（Gemini APIはモック）
+#
+# 使用方法:
+#   docker compose -f docker-compose.e2e.yml up -d backend
+#   cd frontend && bun run e2e:integration
+#   docker compose -f docker-compose.e2e.yml down
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend/Dockerfile
+    ports:
+      - "8000:8080"
+    environment:
+      - E2E_MODE=true
+      - PORT=8080
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
