@@ -11,7 +11,11 @@
 		"format": "biome format --write .",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest",
-		"test:coverage": "vitest --coverage"
+		"test:coverage": "vitest --coverage",
+		"e2e": "playwright test --config e2e/playwright.config.ts",
+		"e2e:smoke": "playwright test --config e2e/playwright.config.ts --project=smoke",
+		"e2e:functional": "playwright test --config e2e/playwright.config.ts --project=smoke --project=functional",
+		"e2e:integration": "playwright test --config e2e/playwright.config.ts --project=integration"
 	},
 	"dependencies": {
 		"@rive-app/react-canvas": "^4.26.2",
@@ -22,6 +26,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.13",
+		"@playwright/test": "^1.58.2",
 		"@tailwindcss/postcss": "^4",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/jest-dom": "^6.9.1",
