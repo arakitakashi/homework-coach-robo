@@ -133,10 +133,16 @@ homework-coach-robo/
 ├── shared/                   # 共通リソース
 ├── infrastructure/           # Terraform, Cloud Build
 ├── docs/                     # 設計ドキュメント
+├── .tree/                    # ⚠️ git worktree（並列開発用、触れない）
+│   ├── backend/              # バックエンド作業用worktree
+│   └── frontend/             # フロントエンド作業用worktree
+│
 └── .claude/
     ├── rules/                # 開発ルール（自動読み込み）
     └── skills/               # スキルファイル
 ```
+
+> **⚠️ `.tree/` は git worktree 用ディレクトリです。他のworktreeのファイルを読み書きしてはなりません。詳細は `.claude/rules/git-worktree.md` を参照。**
 
 **命名規則・配置ルールの詳細は `.claude/rules/file-structure-rules.md` を参照。**
 
@@ -239,6 +245,7 @@ infrastructure/terraform/
 | `frontend.md` | フロントエンド開発ルール、**Biome a11yルール、Jotaiテストパターン** |
 | `auto-format-hooks.md` | 自動フォーマット（Ruff/Biome）との共存方法 |
 | `pr-checklist.md` | PR作成前のローカルCIチェックリスト |
+| `git-worktree.md` | git worktree並列開発ルール（`.tree/`配下のファイル操作禁止） |
 
 ### 🔴 PR作成前の必須コマンド
 
