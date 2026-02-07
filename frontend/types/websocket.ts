@@ -3,6 +3,7 @@
  */
 
 import type { HintLevel, Speaker } from "./dialogue"
+import type { AgentType, EmotionType, ToolExecutionStatus, ToolName } from "./phase2"
 
 /** 音声データメッセージ */
 export interface AudioMessage {
@@ -40,6 +41,30 @@ export interface ErrorMessage {
 	message: string
 }
 
+/** Phase 2a: ツール実行メッセージ */
+export interface ToolExecutionMessage {
+	type: "tool_execution"
+	toolName: ToolName
+	status: ToolExecutionStatus
+	result?: Record<string, unknown>
+}
+
+/** Phase 2b: エージェント切り替えメッセージ */
+export interface AgentTransitionMessage {
+	type: "agent_transition"
+	fromAgent: AgentType
+	toAgent: AgentType
+	reason: string
+}
+
+/** Phase 2d: 感情更新メッセージ */
+export interface EmotionUpdateMessage {
+	type: "emotion_update"
+	emotion: EmotionType
+	frustrationLevel: number
+	engagementLevel: number
+}
+
 /** WebSocketメッセージ（受信） */
 export type WebSocketIncomingMessage =
 	| AudioMessage
@@ -48,6 +73,9 @@ export type WebSocketIncomingMessage =
 	| SessionStartMessage
 	| SessionEndMessage
 	| ErrorMessage
+	| ToolExecutionMessage
+	| AgentTransitionMessage
+	| EmotionUpdateMessage
 
 /** WebSocketメッセージ（送信） */
 export type WebSocketOutgoingMessage = AudioMessage | SessionEndMessage
