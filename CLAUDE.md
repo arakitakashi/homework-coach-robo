@@ -149,7 +149,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**コア機能実装準備中**の段階です。
+このプロジェクトは現在、**MVP実装完了・パイロットテスト準備中**の段階です。
 
 ### 完了済み
 
@@ -170,6 +170,9 @@ homework-coach-robo/
 - **フロントエンドUI**: コンポーネント、状態管理、カスタムフック、SSEクライアント、音声入力実装完了
 - **インフラデプロイ**: GCPプロジェクト（homework-coach-robo）にTerraformでデプロイ完了
 - **アプリケーションデプロイ**: Backend/Frontend を Cloud Run にデプロイ完了
+- **WebSocket音声ストリーミング**: バックエンドWebSocketエンドポイント + フロントエンド統合完了
+- **E2Eテスト**: Playwright によるスモーク・機能・統合テスト（9テストファイル）実装完了
+- **GitHub WIF Terraform**: GitHub Actions 向け Workload Identity Federation をIaC化完了
 
 ### 技術検証（PoC）の成果
 
@@ -182,7 +185,8 @@ homework-coach-robo/
 | ソクラテス式対話 | ✅ 動作 | システムプロンプトで実現 |
 | レイテンシ | ⚠️ 約5秒 | プレビュー版の制約（目標2秒） |
 
-**使用モデル**: `gemini-2.5-flash-native-audio-preview-12-2025`
+**PoCで使用したモデル**: `gemini-2.5-flash-native-audio-preview-12-2025`
+**本番使用モデル**: `gemini-live-2.5-flash-native-audio`（Vertex AI 安定版）
 
 詳細は `.steering/20260131-gemini-live-api-poc/COMPLETED.md` を参照。
 
@@ -233,7 +237,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 96%（309テスト）
+**テストカバレッジ**: 96%（352テスト）
 
 ### Firestore Session Persistence
 
@@ -342,11 +346,41 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 
 詳細は `.steering/20260205-dialogue-api-integration/COMPLETED.md` を参照。
 
+### WebSocket Voice Streaming（完了）
+
+`backend/app/services/voice/` および `backend/app/api/v1/voice_stream.py` に双方向音声ストリーミングを実装しました。
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `services/voice/streaming_service.py` | VoiceStreamingService（ADK Runner.run_live() + LiveRequestQueue） |
+| `schemas/voice_stream.py` | WebSocketメッセージスキーマ（Audio, Text, Config, Error） |
+| `api/v1/voice_stream.py` | WebSocketエンドポイント（Full-duplex） |
+
+**WebSocketエンドポイント:**
+```
+WebSocket /ws/{user_id}/{session_id}
+
+Client → Server:
+  - Binary: PCM音声データ（16kHz 16-bit）
+  - JSON: {"type": "text", "text": "..."} テキストメッセージ
+  - JSON: {"type": "config", ...} 設定変更
+
+Server → Client:
+  - Binary: PCM音声データ（24kHz）
+  - JSON: {"type": "transcript", "text": "...", "role": "user|model"}
+  - JSON: {"type": "turn_complete"}
+  - JSON: {"type": "error", "message": "..."}
+```
+
+**使用モデル**: `gemini-live-2.5-flash-native-audio`（Vertex AI）
+
+詳細は `.steering/20260207-backend-websocket-streaming/COMPLETED.md` を参照。
+
 ### Frontend Implementation（完了）
 
 `frontend/` に Next.js 16 ベースのフロントエンドを実装しました。
 
-**進捗: 約95% 完了（コア機能実装完了）**
+**進捗: コア機能実装完了（WebSocket統合・E2Eテスト含む）**
 
 #### 完了済みコンポーネント
 
@@ -364,6 +398,7 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 | | `store/atoms/session.ts` | セッション、学習進捗、ポイント計算 |
 | **フック** | `useVoiceRecorder` | Web Audio API録音（PCM 16-bit変換） |
 | | `useAudioPlayer` | 音声再生（AudioContext管理） |
+| | `usePcmPlayer` | AudioWorkletベースPCMストリーミング再生（24kHz） |
 | | `useWebSocket` | WebSocket通信（JSON/ArrayBuffer対応） |
 | | `useVoiceStream` | 音声ストリーミング統合（WebSocket + AudioWorklet） |
 | | `useSession` | セッション管理（作成/削除） |
@@ -375,19 +410,16 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 | | `pcm-player-processor.js` | 再生用Processor（24kHz） |
 | **型定義** | `types/` | dialogue, session, audio, websocket |
 
-#### 未実装（残り10-15%）
+#### 未実装（MVP後）
 
 | 項目 | 状況 | 説明 |
 |------|------|------|
-| **音声入力有効化** | ⏸️ 実装済み・無効 | useVoiceStream実装済み、MVP期間は無効 |
 | **追加キャラクター** | ⏸️ 低優先度 | 魔法使い、宇宙飛行士、動物（選択UIは実装済み） |
-| **E2Eテスト** | ❌ 未実装 | 実際のバックエンドとの統合テスト |
 
 #### テストカバレッジ
 
-- 22テストファイル、172テスト
-- Statements: 89.35%, Lines: 90.01%, Functions: 90.99%
-- Vitest + Testing Library
+- **ユニットテスト**: 23テストファイル、194テスト（Vitest + Testing Library）
+- **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
 #### 技術スタック
@@ -417,11 +449,33 @@ SessionContent
 
 詳細は `.steering/20260206-voice-input-implementation/COMPLETED.md` を参照。
 
-#### 次に実装すべき項目
+#### 今後の実装予定（MVP後）
 
-1. **E2Eテスト** - バックエンドとの統合テスト
-2. **音声入力有効化** - `isVoiceEnabled`フラグをtrue（MVP後）
-3. **追加キャラクター** - 魔法使い、宇宙飛行士、動物の実装（MVP後）
+1. **追加キャラクター** - 魔法使い、宇宙飛行士、動物の実装
+
+### E2Eテスト（完了）
+
+`frontend/e2e/` に Playwright ベースの E2E テストを実装しました。
+
+| カテゴリ | テストファイル | 内容 |
+|---------|-------------|------|
+| **Smoke** | `health-check.spec.ts` | ヘルスチェックエンドポイント確認 |
+| | `navigation.spec.ts` | ページ遷移の動作確認 |
+| **Functional** | `home-page.spec.ts` | ホームページUI・キャラクター選択 |
+| | `session-creation.spec.ts` | セッション作成フロー |
+| | `session-cleanup.spec.ts` | セッション終了・クリーンアップ |
+| | `text-dialogue.spec.ts` | テキスト対話（SSEストリーミング） |
+| | `voice-ui.spec.ts` | 音声UIの表示・状態遷移 |
+| **Integration** | `dialogue-stream.spec.ts` | 対話ストリーム統合テスト |
+| | `session-api.spec.ts` | セッションAPI統合テスト |
+
+**テスト基盤:**
+- `E2E_MODE` 環境変数でバックエンドのモックサービスを有効化（DI overrides）
+- Docker Compose でバックエンド・フロントエンドを起動
+- `global-setup.ts` / `global-teardown.ts` でサーバーのライフサイクル管理
+- CI: `.github/workflows/ci-e2e.yml`
+
+詳細は `.steering/20260207-e2e-tests/` 配下を参照。
 
 ### インフラストラクチャ（IaC）
 
@@ -440,7 +494,8 @@ infrastructure/terraform/
 │   ├── firestore/             # Database + Indexes
 │   ├── bigquery/              # Dataset + Tables
 │   ├── cloud_storage/         # Assets Bucket + CDN
-│   └── cloud_run/             # Backend/Frontend Services
+│   ├── cloud_run/             # Backend/Frontend Services
+│   └── github_wif/            # GitHub Actions WIF（Workload Identity Federation）
 └── environments/
     └── dev/                   # 開発環境設定
 ```
@@ -459,11 +514,14 @@ infrastructure/terraform/
 - `infrastructure/docker/backend/Dockerfile` - FastAPI + uv
 - `infrastructure/docker/frontend/Dockerfile` - Next.js + Bun
 - `infrastructure/cloud-build/` - Cloud Build パイプライン
+- `.github/workflows/ci-backend.yml` - バックエンドCI（lint, type check, test）
+- `.github/workflows/ci-frontend.yml` - フロントエンドCI（lint, type check, test）
+- `.github/workflows/ci-e2e.yml` - E2Eテスト（Docker Compose + Playwright）
 - `.github/workflows/cd.yml` - 自動デプロイ（push to main）
 - `.github/workflows/deploy.yml` - マニュアルデプロイ（workflow_dispatch）
 
 **CI/CDの前提条件:** Workload Identity Federation (WIF) の設定が必要。
-詳細は `docs/architecture.md` の「2.3 CI/CDパイプライン > 前提条件」を参照。
+`infrastructure/terraform/modules/github_wif/` でTerraform管理。
 
 #### インフラデプロイ手順
 
@@ -485,7 +543,7 @@ terraform apply
 # 4. Secret値を手動設定（Secret Manager）
 
 # 5. WIF設定（GitHub Actions連携）
-# → .steering/20260206-github-actions-cicd/gcp-wif-setup.md の手順を実行
+# → Terraformで自動作成: modules/github_wif
 # → GitHub Secrets に GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT を設定
 ```
 
@@ -525,13 +583,14 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済みです。
     - ~~音声入力実装~~ ✅ 完了
 11. ~~**インフラデプロイ**~~ ✅ 完了
 12. ~~**アプリケーションデプロイ**~~ ✅ 完了
-13. **WebSocket音声ストリーミング実装** ← 現在地
-    - バックエンドWebSocketエンドポイント（`/api/v1/voice/stream`）
-    - Gemini Live API統合（`poc/`の成果を本実装に移植）
-    - 双方向音声ストリーミング（録音→STT→LLM→TTS→再生）
-    - フロントエンドとの接続確認
-14. **E2Eテスト**
-15. **パイロットテスト**: 小規模グループでのβテスト
+13. ~~**WebSocket音声ストリーミング実装**~~ ✅ 完了
+    - ~~バックエンドWebSocketエンドポイント（`/ws/{user_id}/{session_id}`）~~ ✅ 完了
+    - ~~Gemini Live API統合（`poc/`の成果を本実装に移植）~~ ✅ 完了
+    - ~~双方向音声ストリーミング（録音→STT→LLM→TTS→再生）~~ ✅ 完了
+    - ~~フロントエンドとの接続確認~~ ✅ 完了
+14. ~~**E2Eテスト**~~ ✅ 完了
+15. ~~**GitHub WIF Terraform**~~ ✅ 完了
+16. **パイロットテスト**: 小規模グループでのβテスト ← 現在地
 
 ### 開発方針
 
@@ -557,8 +616,9 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済みです。
 | `coding-standards.md` | コーディング規約 |
 | `security-requirement.md` | セキュリティ要件 |
 | `file-structure-rules.md` | ファイル配置・命名規則 |
-
 | `frontend.md` | フロントエンド開発ルール、**Biome a11yルール、Jotaiテストパターン** |
+| `auto-format-hooks.md` | 自動フォーマット（Ruff/Biome）との共存方法 |
+| `pr-checklist.md` | PR作成前のローカルCIチェックリスト |
 
 ### 🔴 PR作成前の必須コマンド
 
@@ -571,9 +631,6 @@ cd backend && uv run ruff check . && uv run mypy . && uv run pytest
 ```
 
 **CIで実行される全チェックをローカルで事前実行すること。**
-| `frontend.md` | フロントエンド開発ルール（`/frontend`, `/frontend-design`スキル必須） |
-| `auto-format-hooks.md` | 自動フォーマット（Ruff/Biome）との共存方法 |
-| `pr-checklist.md` | PR作成前のローカルCIチェックリスト |
 
 ## Available Skills
 
