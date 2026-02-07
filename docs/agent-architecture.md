@@ -27,12 +27,12 @@
 
 | ADK機能 | 利用状況 | 備考 |
 |---------|---------|------|
-| `Agent`（単一） | ✅ 使用中 | `tools=[]`（空配列） |
+| `Agent`（単一） | ✅ 使用中 | `tools=[5ツール]`（Phase 2a完了） |
 | `Runner.run_async()` | ✅ 使用中 | テキスト対話（SSE） |
 | `Runner.run_live()` | ✅ 使用中 | 音声ストリーミング |
 | `BaseSessionService` | ✅ 使用中 | Firestore永続化を自前実装 |
 | `BaseMemoryService` | ✅ 使用中 | Firestore永続化を自前実装 |
-| Tool / Function Calling | ❌ 未使用 | |
+| Tool / Function Calling | ✅ 使用中 | Phase 2a で5ツール導入 |
 | マルチエージェント | ❌ 未使用 | |
 | サブエージェント委譲 | ❌ 未使用 | |
 | Agent Engine（マネージド） | ❌ 未使用 | Cloud Runに直接デプロイ |
@@ -60,11 +60,11 @@ FastAPI Endpoints
 
 | 制約 | 影響 | 原因 |
 |------|------|------|
-| ツールなし | 計算検証が不正確（LLMの幻覚リスク） | `tools=[]` |
+| ~~ツールなし~~ | ~~計算検証が不正確（LLMの幻覚リスク）~~ | ✅ Phase 2a で解決 |
 | 単一エージェント | 教科ごとの最適化不可 | エージェント1つ |
 | キーワード検索のみ | 過去の学習履歴を活かせない | セマンティック検索なし |
 | 感情認識なし | サポートレベルの適応が不十分 | Phase 2で計画 |
-| プロンプト依存 | ヒント段階の管理が不確実 | 状態管理がLLM頼み |
+| ~~プロンプト依存~~ | ~~ヒント段階の管理が不確実~~ | ✅ Phase 2a で解決（manage_hint_tool） |
 
 ---
 
@@ -117,11 +117,13 @@ FastAPI Endpoints
 
 ---
 
-## 3. Phase 2a: ツール導入（Function Calling）
+## 3. Phase 2a: ツール導入（Function Calling）✅ 実装完了
 
 ### 3.1 概要
 
-現在プロンプトのみで実現している機能を、ADK Toolとして切り出す。これにより、LLMの幻覚リスクを排除し、確実な動作を保証する。
+~~現在プロンプトのみで実現している機能を~~ ADK Toolとして切り出し済み。LLMの幻覚リスクを排除し、確実な動作を保証する。
+
+> **Status**: PR #59 で実装完了。5ツール（70テスト、カバレッジ88%）。
 
 ### 3.2 ツール一覧
 
@@ -216,7 +218,7 @@ def check_curriculum(
     ...
 ```
 
-**データソース**: Firestoreの`curriculum`コレクションに学習指導要領に基づくデータを格納。
+**データソース**: Phase 2a ではインメモリ静的辞書で実装。Phase 2c以降でFirestoreに移行予定。
 
 #### 3.2.4 `record_progress_tool` — 学習進捗記録ツール
 
@@ -282,22 +284,14 @@ def analyze_homework_image(
 
 **使用API**: Gemini Vision API（プライマリ）+ Cloud Vision API（OCRフォールバック）
 
-### 3.3 エージェント定義の変更
+### 3.3 エージェント定義（実装済み）
 
 ```python
-# 現在
+# runner/agent.py - create_socratic_agent()
 agent = Agent(
     name="socratic_dialogue_agent",
     model="gemini-2.5-flash",
-    instruction=SOCRATIC_SYSTEM_PROMPT,
-    tools=[],  # ← 空
-)
-
-# Phase 2a 後
-agent = Agent(
-    name="socratic_dialogue_agent",
-    model="gemini-2.5-flash",
-    instruction=SOCRATIC_SYSTEM_PROMPT_V2,  # ツール使用ガイダンスを追加
+    instruction=SOCRATIC_SYSTEM_PROMPT,  # ツール使用ガイダンス含む
     tools=[
         calculate_tool,
         manage_hint_tool,
@@ -822,7 +816,7 @@ Phase 2d（感情）───────────┘
                     Phase 3（Agent Engine）
 ```
 
-- **Phase 2a は最初に実装必須**（他の全フェーズの基盤）
+- **Phase 2a は実装完了** ✅（他の全フェーズの基盤）
 - **Phase 2b, 2c, 2d は並行可能**（ただし2bを先に推奨）
 - **Phase 3 は全Phase 2完了後**
 
@@ -830,7 +824,7 @@ Phase 2d（感情）───────────┘
 
 | 順序 | フェーズ | 優先度 | 理由 |
 |------|---------|-------|------|
-| 1 | Phase 2a: ツール導入 | 最高 | 全フェーズの基盤。パイロットテスト前に導入推奨 |
+| 1 | Phase 2a: ツール導入 | ✅ 完了 | 全フェーズの基盤。PR #59 で実装完了 |
 | 2 | Phase 2b: マルチエージェント | 高 | 教科最適化で学習効果が大幅向上 |
 | 3 | Phase 2c: RAG記憶 | 高 | 個別化学習の実現。長期利用の鍵 |
 | 4 | Phase 2d: 感情適応 | 中 | UX向上。まずはテキストベースから開始可能 |
