@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import router as api_v1_router
+from app.api.v1.voice_stream import voice_stream_endpoint
 
 app = FastAPI(
     title="宿題コーチロボット API",
@@ -15,6 +16,9 @@ app = FastAPI(
 
 # API v1 ルーターを登録
 app.include_router(api_v1_router)
+
+# WebSocketエンドポイントを登録
+app.websocket("/ws/{user_id}/{session_id}")(voice_stream_endpoint)
 
 # CORS設定
 # 環境変数CORS_ORIGINSで追加のオリジンを指定可能（カンマ区切り）
