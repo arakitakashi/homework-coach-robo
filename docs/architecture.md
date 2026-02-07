@@ -1,8 +1,8 @@
 # 宿題コーチロボット - 技術仕様書
 
-**Document Version**: 1.2
-**Last Updated**: 2026-02-03
-**Status**: MVP設計完了（ADK 1.23.0+）
+**Document Version**: 1.3
+**Last Updated**: 2026-02-08
+**Status**: MVP設計完了 + Phase 2 エージェントアーキテクチャ追加（ADK 1.23.0+）
 
 ---
 
