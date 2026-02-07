@@ -441,7 +441,7 @@ class TestConstants:
 
     def test_live_model(self) -> None:
         """Live APIモデル名が正しい"""
-        assert LIVE_MODEL == "gemini-2.5-flash-native-audio-preview-12-2025"
+        assert LIVE_MODEL == "gemini-live-2.5-flash-native-audio"
 
     def test_default_app_name(self) -> None:
         """デフォルトアプリ名が正しい"""

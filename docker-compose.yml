@@ -18,7 +18,7 @@ services:
       - backend-venv:/app/.venv
     environment:
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-homework-coach-robo}
-      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-asia-northeast1}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-us-central1}
       - GOOGLE_GENAI_USE_VERTEXAI=true
       - ENVIRONMENT=development
       - LOG_LEVEL=DEBUG
