@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2（エージェントアーキテクチャ拡張）準備中
+**プロジェクトステータス**: MVP実装完了・Phase 2a（ツール導入）実装完了
 
 ---
 
@@ -28,6 +28,7 @@
 - **WebSocket音声ストリーミング**: バックエンドWebSocketエンドポイント + フロントエンド統合完了
 - **E2Eテスト**: Playwright によるスモーク・機能・統合テスト（9テストファイル）実装完了
 - **GitHub WIF Terraform**: GitHub Actions 向け Workload Identity Federation をIaC化完了
+- **ADK Function Tools (Phase 2a)**: 5つのADKツール（calculate, hint_manager, curriculum, progress_recorder, image_analyzer）実装完了
 
 ---
 
@@ -218,6 +219,29 @@ Server → Client:
 **使用モデル**: `gemini-live-2.5-flash-native-audio`（Vertex AI）
 
 詳細は `.steering/20260207-backend-websocket-streaming/COMPLETED.md` を参照。
+
+### ADK Function Tools (Phase 2a)
+
+`backend/app/services/adk/tools/` に ADK FunctionTool を5つ実装。エージェントの `tools=[]` を置き換え、LLMの幻覚リスクを排除。
+
+| ツール | ファイル | 説明 |
+|--------|---------|------|
+| `calculate_tool` | `calculate.py` | 安全な算術評価（eval不使用）、子供の回答の正誤検証、学年別ヒント |
+| `manage_hint_tool` | `hint_manager.py` | 3段階ヒントシステムの状態管理（ToolContext.state経由） |
+| `check_curriculum_tool` | `curriculum.py` | 学年・教科に応じたカリキュラム情報参照（インメモリ静的データ） |
+| `record_progress_tool` | `progress_recorder.py` | 学習プロセスのポイント付与（self_solved=3pt, hint_solved=2pt, guided_solved=1pt） |
+| `analyze_image_tool` | `image_analyzer.py` | Gemini Vision API による宿題画像分析（base64入力、10MB制限） |
+
+**エージェント統合:**
+- `runner/agent.py` の `create_socratic_agent()` に5ツールを統合
+- システムプロンプトに「ツールの使い方」セクションを追加
+- 各ツールは `ToolContext.state` を通じてセッション状態を読み書き
+
+**テスト:**
+- 70テスト（ツール単体63 + エージェント統合7）
+- ツールカバレッジ: 88%
+
+詳細は `.steering/20260208-phase2a-adk-tools/` を参照。
 
 ---
 
@@ -442,3 +466,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260207-backend-websocket-streaming/` | WebSocket 音声ストリーミング |
 | `.steering/20260207-frontend-websocket-integration/` | フロントエンド WebSocket 統合 |
 | `.steering/20260207-e2e-tests/` | E2E テスト |
+| `.steering/20260208-phase2a-adk-tools/` | Phase 2a ADK Function Tools |

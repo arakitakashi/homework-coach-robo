@@ -118,3 +118,76 @@ class TestCreateSocraticAgentWithCustomModel:
             create_socratic_agent()
             call_kwargs = MockAgent.call_args[1]
             assert call_kwargs["model"] == "gemini-2.5-flash"
+
+
+class TestAgentToolsIntegration:
+    """Phase 2a: ツール統合テスト"""
+
+    def test_agent_has_five_tools(self) -> None:
+        """エージェントに5つのツールが設定される"""
+        from app.services.adk.runner.agent import create_socratic_agent
+
+        with patch("app.services.adk.runner.agent.Agent") as MockAgent:
+            create_socratic_agent()
+            call_kwargs = MockAgent.call_args[1]
+            assert len(call_kwargs["tools"]) == 5
+
+    def test_agent_includes_calculate_tool(self) -> None:
+        """calculate_tool が含まれる"""
+        from app.services.adk.runner.agent import create_socratic_agent
+        from app.services.adk.tools.calculate import calculate_tool
+
+        with patch("app.services.adk.runner.agent.Agent") as MockAgent:
+            create_socratic_agent()
+            call_kwargs = MockAgent.call_args[1]
+            assert calculate_tool in call_kwargs["tools"]
+
+    def test_agent_includes_manage_hint_tool(self) -> None:
+        """manage_hint_tool が含まれる"""
+        from app.services.adk.runner.agent import create_socratic_agent
+        from app.services.adk.tools.hint_manager import manage_hint_tool
+
+        with patch("app.services.adk.runner.agent.Agent") as MockAgent:
+            create_socratic_agent()
+            call_kwargs = MockAgent.call_args[1]
+            assert manage_hint_tool in call_kwargs["tools"]
+
+    def test_agent_includes_check_curriculum_tool(self) -> None:
+        """check_curriculum_tool が含まれる"""
+        from app.services.adk.runner.agent import create_socratic_agent
+        from app.services.adk.tools.curriculum import check_curriculum_tool
+
+        with patch("app.services.adk.runner.agent.Agent") as MockAgent:
+            create_socratic_agent()
+            call_kwargs = MockAgent.call_args[1]
+            assert check_curriculum_tool in call_kwargs["tools"]
+
+    def test_agent_includes_record_progress_tool(self) -> None:
+        """record_progress_tool が含まれる"""
+        from app.services.adk.runner.agent import create_socratic_agent
+        from app.services.adk.tools.progress_recorder import record_progress_tool
+
+        with patch("app.services.adk.runner.agent.Agent") as MockAgent:
+            create_socratic_agent()
+            call_kwargs = MockAgent.call_args[1]
+            assert record_progress_tool in call_kwargs["tools"]
+
+    def test_agent_includes_analyze_image_tool(self) -> None:
+        """analyze_image_tool が含まれる"""
+        from app.services.adk.runner.agent import create_socratic_agent
+        from app.services.adk.tools.image_analyzer import analyze_image_tool
+
+        with patch("app.services.adk.runner.agent.Agent") as MockAgent:
+            create_socratic_agent()
+            call_kwargs = MockAgent.call_args[1]
+            assert analyze_image_tool in call_kwargs["tools"]
+
+    def test_system_prompt_mentions_tools(self) -> None:
+        """システムプロンプトにツール使用ガイドが含まれる"""
+        from app.services.adk.runner.agent import SOCRATIC_SYSTEM_PROMPT
+
+        assert "calculate_and_verify" in SOCRATIC_SYSTEM_PROMPT
+        assert "manage_hint" in SOCRATIC_SYSTEM_PROMPT
+        assert "check_curriculum" in SOCRATIC_SYSTEM_PROMPT
+        assert "record_progress" in SOCRATIC_SYSTEM_PROMPT
+        assert "analyze_homework_image" in SOCRATIC_SYSTEM_PROMPT
