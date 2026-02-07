@@ -279,6 +279,63 @@ describe("useVoiceStream", () => {
 		})
 	})
 
+	describe("audioLevel", () => {
+		it("初期値が0である", () => {
+			const { TestWrapper } = createTestWrapper()
+			const { result } = renderHook(() => useVoiceStream(), { wrapper: TestWrapper })
+
+			expect(result.current.audioLevel).toBe(0)
+		})
+
+		it("録音開始時はaudioLevelが0のまま（データ受信前）", async () => {
+			const { TestWrapper } = createTestWrapper()
+			const { result } = renderHook(() => useVoiceStream(), { wrapper: TestWrapper })
+
+			// 接続
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+			act(() => {
+				getMockClientOptions()?.onConnectionChange("connected")
+				setMockIsConnected(true)
+			})
+
+			// 録音開始
+			await act(async () => {
+				await result.current.startRecording()
+			})
+
+			// workletからデータ受信前はaudioLevelは0
+			expect(result.current.audioLevel).toBe(0)
+		})
+
+		it("録音停止でaudioLevelが0にリセットされる", async () => {
+			const { TestWrapper } = createTestWrapper()
+			const { result } = renderHook(() => useVoiceStream(), { wrapper: TestWrapper })
+
+			// 接続
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+			act(() => {
+				getMockClientOptions()?.onConnectionChange("connected")
+				setMockIsConnected(true)
+			})
+
+			// 録音開始
+			await act(async () => {
+				await result.current.startRecording()
+			})
+
+			// 録音停止
+			act(() => {
+				result.current.stopRecording()
+			})
+
+			expect(result.current.audioLevel).toBe(0)
+		})
+	})
+
 	describe("エラーハンドリング", () => {
 		it("エラーがerror状態に反映される", () => {
 			const { TestWrapper } = createTestWrapper()

@@ -2,7 +2,7 @@
 
 import { useAtom } from "jotai"
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
 	CharacterDisplay,
 	DialogueHistory,
@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/Card"
 import { ErrorMessage } from "@/components/ui/ErrorMessage"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { TextInput } from "@/components/ui/TextInput"
-import { useDialogue, useSession, useVoiceStream } from "@/lib/hooks"
+import { useDialogue, usePcmPlayer, useSession, useVoiceStream } from "@/lib/hooks"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
 import { learningProgressAtom } from "@/store/atoms/session"
 import type { CharacterType, DialogueTurn } from "@/types"
@@ -35,11 +35,23 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const router = useRouter()
 	const [dialogueTurns, setDialogueTurns] = useAtom(dialogueTurnsAtom)
 	const [hintLevel] = useAtom(hintLevelAtom)
-	const [characterState] = useAtom(characterStateAtom)
+	const [characterState, setCharacterState] = useAtom(characterStateAtom)
 	const [learningProgress] = useAtom(learningProgressAtom)
 
 	// 音声入力の有効化状態
 	const [isVoiceEnabled] = useState(true)
+
+	// トランスクリプションID用カウンター
+	const transcriptionIdRef = useRef(0)
+
+	// PCM再生フック
+	const {
+		isPlaying,
+		feedAudio,
+		stop: stopPlayback,
+		initialize: initPlayer,
+		cleanup: cleanupPlayer,
+	} = usePcmPlayer()
 
 	// セッション管理フック
 	const {
@@ -59,13 +71,64 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		clearError: clearDialogueError,
 	} = useDialogue()
 
+	// WebSocketコールバック
+	const handleAudioData = useCallback(
+		(data: ArrayBuffer) => {
+			feedAudio(data)
+			setCharacterState("speaking")
+		},
+		[feedAudio, setCharacterState],
+	)
+
+	const handleTranscription = useCallback(
+		(text: string, isUser: boolean, finished: boolean) => {
+			// 完了したトランスクリプションのみ対話履歴に追加
+			if (!finished) {
+				return
+			}
+
+			transcriptionIdRef.current += 1
+			const turn: DialogueTurn = {
+				id: `voice-${transcriptionIdRef.current}`,
+				speaker: isUser ? "child" : "robot",
+				text,
+				timestamp: new Date(),
+			}
+			setDialogueTurns((prev) => [...prev, turn])
+
+			if (isUser) {
+				setCharacterState("thinking")
+			} else {
+				setCharacterState("speaking")
+			}
+		},
+		[setDialogueTurns, setCharacterState],
+	)
+
+	const handleTurnComplete = useCallback(() => {
+		setCharacterState("idle")
+	}, [setCharacterState])
+
+	const handleInterrupted = useCallback(() => {
+		stopPlayback()
+		setCharacterState("listening")
+	}, [stopPlayback, setCharacterState])
+
 	// 音声ストリーミングフック
 	const {
 		connectionState: voiceConnectionState,
 		isRecording,
+		audioLevel,
 		startRecording,
 		stopRecording,
-	} = useVoiceStream()
+		connect: voiceConnect,
+		disconnect: voiceDisconnect,
+	} = useVoiceStream({
+		onAudioData: handleAudioData,
+		onTranscription: handleTranscription,
+		onTurnComplete: handleTurnComplete,
+		onInterrupted: handleInterrupted,
+	})
 
 	// 初期化時にセッションを作成
 	useEffect(() => {
@@ -81,10 +144,20 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		}
 	}, [dialogueTurns.length, setDialogueTurns])
 
+	// セッション作成完了時にWebSocket接続とPCMプレーヤー初期化
+	useEffect(() => {
+		if (session) {
+			initPlayer()
+			voiceConnect(session.userId || "anonymous", session.id)
+		}
+	}, [session, initPlayer, voiceConnect])
+
 	const handleEndSession = useCallback(async () => {
+		voiceDisconnect()
+		cleanupPlayer()
 		await clearSession()
 		router.push("/")
-	}, [clearSession, router])
+	}, [voiceDisconnect, cleanupPlayer, clearSession, router])
 
 	const handleSendMessage = useCallback(
 		(text: string) => {
@@ -96,10 +169,12 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const handleToggleRecording = useCallback(async () => {
 		if (isRecording) {
 			stopRecording()
+			setCharacterState("thinking")
 		} else {
+			setCharacterState("listening")
 			await startRecording()
 		}
-	}, [isRecording, startRecording, stopRecording])
+	}, [isRecording, startRecording, stopRecording, setCharacterState])
 
 	const handleRetry = useCallback(() => {
 		clearSessionError()
@@ -190,9 +265,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 					<div className="w-full max-w-md">
 						<VoiceInterface
 							isRecording={isRecording}
-							audioLevel={0}
+							audioLevel={audioLevel}
 							isConnected={isVoiceConnected}
-							isPlaying={false}
+							isPlaying={isPlaying}
 							onToggleRecording={handleToggleRecording}
 						/>
 					</div>
@@ -203,9 +278,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 						</p>
 						<VoiceInterface
 							isRecording={isRecording}
-							audioLevel={0}
+							audioLevel={audioLevel}
 							isConnected={isVoiceConnected}
-							isPlaying={false}
+							isPlaying={isPlaying}
 							onToggleRecording={handleToggleRecording}
 						/>
 					</div>

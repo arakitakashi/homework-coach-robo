@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import type { ReactNode } from "react"
@@ -28,7 +28,22 @@ let mockCreateSessionResponse: {
 	created_at: string
 } | null = null
 
-// SessionClient と DialogueClient をモック
+// VoiceWebSocketClient のコールバックをキャプチャ
+interface CapturedVoiceCallbacks {
+	onAudioData: (data: ArrayBuffer) => void
+	onTranscription: (text: string, isUser: boolean, finished: boolean) => void
+	onTurnComplete: () => void
+	onInterrupted: () => void
+	onError: (error: string) => void
+	onConnectionChange: (state: string) => void
+}
+
+let capturedVoiceCallbacks: CapturedVoiceCallbacks | null = null
+const mockVoiceConnect = vi.fn()
+const mockVoiceDisconnect = vi.fn()
+let mockVoiceIsConnected = false
+
+// SessionClient, DialogueClient, VoiceWebSocketClient をモック
 vi.mock("@/lib/api", () => {
 	class MockSessionClient {
 		async createSession(): Promise<{
@@ -76,9 +91,32 @@ vi.mock("@/lib/api", () => {
 		}
 	}
 
+	class MockVoiceWebSocketClient {
+		constructor(
+			options: CapturedVoiceCallbacks & { baseUrl: string; userId: string; sessionId: string },
+		) {
+			capturedVoiceCallbacks = {
+				onAudioData: options.onAudioData,
+				onTranscription: options.onTranscription,
+				onTurnComplete: options.onTurnComplete,
+				onInterrupted: options.onInterrupted,
+				onError: options.onError,
+				onConnectionChange: options.onConnectionChange,
+			}
+		}
+		connect = mockVoiceConnect
+		disconnect = mockVoiceDisconnect
+		sendAudio = vi.fn()
+		sendText = vi.fn()
+		get isConnected() {
+			return mockVoiceIsConnected
+		}
+	}
+
 	return {
 		SessionClient: MockSessionClient,
 		DialogueClient: MockDialogueClient,
+		VoiceWebSocketClient: MockVoiceWebSocketClient,
 	}
 })
 
@@ -115,23 +153,41 @@ class MockWebSocket {
 globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
 
 // AudioContextをモック
-const mockAudioContext = {
-	createBufferSource: vi.fn(() => ({
+const mockAddModule = vi.fn().mockResolvedValue(undefined)
+const mockAudioContextClose = vi.fn().mockResolvedValue(undefined)
+
+class MockAudioContext {
+	sampleRate = 24000
+	state = "running"
+	audioWorklet = {
+		addModule: mockAddModule,
+	}
+	createBufferSource = vi.fn(() => ({
 		connect: vi.fn(),
 		start: vi.fn(),
 		buffer: null,
-	})),
-	decodeAudioData: vi.fn(),
-	destination: {},
-}
-
-class MockAudioContext {
-	createBufferSource = mockAudioContext.createBufferSource
-	decodeAudioData = mockAudioContext.decodeAudioData
-	destination = mockAudioContext.destination
+	}))
+	decodeAudioData = vi.fn()
+	destination = {}
+	close = mockAudioContextClose
+	createMediaStreamSource = vi.fn().mockReturnValue({
+		connect: vi.fn(),
+	})
 }
 
 globalThis.AudioContext = MockAudioContext as unknown as typeof AudioContext
+
+// AudioWorkletNode モック
+class MockAudioWorkletNode {
+	port = {
+		postMessage: vi.fn(),
+		onmessage: null as ((event: { data: Float32Array }) => void) | null,
+	}
+	connect = vi.fn()
+	disconnect = vi.fn()
+}
+
+globalThis.AudioWorkletNode = MockAudioWorkletNode as unknown as typeof AudioWorkletNode
 
 // MediaDevicesをモック
 const mockMediaStream = {
@@ -149,6 +205,8 @@ describe("SessionContent", () => {
 	beforeEach(() => {
 		mockPush.mockClear()
 		vi.clearAllMocks()
+		capturedVoiceCallbacks = null
+		mockVoiceIsConnected = false
 		// デフォルトのモックレスポンスを設定
 		mockCreateSessionResponse = {
 			session_id: "test-session-123",
@@ -232,5 +290,82 @@ describe("SessionContent", () => {
 		renderWithProvider(<SessionContent characterType="robot" />)
 		// ローディング中もmainがあるはず
 		expect(screen.getByRole("main")).toBeInTheDocument()
+	})
+
+	describe("WebSocket音声統合", () => {
+		it("セッション作成後にWebSocket接続を開始する", async () => {
+			renderWithProvider(<SessionContent characterType="robot" />)
+
+			await waitFor(() => {
+				expect(mockVoiceConnect).toHaveBeenCalled()
+			})
+		})
+
+		it("トランスクリプション（ユーザー、finished=true）で対話履歴にターンが追加される", async () => {
+			renderWithProvider(<SessionContent characterType="robot" />)
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(capturedVoiceCallbacks).not.toBeNull()
+			})
+
+			// ユーザーのトランスクリプション（finished=true）をシミュレート
+			act(() => {
+				capturedVoiceCallbacks?.onTranscription("3たす5はいくつ？", true, true)
+			})
+
+			await waitFor(() => {
+				expect(screen.getByText("3たす5はいくつ？")).toBeInTheDocument()
+			})
+		})
+
+		it("トランスクリプション（AI、finished=true）で対話履歴にターンが追加される", async () => {
+			renderWithProvider(<SessionContent characterType="robot" />)
+
+			await waitFor(() => {
+				expect(capturedVoiceCallbacks).not.toBeNull()
+			})
+
+			// AIのトランスクリプション（finished=true）をシミュレート
+			act(() => {
+				capturedVoiceCallbacks?.onTranscription("この問題、何を聞いてると思う？", false, true)
+			})
+
+			await waitFor(() => {
+				expect(screen.getByText("この問題、何を聞いてると思う？")).toBeInTheDocument()
+			})
+		})
+
+		it("トランスクリプション（finished=false）では対話履歴に追加しない", async () => {
+			renderWithProvider(<SessionContent characterType="robot" />)
+
+			await waitFor(() => {
+				expect(capturedVoiceCallbacks).not.toBeNull()
+			})
+
+			// 部分的なトランスクリプション（finished=false）
+			act(() => {
+				capturedVoiceCallbacks?.onTranscription("3たす", true, false)
+			})
+
+			// 部分テキストは対話履歴に表示されない
+			expect(screen.queryByText("3たす")).not.toBeInTheDocument()
+		})
+
+		it("セッション終了時にWebSocket接続を切断する", async () => {
+			const user = userEvent.setup()
+			renderWithProvider(<SessionContent characterType="robot" />)
+
+			await waitFor(() => {
+				expect(screen.getByRole("button", { name: /おわる/i })).toBeInTheDocument()
+			})
+
+			const endButton = screen.getByRole("button", { name: /おわる/i })
+			await user.click(endButton)
+
+			await waitFor(() => {
+				expect(mockVoiceDisconnect).toHaveBeenCalled()
+			})
+		})
 	})
 })

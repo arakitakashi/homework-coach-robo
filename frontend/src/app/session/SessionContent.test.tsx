@@ -35,6 +35,7 @@ vi.mock("@/lib/hooks/useVoiceStream", () => ({
 	useVoiceStream: () => ({
 		connectionState: "disconnected",
 		isRecording: false,
+		audioLevel: 0,
 		error: null,
 		connect: vi.fn(),
 		disconnect: vi.fn(),
@@ -42,6 +43,17 @@ vi.mock("@/lib/hooks/useVoiceStream", () => ({
 		stopRecording: vi.fn(),
 		sendText: vi.fn(),
 		clearError: vi.fn(),
+	}),
+}))
+
+// usePcmPlayerをモック
+vi.mock("@/lib/hooks/usePcmPlayer", () => ({
+	usePcmPlayer: () => ({
+		isPlaying: false,
+		feedAudio: vi.fn(),
+		stop: vi.fn(),
+		initialize: vi.fn().mockResolvedValue(undefined),
+		cleanup: vi.fn(),
 	}),
 }))
 

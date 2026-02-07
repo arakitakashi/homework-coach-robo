@@ -29,6 +29,8 @@ export interface UseVoiceStreamReturn {
 	connectionState: VoiceConnectionState
 	/** 録音中フラグ */
 	isRecording: boolean
+	/** 音声レベル（0-1の範囲、RMS値） */
+	audioLevel: number
 	/** エラーメッセージ */
 	error: string | null
 	/** WebSocket接続を開始 */
@@ -65,6 +67,7 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 	// 状態
 	const [connectionState, setConnectionState] = useState<VoiceConnectionState>("disconnected")
 	const [isRecording, setIsRecording] = useState(false)
+	const [audioLevel, setAudioLevel] = useState(0)
 	const [error, setError] = useState<string | null>(null)
 
 	// Refs
@@ -98,6 +101,7 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 		}
 
 		setIsRecording(false)
+		setAudioLevel(0)
 	}, [])
 
 	/**
@@ -191,8 +195,18 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 
 			// 音声データを受信してWebSocketで送信
 			workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
+				const float32Data = event.data
+
+				// RMS計算で音声レベルを更新
+				let sum = 0
+				for (let i = 0; i < float32Data.length; i++) {
+					sum += float32Data[i] * float32Data[i]
+				}
+				const rms = Math.sqrt(sum / float32Data.length)
+				setAudioLevel(Math.min(1, rms * 5))
+
 				if (clientRef.current?.isConnected) {
-					const pcmData = convertFloat32ToPCM16(event.data)
+					const pcmData = convertFloat32ToPCM16(float32Data)
 					clientRef.current.sendAudio(pcmData)
 				}
 			}
@@ -235,6 +249,7 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 	return {
 		connectionState,
 		isRecording,
+		audioLevel,
 		error,
 		connect,
 		disconnect,
