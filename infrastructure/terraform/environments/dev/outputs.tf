@@ -68,6 +68,17 @@ output "frontend_url" {
   value       = module.cloud_run.frontend_url
 }
 
+# GitHub Actions WIF
+output "github_wif_provider" {
+  description = "The Workload Identity Provider (for GitHub Secret GCP_WORKLOAD_IDENTITY_PROVIDER)"
+  value       = module.github_wif.workload_identity_provider
+}
+
+output "github_wif_service_account" {
+  description = "The GitHub Actions service account email (for GitHub Secret GCP_SERVICE_ACCOUNT)"
+  value       = module.github_wif.service_account_email
+}
+
 # Summary for easy reference
 output "summary" {
   description = "Summary of important resources"

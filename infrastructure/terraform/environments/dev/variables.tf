@@ -38,6 +38,18 @@ variable "frontend_min_instances" {
 
 # NOTE: Redis variables removed - session management handled by Vertex AI / ADK
 
+variable "github_owner" {
+  description = "GitHub repository owner for Workload Identity Federation"
+  type        = string
+  default     = "arakitakashi"
+}
+
+variable "github_repo" {
+  description = "GitHub repository name for Workload Identity Federation"
+  type        = string
+  default     = "homework-coach-robo"
+}
+
 variable "enable_cdn" {
   description = "Enable Cloud CDN (dev default: false)"
   type        = bool
