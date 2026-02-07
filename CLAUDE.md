@@ -146,10 +146,11 @@ homework-coach-robo/
 - `docs/functional-design.md`: 機能設計書（システムアーキテクチャ、API仕様、データフロー）
 - `docs/architecture.md`: 技術仕様書（技術スタック、インフラ設計、パフォーマンス要件）
 - `docs/firestore-design.md`: Firestoreスキーマ設計（データ構造、セキュリティルール）
+- `docs/agent-architecture.md`: エージェントアーキテクチャ設計書（ツール、マルチエージェント、RAG、感情適応、Agent Engine）
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・パイロットテスト準備中**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2（エージェントアーキテクチャ拡張）準備中**の段階です。
 
 ### 完了済み
 
@@ -310,6 +311,41 @@ AgentRunnerService
 ```
 
 詳細は `.steering/20260205-adk-runner-integration/COMPLETED.md` を参照。
+
+### ADK エージェントアーキテクチャ（Phase 2 計画）
+
+MVP（Phase 1）ではシステムプロンプトのみの単一エージェント（`tools=[]`）だが、Phase 2ではADKの高度な機能をフル活用する。
+
+| Phase | 内容 | 主要変更 |
+|-------|------|---------|
+| **2a** | ツール導入（Function Calling） | `calculate_tool`, `manage_hint_tool`, `record_progress_tool`, `check_curriculum_tool`, `analyze_image_tool` |
+| **2b** | マルチエージェント | Router Agent → Math/Japanese/Encouragement/Review Agent |
+| **2c** | Vertex AI RAG | セマンティック記憶検索（キーワード検索を置換） |
+| **2d** | 感情適応 | 音声トーン分析 → 対話トーン・サポートレベル適応 |
+| **3** | Agent Engine | Vertex AI Agent Engineへのマネージドデプロイ |
+
+**Phase 2 ファイル構成（計画）:**
+```
+backend/app/services/adk/
+├── agents/                   # マルチエージェント定義
+│   ├── router.py             # Router Agent
+│   ├── math_coach.py         # 算数コーチ
+│   ├── japanese_coach.py     # 国語コーチ
+│   ├── encouragement.py      # 励まし
+│   ├── review.py             # 振り返り
+│   └── prompts/              # エージェント別プロンプト
+├── tools/                    # ADK Function Tools
+│   ├── calculate.py          # 計算検証
+│   ├── hint_manager.py       # ヒント段階管理
+│   ├── curriculum.py         # カリキュラム参照
+│   ├── progress_recorder.py  # 進捗記録
+│   └── image_analyzer.py     # 画像分析
+├── runner/                   # 既存
+├── sessions/                 # 既存
+└── memory/                   # → Phase 2cでRAGに移行
+```
+
+詳細は `docs/agent-architecture.md` を参照。
 
 ### Dialogue API Integration
 
@@ -590,7 +626,31 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済みです。
     - ~~フロントエンドとの接続確認~~ ✅ 完了
 14. ~~**E2Eテスト**~~ ✅ 完了
 15. ~~**GitHub WIF Terraform**~~ ✅ 完了
-16. **パイロットテスト**: 小規模グループでのβテスト ← 現在地
+16. **Phase 2a: ADKツール導入（Function Calling）** ← 現在地
+    - `calculate_tool`: 計算検証（LLM幻覚リスク排除）
+    - `manage_hint_tool`: ヒント段階の厳密な状態管理
+    - `record_progress_tool`: 学習進捗記録・ポイント付与
+    - `check_curriculum_tool`: カリキュラム・教科書参照
+    - `analyze_image_tool`: 宿題写真の読み取り（Vision API）
+17. **Phase 2b: マルチエージェント構成**
+    - Router Agent（教科・状況に応じた振り分け）
+    - Math Coach Agent（算数専門コーチ）
+    - Japanese Coach Agent（国語専門コーチ）
+    - Encouragement Agent（励まし・休憩提案）
+    - Review Agent（振り返り・保護者レポート）
+18. **Phase 2c: Vertex AI RAG（セマンティック記憶）**
+    - RAG Corpus作成・インデクシング
+    - `search_memory_tool` 統合
+    - FirestoreMemoryService からの移行
+19. **Phase 2d: 感情適応エージェント**
+    - テキストベース感情分析（Gemini）
+    - 感情 → 対話トーン適応ロジック
+    - 音声トーン分析の高度化（AutoML）
+20. **Phase 3: Vertex AI Agent Engine デプロイ**
+    - Agent Engine へのエージェントデプロイ
+    - セッション管理の移行（自前 → マネージド）
+    - A/Bテスト環境構築
+21. **パイロットテスト**: 小規模グループでのβテスト
 
 ### 開発方針
 

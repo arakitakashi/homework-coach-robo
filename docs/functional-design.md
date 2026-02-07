@@ -1,8 +1,8 @@
 # 宿題コーチロボット - 機能設計書
 
-**Document Version**: 1.5
-**Last Updated**: 2026-02-03
-**Status**: MVP設計完了（ADK 1.23.0+、StateTracker実装注記追加）
+**Document Version**: 1.6
+**Last Updated**: 2026-02-08
+**Status**: MVP設計完了 + Phase 2 エージェントアーキテクチャ追加（ADK 1.23.0+）
 
 ---
 
@@ -260,7 +260,78 @@ finally:
     await save_session_to_bigquery(session)
 ```
 
-### 1.4 ユースケース図
+### 1.4 Phase 2: エージェントアーキテクチャ拡張
+
+MVP（Phase 1）ではシステムプロンプトのみの単一エージェントだが、Phase 2ではADKの高度な機能をフル活用する。
+
+> **詳細設計は [`docs/agent-architecture.md`](./agent-architecture.md) を参照。**
+
+#### Phase 2 全体像
+
+```mermaid
+graph TB
+    subgraph Agents["エージェント層（マルチエージェント）"]
+        Router["Router Agent<br/>（振り分け）"]
+        MathCoach["Math Coach<br/>（算数コーチ）"]
+        JapaneseCoach["Japanese Coach<br/>（国語コーチ）"]
+        Encouragement["Encouragement<br/>（励まし）"]
+        Review["Review<br/>（振り返り）"]
+        Emotion["Emotion Analyzer<br/>（感情分析）"]
+    end
+
+    subgraph Tools["ツール層（Function Calling）"]
+        CalcTool["calculate_tool<br/>計算検証"]
+        HintTool["manage_hint_tool<br/>ヒント管理"]
+        CurrTool["check_curriculum_tool<br/>カリキュラム参照"]
+        ProgTool["record_progress_tool<br/>進捗記録"]
+        ImgTool["analyze_image_tool<br/>画像分析"]
+        MemTool["search_memory_tool<br/>RAG記憶検索"]
+    end
+
+    subgraph Memory["記憶層（Vertex AI RAG）"]
+        RAG["RAG Engine<br/>セマンティック検索"]
+        Corpus["RAG Corpus<br/>対話履歴・苦手分野"]
+    end
+
+    Router --> MathCoach
+    Router --> JapaneseCoach
+    Router --> Encouragement
+    Router --> Review
+    Emotion -.感情状態.-> Router
+
+    MathCoach --> CalcTool
+    MathCoach --> HintTool
+    JapaneseCoach --> HintTool
+    MathCoach --> CurrTool
+    JapaneseCoach --> CurrTool
+    MathCoach --> ProgTool
+    Review --> ProgTool
+    MathCoach --> ImgTool
+    Review --> MemTool
+
+    MemTool --> RAG
+    RAG --> Corpus
+
+    classDef agent fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef tool fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef memory fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+
+    class Router,MathCoach,JapaneseCoach,Encouragement,Review,Emotion agent
+    class CalcTool,HintTool,CurrTool,ProgTool,ImgTool,MemTool tool
+    class RAG,Corpus memory
+```
+
+#### Phase 2 実装ステップ
+
+| フェーズ | 内容 | 依存関係 |
+|---------|------|---------|
+| **2a: ツール導入** | Function Calling（計算、ヒント管理、進捗記録、画像分析） | なし（最初に実装） |
+| **2b: マルチエージェント** | Router + 教科別コーチ + 励まし + 振り返り | Phase 2a |
+| **2c: RAG記憶** | Vertex AI RAGによるセマンティック検索 | Phase 2a |
+| **2d: 感情適応** | 音声トーン分析 → 対話トーン適応 | Phase 2a |
+| **3: Agent Engine** | Vertex AI Agent Engineへのマネージドデプロイ | Phase 2全完了 |
+
+### 1.5 ユースケース図
 
 ```mermaid
 graph TB
