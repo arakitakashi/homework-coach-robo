@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2a（ツール導入）実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2a（ツール導入）実装完了・Phase 2 フロントエンド型定義基盤完了
 
 ---
 
@@ -29,6 +29,7 @@
 - **E2Eテスト**: Playwright によるスモーク・機能・統合テスト（9テストファイル）実装完了
 - **GitHub WIF Terraform**: GitHub Actions 向け Workload Identity Federation をIaC化完了
 - **ADK Function Tools (Phase 2a)**: 5つのADKツール（calculate, hint_manager, curriculum, progress_recorder, image_analyzer）実装完了
+- **フロントエンド Phase 2 型定義・状態管理**: Phase 2a-2d 対応の型定義（25型）+ Jotai atoms（12個）実装完了
 
 ---
 
@@ -275,7 +276,8 @@ Server → Client:
 | | `VoiceWebSocketClient` | WebSocket音声通信 |
 | **AudioWorklet** | `pcm-recorder-processor.js` | 録音用Processor（16kHz 16-bit） |
 | | `pcm-player-processor.js` | 再生用Processor（24kHz） |
-| **型定義** | `types/` | dialogue, session, audio, websocket |
+| **型定義** | `types/` | dialogue, session, audio, websocket, phase2 |
+| **Phase 2 状態管理** | `store/atoms/phase2.ts` | Phase 2a-2d 対応の12個のJotai atoms |
 
 ### 未実装（MVP後）
 
@@ -283,9 +285,48 @@ Server → Client:
 |------|------|------|
 | **追加キャラクター** | 低優先度 | 魔法使い、宇宙飛行士、動物（選択UIは実装済み） |
 
+### Phase 2 型定義・状態管理基盤
+
+`frontend/types/phase2.ts` および `frontend/store/atoms/phase2.ts` に Phase 2a-2d 対応の型定義と状態管理を実装。既存の型は後方互換性を維持しつつオプショナルフィールドで拡張。
+
+**型定義（`types/phase2.ts`）:**
+
+| Phase | 型名 | 説明 |
+|-------|------|------|
+| **2a** | `ToolName`, `ToolExecutionStatus`, `ToolExecution` | ツール実行の状態管理 |
+| **2a** | `CalculationResult`, `HintManagementResult`, `ProgressRecordResult`, `CurriculumCheckResult`, `ImageAnalysisResult` | 各ツールの結果型 |
+| **2b** | `SubjectType`, `AgentType`, `ActiveAgent`, `AgentTransition` | マルチエージェント構成 |
+| **2c** | `MemoryType`, `RetrievedMemory` | RAGセマンティック記憶 |
+| **2d** | `EmotionType`, `EmotionAnalysis`, `SupportLevel`, `DialogueTone`, `EmotionAdaptation` | 感情適応 |
+| **共通** | `QuestionType`, `ResponseAnalysis`, `ThinkingTendencies`, `SubjectUnderstanding`, `SessionSummary`, `ChildLearningProfile` | 学習プロファイル・分析 |
+
+**既存型の拡張（後方互換）:**
+- `DialogueTurn`（`dialogue.ts`）: `questionType?`, `responseAnalysis?`, `emotion?`, `activeAgent?`, `toolExecutions?` を追加
+- `LearningProgress`（`session.ts`）: `currentSubject?`, `currentTopic?`, `thinkingTendencies?` を追加
+- `WebSocketIncomingMessage`（`websocket.ts`）: `ToolExecutionMessage`, `AgentTransitionMessage`, `EmotionUpdateMessage` を追加
+
+**Jotai Atoms（`store/atoms/phase2.ts`）:**
+
+| Phase | Atom | 型 | 説明 |
+|-------|------|---|------|
+| 2a | `activeToolExecutionsAtom` | `ToolExecution[]` | 現在実行中のツール |
+| 2a | `toolExecutionHistoryAtom` | `ToolExecution[]` | ツール実行履歴 |
+| 2a | `isToolRunningAtom` | `boolean`（派生） | ツール実行中フラグ |
+| 2b | `activeAgentAtom` | `ActiveAgent \| null` | 現在のアクティブエージェント |
+| 2b | `agentTransitionHistoryAtom` | `AgentTransition[]` | エージェント切り替え履歴 |
+| 2c | `retrievedMemoriesAtom` | `RetrievedMemory[]` | RAG検索結果 |
+| 2d | `emotionAnalysisAtom` | `EmotionAnalysis \| null` | 現在の感情分析結果 |
+| 2d | `emotionAdaptationAtom` | `EmotionAdaptation \| null` | 感情適応設定 |
+| 2d | `emotionHistoryAtom` | `EmotionAnalysis[]` | 感情分析履歴 |
+| 共通 | `learningProfileAtom` | `ChildLearningProfile \| null` | 学習プロファイル |
+
+**テスト:** 37型テスト + 27 atomテスト = 64テスト
+
+詳細は `.steering/20260208-frontend-phase2-types/COMPLETED.md` を参照。
+
 ### テストカバレッジ
 
-- **ユニットテスト**: 23テストファイル、194テスト（Vitest + Testing Library）
+- **ユニットテスト**: 25テストファイル、258テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -467,3 +508,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260207-frontend-websocket-integration/` | フロントエンド WebSocket 統合 |
 | `.steering/20260207-e2e-tests/` | E2E テスト |
 | `.steering/20260208-phase2a-adk-tools/` | Phase 2a ADK Function Tools |
+| `.steering/20260208-frontend-phase2-types/` | フロントエンド Phase 2 型定義・状態管理基盤 |

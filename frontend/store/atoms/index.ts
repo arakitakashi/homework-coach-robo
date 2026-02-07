@@ -3,4 +3,5 @@
 
 export * from "./audio"
 export * from "./dialogue"
+export * from "./phase2"
 export * from "./session"
