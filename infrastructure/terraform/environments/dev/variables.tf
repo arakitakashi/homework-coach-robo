@@ -55,3 +55,37 @@ variable "enable_cdn" {
   type        = bool
   default     = false
 }
+
+# =============================================================================
+# Phase 2 Feature Flags
+# =============================================================================
+
+variable "enable_phase2_tools" {
+  description = "Enable Phase 2a: ADK tools infrastructure"
+  type        = bool
+  default     = false
+}
+
+variable "enable_phase2_multi_agent" {
+  description = "Enable Phase 2b: Multi-agent infrastructure"
+  type        = bool
+  default     = false
+}
+
+variable "enable_phase2_rag" {
+  description = "Enable Phase 2c: RAG infrastructure (Discovery Engine, indexes, tables)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_phase2_emotion" {
+  description = "Enable Phase 2d: Emotion analysis infrastructure"
+  type        = bool
+  default     = false
+}
+
+variable "backend_memory" {
+  description = "Memory limit for backend (Phase 2 may need more)"
+  type        = string
+  default     = "1Gi"
+}

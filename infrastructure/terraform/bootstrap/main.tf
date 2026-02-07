@@ -88,6 +88,7 @@ locals {
     "iam.googleapis.com",                  # IAM
     "iamcredentials.googleapis.com",       # IAM Credentials (for WIF)
     "cloudresourcemanager.googleapis.com", # Resource Manager
+    "discoveryengine.googleapis.com",      # Discovery Engine (RAG - Phase 2c)
   ]
 }
 

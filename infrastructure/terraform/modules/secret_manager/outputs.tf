@@ -31,3 +31,14 @@ output "api_key_secret_name" {
   description = "The resource name of the API key secret (if created)"
   value       = var.create_api_key_secret ? google_secret_manager_secret.api_key[0].name : null
 }
+
+# Phase 2 outputs
+output "gemini_api_key_secret_id" {
+  description = "The ID of the Gemini API key secret (if created)"
+  value       = var.create_gemini_api_key_secret ? google_secret_manager_secret.gemini_api_key[0].secret_id : null
+}
+
+output "gemini_api_key_secret_name" {
+  description = "The resource name of the Gemini API key secret (if created)"
+  value       = var.create_gemini_api_key_secret ? google_secret_manager_secret.gemini_api_key[0].name : null
+}

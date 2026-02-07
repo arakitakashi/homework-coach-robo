@@ -129,3 +129,112 @@ resource "google_firestore_index" "users_by_parent" {
 
   depends_on = [google_firestore_database.main]
 }
+
+# =============================================================================
+# Phase 2 Indexes (conditional)
+# =============================================================================
+
+# Phase 2a: Curriculum items by subject and grade level
+resource "google_firestore_index" "curriculum_by_subject_grade" {
+  count      = var.enable_phase2_indexes ? 1 : 0
+  project    = var.project_id
+  database   = google_firestore_database.main.name
+  collection = "curriculum"
+
+  fields {
+    field_path = "subject"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "gradeLevel"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "unit"
+    order      = "ASCENDING"
+  }
+
+  depends_on = [google_firestore_database.main]
+}
+
+# Phase 2b: Agent configs by name
+resource "google_firestore_index" "agent_configs_by_name" {
+  count      = var.enable_phase2_indexes ? 1 : 0
+  project    = var.project_id
+  database   = google_firestore_database.main.name
+  collection = "agent_configs"
+
+  fields {
+    field_path = "agentName"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "version"
+    order      = "DESCENDING"
+  }
+
+  depends_on = [google_firestore_database.main]
+}
+
+# Phase 2b: Active agent configs
+resource "google_firestore_index" "agent_configs_active" {
+  count      = var.enable_phase2_indexes ? 1 : 0
+  project    = var.project_id
+  database   = google_firestore_database.main.name
+  collection = "agent_configs"
+
+  fields {
+    field_path = "isActive"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "agentName"
+    order      = "ASCENDING"
+  }
+
+  depends_on = [google_firestore_database.main]
+}
+
+# Phase 2d: Emotion analysis by session
+resource "google_firestore_index" "emotion_analysis_by_session" {
+  count      = var.enable_phase2_indexes ? 1 : 0
+  project    = var.project_id
+  database   = google_firestore_database.main.name
+  collection = "emotion_analysis"
+
+  fields {
+    field_path = "sessionId"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "analyzedAt"
+    order      = "DESCENDING"
+  }
+
+  depends_on = [google_firestore_database.main]
+}
+
+# Phase 2d: Emotion analysis by user
+resource "google_firestore_index" "emotion_analysis_by_user" {
+  count      = var.enable_phase2_indexes ? 1 : 0
+  project    = var.project_id
+  database   = google_firestore_database.main.name
+  collection = "emotion_analysis"
+
+  fields {
+    field_path = "userId"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "analyzedAt"
+    order      = "DESCENDING"
+  }
+
+  depends_on = [google_firestore_database.main]
+}

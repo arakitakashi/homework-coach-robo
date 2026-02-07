@@ -63,6 +63,15 @@ resource "google_cloud_run_v2_service" "backend" {
       }
       # NOTE: PORT is automatically set by Cloud Run (8080)
 
+      # Additional environment variables (Phase 2)
+      dynamic "env" {
+        for_each = var.backend_env_vars
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+
       # Secret environment variables
       dynamic "env" {
         for_each = var.backend_secrets

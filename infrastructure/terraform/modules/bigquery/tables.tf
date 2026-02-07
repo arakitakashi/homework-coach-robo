@@ -290,3 +290,256 @@ resource "google_bigquery_table" "learning_profile_snapshots" {
 
   depends_on = [google_bigquery_dataset.main]
 }
+
+# =============================================================================
+# Phase 2 Tables (conditional)
+# =============================================================================
+
+# Agent Metrics Table (Phase 2b: multi-agent performance tracking)
+resource "google_bigquery_table" "agent_metrics" {
+  count               = var.enable_phase2_tables ? 1 : 0
+  dataset_id          = google_bigquery_dataset.main.dataset_id
+  table_id            = "agent_metrics"
+  project             = var.project_id
+  deletion_protection = var.environment == "production"
+
+  description = "Tracks multi-agent routing decisions and performance metrics"
+
+  time_partitioning {
+    type  = "DAY"
+    field = "timestamp"
+  }
+
+  clustering = ["agent_name", "session_id"]
+
+  labels = {
+    environment = var.environment
+    managed_by  = "terraform"
+    phase       = "phase2"
+  }
+
+  schema = jsonencode([
+    {
+      name        = "session_id"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "Session identifier"
+    },
+    {
+      name        = "agent_name"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "Name of the agent (router, math_coach, japanese_coach, etc.)"
+    },
+    {
+      name        = "timestamp"
+      type        = "TIMESTAMP"
+      mode        = "REQUIRED"
+      description = "Event timestamp"
+    },
+    {
+      name        = "action"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "Action performed (route, respond, tool_call, etc.)"
+    },
+    {
+      name        = "latency_ms"
+      type        = "INT64"
+      mode        = "NULLABLE"
+      description = "Response latency in milliseconds"
+    },
+    {
+      name        = "tokens_used"
+      type        = "INT64"
+      mode        = "NULLABLE"
+      description = "Number of tokens consumed"
+    },
+    {
+      name        = "tool_name"
+      type        = "STRING"
+      mode        = "NULLABLE"
+      description = "Name of the tool called (if applicable)"
+    },
+    {
+      name        = "success"
+      type        = "BOOLEAN"
+      mode        = "NULLABLE"
+      description = "Whether the action was successful"
+    },
+    {
+      name        = "error_message"
+      type        = "STRING"
+      mode        = "NULLABLE"
+      description = "Error message if action failed"
+    },
+    {
+      name        = "user_id"
+      type        = "STRING"
+      mode        = "NULLABLE"
+      description = "User identifier"
+    }
+  ])
+
+  depends_on = [google_bigquery_dataset.main]
+}
+
+# Emotion Analysis Table (Phase 2d: emotion tracking)
+resource "google_bigquery_table" "emotion_analysis" {
+  count               = var.enable_phase2_tables ? 1 : 0
+  dataset_id          = google_bigquery_dataset.main.dataset_id
+  table_id            = "emotion_analysis"
+  project             = var.project_id
+  deletion_protection = var.environment == "production"
+
+  description = "Stores emotion analysis results from voice tone analysis"
+
+  time_partitioning {
+    type  = "DAY"
+    field = "analyzed_at"
+  }
+
+  clustering = ["user_id", "session_id"]
+
+  labels = {
+    environment = var.environment
+    managed_by  = "terraform"
+    phase       = "phase2"
+  }
+
+  schema = jsonencode([
+    {
+      name        = "session_id"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "Session identifier"
+    },
+    {
+      name        = "user_id"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "User identifier"
+    },
+    {
+      name        = "analyzed_at"
+      type        = "TIMESTAMP"
+      mode        = "REQUIRED"
+      description = "Analysis timestamp"
+    },
+    {
+      name        = "emotion"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "Detected emotion (frustrated, confident, tired, neutral, etc.)"
+    },
+    {
+      name        = "confidence"
+      type        = "FLOAT64"
+      mode        = "NULLABLE"
+      description = "Confidence score of emotion detection (0-1)"
+    },
+    {
+      name        = "frustration_level"
+      type        = "FLOAT64"
+      mode        = "NULLABLE"
+      description = "Frustration level (0-10)"
+    },
+    {
+      name        = "support_level_adjustment"
+      type        = "STRING"
+      mode        = "NULLABLE"
+      description = "Support level adjustment made (increase, decrease, maintain)"
+    },
+    {
+      name        = "turn_id"
+      type        = "STRING"
+      mode        = "NULLABLE"
+      description = "Dialogue turn that triggered the analysis"
+    }
+  ])
+
+  depends_on = [google_bigquery_dataset.main]
+}
+
+# RAG Metrics Table (Phase 2c: RAG performance tracking)
+resource "google_bigquery_table" "rag_metrics" {
+  count               = var.enable_phase2_tables ? 1 : 0
+  dataset_id          = google_bigquery_dataset.main.dataset_id
+  table_id            = "rag_metrics"
+  project             = var.project_id
+  deletion_protection = var.environment == "production"
+
+  description = "Tracks RAG retrieval performance and relevance metrics"
+
+  time_partitioning {
+    type  = "DAY"
+    field = "queried_at"
+  }
+
+  clustering = ["corpus_id"]
+
+  labels = {
+    environment = var.environment
+    managed_by  = "terraform"
+    phase       = "phase2"
+  }
+
+  schema = jsonencode([
+    {
+      name        = "session_id"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "Session identifier"
+    },
+    {
+      name        = "queried_at"
+      type        = "TIMESTAMP"
+      mode        = "REQUIRED"
+      description = "Query timestamp"
+    },
+    {
+      name        = "corpus_id"
+      type        = "STRING"
+      mode        = "REQUIRED"
+      description = "RAG corpus identifier"
+    },
+    {
+      name        = "query_text"
+      type        = "STRING"
+      mode        = "NULLABLE"
+      description = "The query sent to RAG"
+    },
+    {
+      name        = "results_count"
+      type        = "INT64"
+      mode        = "NULLABLE"
+      description = "Number of results returned"
+    },
+    {
+      name        = "top_relevance_score"
+      type        = "FLOAT64"
+      mode        = "NULLABLE"
+      description = "Relevance score of the top result (0-1)"
+    },
+    {
+      name        = "latency_ms"
+      type        = "INT64"
+      mode        = "NULLABLE"
+      description = "Query latency in milliseconds"
+    },
+    {
+      name        = "used_in_response"
+      type        = "BOOLEAN"
+      mode        = "NULLABLE"
+      description = "Whether retrieved content was used in the response"
+    },
+    {
+      name        = "user_id"
+      type        = "STRING"
+      mode        = "NULLABLE"
+      description = "User identifier"
+    }
+  ])
+
+  depends_on = [google_bigquery_dataset.main]
+}

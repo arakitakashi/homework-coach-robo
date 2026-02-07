@@ -79,6 +79,27 @@ output "github_wif_service_account" {
   value       = module.github_wif.service_account_email
 }
 
+# Phase 2 outputs
+output "phase2_gemini_api_key_secret_id" {
+  description = "The Gemini API key secret ID (if created)"
+  value       = module.secret_manager.gemini_api_key_secret_id
+}
+
+output "phase2_bigquery_agent_metrics_table" {
+  description = "The agent_metrics BigQuery table ID (if created)"
+  value       = module.bigquery.agent_metrics_table_id
+}
+
+output "phase2_bigquery_emotion_analysis_table" {
+  description = "The emotion_analysis BigQuery table ID (if created)"
+  value       = module.bigquery.emotion_analysis_table_id
+}
+
+output "phase2_bigquery_rag_metrics_table" {
+  description = "The rag_metrics BigQuery table ID (if created)"
+  value       = module.bigquery.rag_metrics_table_id
+}
+
 # Summary for easy reference
 output "summary" {
   description = "Summary of important resources"
@@ -92,5 +113,10 @@ output "summary" {
     assets_bucket      = module.cloud_storage.bucket_name
     firestore_database = module.firestore.database_name
     bigquery_dataset   = module.bigquery.dataset_id
+    # Phase 2 flags
+    phase2_tools       = var.enable_phase2_tools
+    phase2_multi_agent = var.enable_phase2_multi_agent
+    phase2_rag         = var.enable_phase2_rag
+    phase2_emotion     = var.enable_phase2_emotion
   }
 }

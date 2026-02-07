@@ -32,3 +32,10 @@ variable "create_api_key_secret" {
   type        = bool
   default     = false
 }
+
+# Phase 2 Feature Flags
+variable "create_gemini_api_key_secret" {
+  description = "Whether to create the Gemini API key secret (Phase 2)"
+  type        = bool
+  default     = false
+}

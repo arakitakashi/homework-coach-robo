@@ -51,6 +51,7 @@ resource "google_project_service" "required_apis" {
     "aiplatform.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "discoveryengine.googleapis.com",
   ])
 
   project            = var.project_id
@@ -76,6 +77,10 @@ module "iam" {
   project_id  = var.project_id
   name_prefix = var.name_prefix
 
+  # Phase 2 flags
+  enable_phase2_rag           = var.enable_phase2_rag
+  enable_phase2_storage_admin = var.enable_phase2_rag
+
   depends_on = [google_project_service.required_apis]
 }
 
@@ -89,6 +94,9 @@ module "secret_manager" {
   backend_service_account_email  = module.iam.backend_service_account_email
   frontend_service_account_email = module.iam.frontend_service_account_email
 
+  # Phase 2 flags
+  create_gemini_api_key_secret = var.enable_phase2_tools || var.enable_phase2_multi_agent
+
   depends_on = [module.iam]
 }
 
@@ -99,6 +107,9 @@ module "firestore" {
   project_id  = var.project_id
   location    = var.region
   environment = var.environment
+
+  # Phase 2 flags
+  enable_phase2_indexes = var.enable_phase2_tools || var.enable_phase2_multi_agent || var.enable_phase2_emotion
 
   depends_on = [google_project_service.required_apis]
 }
@@ -111,6 +122,9 @@ module "bigquery" {
   location                      = var.region
   environment                   = var.environment
   backend_service_account_email = module.iam.backend_service_account_email
+
+  # Phase 2 flags
+  enable_phase2_tables = var.enable_phase2_multi_agent || var.enable_phase2_rag || var.enable_phase2_emotion
 
   depends_on = [module.iam]
 }
@@ -148,6 +162,7 @@ module "cloud_run" {
   vpc_connector_id                  = module.vpc.connector_id
   backend_min_instances             = var.backend_min_instances
   frontend_min_instances            = var.frontend_min_instances
+  backend_memory                    = var.backend_memory
 
   # Pass secret references to backend
   backend_secrets = {
@@ -156,6 +171,22 @@ module "cloud_run" {
       version   = "latest"
     }
   }
+
+  # Phase 2 environment variables (conditionally populated)
+  backend_env_vars = merge(
+    var.enable_phase2_tools ? {
+      ENABLE_ADK_TOOLS = "true"
+    } : {},
+    var.enable_phase2_multi_agent ? {
+      ENABLE_MULTI_AGENT = "true"
+    } : {},
+    var.enable_phase2_rag ? {
+      ENABLE_RAG = "true"
+    } : {},
+    var.enable_phase2_emotion ? {
+      ENABLE_EMOTION_ANALYSIS = "true"
+    } : {},
+  )
 
   # Allow unauthenticated access in dev
   allow_unauthenticated_backend = true
