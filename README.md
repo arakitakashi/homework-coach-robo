@@ -2,6 +2,120 @@
 
 開発を進めるうえで遵守すべき標準ルールを定義します。
 
+## ローカル開発環境（Docker）
+
+Dockerを使用してローカルでアプリケーションを起動する手順です。
+
+### 前提条件
+
+- Docker Desktop がインストールされていること
+- Google Cloud 認証が設定されていること（Gemini APIを使用する場合）
+
+### クイックスタート
+
+```bash
+# 1. リポジトリをクローン
+git clone https://github.com/arakitakashi/homework-coach-robo.git
+cd homework-coach-robo
+
+# 2. 環境変数ファイルを作成（オプション）
+cp .env.example .env
+# 必要に応じて .env を編集
+
+# 3. Docker Compose で起動
+docker compose up
+
+# バックグラウンドで起動する場合
+docker compose up -d
+```
+
+### アクセスURL
+
+| サービス | URL | 説明 |
+|----------|-----|------|
+| Frontend | http://localhost:3000 | Next.js フロントエンド |
+| Backend | http://localhost:8080 | FastAPI バックエンド |
+| API Docs | http://localhost:8080/docs | Swagger UI |
+| Health Check | http://localhost:8080/health | ヘルスチェック |
+
+### よく使うコマンド
+
+```bash
+# 起動
+docker compose up
+
+# バックグラウンド起動
+docker compose up -d
+
+# 停止
+docker compose down
+
+# ログ確認
+docker compose logs -f
+
+# 特定サービスのログ
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# 再ビルド（依存関係変更時）
+docker compose build --no-cache
+docker compose up
+
+# コンテナ内でコマンド実行
+docker compose exec backend uv run pytest
+docker compose exec frontend bun test
+```
+
+### 環境変数
+
+| 変数名 | デフォルト値 | 説明 |
+|--------|-------------|------|
+| `GOOGLE_CLOUD_PROJECT` | `homework-coach-robo` | GCPプロジェクトID |
+| `GOOGLE_CLOUD_LOCATION` | `asia-northeast1` | GCPリージョン |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8080` | バックエンドAPI URL |
+
+### Google Cloud 認証（Gemini API使用時）
+
+対話機能を使用する場合は、Google Cloud認証が必要です。
+
+```bash
+# 1. gcloud CLI で認証
+gcloud auth application-default login
+
+# 2. 環境変数を設定
+export GOOGLE_CLOUD_PROJECT=your-project-id
+
+# 3. Docker Compose で起動（認証情報をマウント）
+docker compose -f docker-compose.yml -f docker-compose.gcloud.yml up
+```
+
+### トラブルシューティング
+
+#### ポートが使用中の場合
+
+```bash
+# 使用中のポートを確認
+lsof -i :3000
+lsof -i :8080
+
+# プロセスを終了するか、docker-compose.yml でポートを変更
+```
+
+#### 依存関係のキャッシュをクリアしたい場合
+
+```bash
+# ボリュームを削除して再起動
+docker compose down -v
+docker compose up --build
+```
+
+### Docker を使わない開発
+
+Dockerを使わずにローカルで開発する場合は、以下を参照してください：
+
+- **バックエンド**: `backend/README.md`
+- **フロントエンド**: `frontend/README.md`
+
 ## プロジェクト構造
 
 本リポジトリは、小学生の宿題コーチロボ専用のリポジトリです。

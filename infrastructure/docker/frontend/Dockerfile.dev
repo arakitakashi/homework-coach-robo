@@ -1,0 +1,19 @@
+# Frontend Development Dockerfile
+# Next.js application with hot-reload support
+
+FROM oven/bun:1
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Expose port
+EXPOSE 3000
+
+# Install dependencies on startup (to handle volume mount)
+# Then run development server with hot-reload
+CMD ["sh", "-c", "bun install && bun run dev"]

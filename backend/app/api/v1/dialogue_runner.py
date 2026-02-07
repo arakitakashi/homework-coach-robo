@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dialogue", tags=["dialogue"])
 
+# デフォルトのアプリ名（runner_service.pyと同じ）
+DEFAULT_APP_NAME = "homework-coach"
+
 
 def get_session_service() -> FirestoreSessionService:
     """FirestoreSessionServiceを取得する"""
@@ -45,8 +48,35 @@ def get_agent_runner_service(
     )
 
 
+async def ensure_session_exists(
+    session_service: FirestoreSessionService,
+    user_id: str,
+    session_id: str,
+) -> None:
+    """セッションが存在することを確認し、なければ作成する
+
+    Args:
+        session_service: セッションサービス
+        user_id: ユーザーID
+        session_id: セッションID
+    """
+    existing = await session_service.get_session(
+        app_name=DEFAULT_APP_NAME,
+        user_id=user_id,
+        session_id=session_id,
+    )
+    if existing is None:
+        logger.info(f"Creating new session: {session_id} for user: {user_id}")
+        await session_service.create_session(
+            app_name=DEFAULT_APP_NAME,
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+
 async def event_generator(
     runner: AgentRunnerService,
+    session_service: FirestoreSessionService,
     user_id: str,
     session_id: str,
     message: str,
@@ -55,6 +85,7 @@ async def event_generator(
 
     Args:
         runner: AgentRunnerService
+        session_service: セッションサービス
         user_id: ユーザーID
         session_id: セッションID
         message: ユーザーメッセージ
@@ -63,6 +94,9 @@ async def event_generator(
         SSE形式のイベント文字列
     """
     try:
+        # セッションが存在しない場合は作成
+        await ensure_session_exists(session_service, user_id, session_id)
+
         async for event in runner.run(user_id, session_id, message):
             text = runner.extract_text(event)
             if text:
@@ -86,6 +120,7 @@ async def event_generator(
 async def run_dialogue(
     request: RunDialogueRequest,
     runner: AgentRunnerService = Depends(get_agent_runner_service),
+    session_service: FirestoreSessionService = Depends(get_session_service),
 ) -> StreamingResponse:
     """対話を実行する（ストリーミング）
 
@@ -99,6 +134,7 @@ async def run_dialogue(
     return StreamingResponse(
         event_generator(
             runner=runner,
+            session_service=session_service,
             user_id=request.user_id,
             session_id=request.session_id,
             message=request.message,

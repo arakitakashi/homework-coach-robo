@@ -1,0 +1,54 @@
+# Local Development Docker Compose
+#
+# Usage:
+#   docker compose up        # Start all services
+#   docker compose up -d     # Start in background
+#   docker compose down      # Stop all services
+#   docker compose logs -f   # View logs
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend/Dockerfile.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - backend-venv:/app/.venv
+    environment:
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-homework-coach-robo}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-asia-northeast1}
+      - GOOGLE_GENAI_USE_VERTEXAI=true
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on: []
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+      - frontend-next:/app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8080
+      - NODE_ENV=development
+    depends_on:
+      - backend
+
+volumes:
+  backend-venv:
+  frontend-node-modules:
+  frontend-next:
