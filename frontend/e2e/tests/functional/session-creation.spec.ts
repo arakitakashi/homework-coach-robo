@@ -4,9 +4,9 @@ import { HOME, SESSION } from "../../helpers/selectors"
 test.describe("Session Creation", () => {
 	test("shows loading spinner during session creation", async ({ page, mockAPI }) => {
 		// レスポンスを遅延させてローディング状態を確認
-		let resolveSession: (() => void) | null = null
+		const deferred: { resolve: () => void } = { resolve: () => {} }
 		const sessionPromise = new Promise<void>((resolve) => {
-			resolveSession = resolve
+			deferred.resolve = resolve
 		})
 
 		await page.route("**/api/v1/dialogue/sessions", async (route) => {
@@ -32,7 +32,7 @@ test.describe("Session Creation", () => {
 		await expect(page.getByText(SESSION.loading)).toBeVisible()
 
 		// セッション作成を完了
-		resolveSession?.()
+		deferred.resolve()
 
 		// メインUIが表示される
 		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
