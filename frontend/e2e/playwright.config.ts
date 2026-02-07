@@ -35,6 +35,8 @@ export default defineConfig({
 			testDir: "./tests/integration",
 			use: { ...devices["Desktop Chrome"] },
 			metadata: { backendURL },
+			globalSetup: "./global-setup.ts",
+			globalTeardown: "./global-teardown.ts",
 		},
 	],
 	webServer: {
