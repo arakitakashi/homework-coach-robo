@@ -75,17 +75,18 @@ resource "google_storage_bucket" "terraform_state" {
 
 locals {
   required_apis = [
-    "compute.googleapis.com",           # VPC, Firewall
-    "run.googleapis.com",               # Cloud Run
-    "artifactregistry.googleapis.com",  # Container Registry
-    "firestore.googleapis.com",         # Firestore Database
-    "bigquery.googleapis.com",          # BigQuery
-    "redis.googleapis.com",             # Memorystore for Redis
-    "secretmanager.googleapis.com",     # Secret Manager
-    "cloudbuild.googleapis.com",        # Cloud Build
-    "servicenetworking.googleapis.com", # VPC Peering for Redis
-    "vpcaccess.googleapis.com",         # VPC Access Connector
-    "iam.googleapis.com",               # IAM
+    "compute.googleapis.com",              # VPC, Firewall
+    "run.googleapis.com",                  # Cloud Run
+    "artifactregistry.googleapis.com",     # Container Registry
+    "firestore.googleapis.com",            # Firestore Database
+    "bigquery.googleapis.com",             # BigQuery
+    "redis.googleapis.com",                # Memorystore for Redis
+    "secretmanager.googleapis.com",        # Secret Manager
+    "cloudbuild.googleapis.com",           # Cloud Build
+    "servicenetworking.googleapis.com",    # VPC Peering for Redis
+    "vpcaccess.googleapis.com",            # VPC Access Connector
+    "iam.googleapis.com",                  # IAM
+    "iamcredentials.googleapis.com",       # IAM Credentials (for WIF)
     "cloudresourcemanager.googleapis.com", # Resource Manager
   ]
 }

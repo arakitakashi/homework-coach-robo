@@ -49,6 +49,8 @@ resource "google_project_service" "required_apis" {
     "texttospeech.googleapis.com",
     "vision.googleapis.com",
     "aiplatform.googleapis.com",
+    "iam.googleapis.com",
+    "iamcredentials.googleapis.com",
   ])
 
   project            = var.project_id
@@ -159,4 +161,15 @@ module "cloud_run" {
   allow_unauthenticated_backend = true
 
   depends_on = [module.vpc, module.iam, module.secret_manager]
+}
+
+# GitHub Actions Workload Identity Federation Module
+module "github_wif" {
+  source = "../../modules/github_wif"
+
+  project_id   = var.project_id
+  github_owner = var.github_owner
+  github_repo  = var.github_repo
+
+  depends_on = [google_project_service.required_apis]
 }
