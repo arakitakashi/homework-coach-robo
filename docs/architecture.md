@@ -528,95 +528,79 @@ pytest-cov               # カバレッジ
 
 ### 2.3 CI/CDパイプライン
 
-#### GitHub Actions
+#### 前提条件: Workload Identity Federation (WIF)
 
-```yaml
-# .github/workflows/ci.yml
-name: CI/CD Pipeline
+GitHub ActionsからGCPへの認証にはWorkload Identity Federationを使用する。
+CDおよびマニュアルデプロイが動作するために、以下の設定が必須。
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+**GCP側の設定:**
 
-jobs:
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-      - run: bun install
-      - run: bun run lint
-      - run: bun run type-check
-      - run: bun test
-      - run: bun run build
+| リソース | 値 |
+|----------|-----|
+| Service Account | `github-actions@homework-coach-robo.iam.gserviceaccount.com` |
+| Workload Identity Pool | `github-pool`（global） |
+| Workload Identity Provider | `github-provider`（OIDC） |
+| OIDC Issuer URI | `https://token.actions.githubusercontent.com` |
+| Attribute Condition | `assertion.repository_owner == 'arakitakashi'` |
 
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Install dependencies
-        run: uv pip install -r requirements.txt
-      - run: ruff check .
-      - run: ruff format --check .
-      - run: mypy .
-      - run: pytest --cov
+Service Accountに必要なロール:
+- `roles/artifactregistry.writer` — Docker Push
+- `roles/run.admin` — Cloud Runデプロイ
+- `roles/iam.serviceAccountUser` — Service Account実行
 
-  deploy:
-    needs: [frontend, backend]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: google-github-actions/setup-gcloud@v2
-      - run: gcloud builds submit --config cloudbuild.yaml
+**GitHub Secrets:**
+
+| Secret名 | 値 |
+|-----------|-----|
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/652907685934/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
+| `GCP_SERVICE_ACCOUNT` | `github-actions@homework-coach-robo.iam.gserviceaccount.com` |
+
+セットアップ手順の詳細は `.steering/20260206-github-actions-cicd/gcp-wif-setup.md` を参照。
+
+#### GitHub Actions ワークフロー構成
+
+| ワークフロー | ファイル | トリガー | 用途 |
+|-------------|---------|---------|------|
+| Backend CI | `ci-backend.yml` | push/PR to main, workflow_call | Lint, TypeCheck, Test |
+| Frontend CI | `ci-frontend.yml` | push/PR to main, workflow_call | Lint, TypeCheck, Test, Build |
+| CD | `cd.yml` | push to main | CI実行後、自動デプロイ |
+| Deploy (Manual) | `deploy.yml` | workflow_dispatch | CI実行後、手動デプロイ |
+
+#### CI → CD フロー（自動デプロイ）
+
+```
+push to main
+  └── CD workflow
+        ├── CI Backend (lint → typecheck → test)
+        ├── CI Frontend (lint → typecheck → test → build)
+        ├── Deploy Backend (CI Backend通過後)
+        │     ├── Docker Build → Artifact Registry Push
+        │     └── Cloud Run Deploy
+        └── Deploy Frontend (CI Frontend + Deploy Backend通過後)
+              ├── Backend URL取得
+              ├── Docker Build (NEXT_PUBLIC_API_URL注入) → Artifact Registry Push
+              └── Cloud Run Deploy
 ```
 
-#### Cloud Build
+#### マニュアルデプロイ
 
-```yaml
-# cloudbuild.yaml
-steps:
-  # フロントエンドビルド
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/frontend:$SHORT_SHA', './frontend']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/frontend:$SHORT_SHA']
+GitHub UI の **Actions > "Deploy (Manual)" > "Run workflow"** から実行可能。
 
-  # バックエンドビルド
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/backend:$SHORT_SHA', './backend']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/backend:$SHORT_SHA']
+- **デプロイ対象**: `backend` / `frontend` / `both` を選択
+- **環境**: `dev`（将来的にstaging/prodを追加予定）
+- CIチェック通過後にのみデプロイが実行される
+- デプロイ後にヘルスチェックで自動検証
 
-  # Cloud Runデプロイ
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'homework-coach-frontend'
-      - '--image=gcr.io/$PROJECT_ID/frontend:$SHORT_SHA'
-      - '--region=asia-northeast1'
-      - '--platform=managed'
+#### Cloud Build（代替デプロイ手段）
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'homework-coach-backend'
-      - '--image=gcr.io/$PROJECT_ID/backend:$SHORT_SHA'
-      - '--region=asia-northeast1'
-      - '--platform=managed'
-```
+`infrastructure/cloud-build/` にCloud Buildパイプラインも用意されている。
+GitHub Actions以外のデプロイ手段として使用可能。
+
+| 設定ファイル | 用途 |
+|-------------|------|
+| `cloudbuild-backend.yaml` | バックエンドのビルド・デプロイ |
+| `cloudbuild-frontend.yaml` | フロントエンドのビルド・デプロイ |
+| `cloudbuild-infrastructure.yaml` | Terraformによるインフラ管理 |
 
 ### 2.4 開発手法
 
