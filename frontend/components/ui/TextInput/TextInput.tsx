@@ -61,8 +61,8 @@ export function TextInput({
 				placeholder={placeholder}
 				aria-label="メッセージ入力"
 				className={`
-					flex-1 rounded-xl border-2 border-gray-200 px-4 py-3
-					text-lg transition-colors
+					flex-1 rounded-xl border-2 border-gray-200 bg-white px-4 py-3
+					text-lg text-gray-900 transition-colors
 					placeholder:text-gray-400
 					focus:border-blue-400 focus:outline-none
 					disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500
