@@ -146,6 +146,13 @@ variable "frontend_concurrency" {
   default     = 80
 }
 
+# Backend additional environment variables (Phase 2)
+variable "backend_env_vars" {
+  description = "Additional environment variables for backend service"
+  type        = map(string)
+  default     = {}
+}
+
 # IAM Configuration
 variable "allow_unauthenticated_backend" {
   description = "Allow unauthenticated access to backend (for development)"

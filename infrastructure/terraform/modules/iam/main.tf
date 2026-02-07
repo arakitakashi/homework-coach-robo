@@ -96,6 +96,22 @@ resource "google_project_iam_member" "backend_redis" {
   member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
+# Phase 2c: Discovery Engine (RAG) access
+resource "google_project_iam_member" "backend_discovery_engine" {
+  count   = var.enable_phase2_rag ? 1 : 0
+  project = var.project_id
+  role    = "roles/discoveryengine.editor"
+  member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
+# Phase 2c: Cloud Storage admin for RAG data upload
+resource "google_project_iam_member" "backend_storage_admin" {
+  count   = var.enable_phase2_storage_admin ? 1 : 0
+  project = var.project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
 # Frontend Service Account Roles
 # Secret Manager access (for API keys, etc.)
 resource "google_project_iam_member" "frontend_secret_accessor" {

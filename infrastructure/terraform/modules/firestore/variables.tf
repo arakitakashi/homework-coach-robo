@@ -16,3 +16,10 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+# Phase 2 Feature Flags
+variable "enable_phase2_indexes" {
+  description = "Enable Phase 2 Firestore composite indexes"
+  type        = bool
+  default     = false
+}
