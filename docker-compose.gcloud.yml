@@ -1,0 +1,14 @@
+# Docker Compose override for Google Cloud authentication
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.gcloud.yml up
+#
+# Prerequisites:
+#   gcloud auth application-default login
+
+services:
+  backend:
+    volumes:
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json

@@ -2,7 +2,7 @@
 
 from collections.abc import AsyncIterator
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,12 +14,23 @@ async def async_iter(items: list[Any]) -> AsyncIterator[Any]:
         yield item
 
 
+def create_mock_session_service() -> MagicMock:
+    """モックセッションサービスを作成するヘルパー"""
+    mock_service = MagicMock()
+    mock_service.get_session = AsyncMock(return_value=None)
+    mock_service.create_session = AsyncMock(return_value=None)
+    return mock_service
+
+
 class TestRunDialogueEndpoint:
     """POST /api/v1/dialogue/run のテスト"""
 
     def test_returns_streaming_response(self) -> None:
         """ストリーミングレスポンスを返す"""
-        from app.api.v1.dialogue_runner import get_agent_runner_service
+        from app.api.v1.dialogue_runner import (
+            get_agent_runner_service,
+            get_session_service,
+        )
         from app.main import app
 
         # AgentRunnerServiceをモック
@@ -32,6 +43,7 @@ class TestRunDialogueEndpoint:
 
         # FastAPIのdependency_overridesを使用
         app.dependency_overrides[get_agent_runner_service] = lambda: mock_runner
+        app.dependency_overrides[get_session_service] = create_mock_session_service
 
         try:
             client = TestClient(app)
@@ -51,7 +63,10 @@ class TestRunDialogueEndpoint:
 
     def test_streams_text_events(self) -> None:
         """テキストイベントをストリームで送信する"""
-        from app.api.v1.dialogue_runner import get_agent_runner_service
+        from app.api.v1.dialogue_runner import (
+            get_agent_runner_service,
+            get_session_service,
+        )
         from app.main import app
 
         mock_event = MagicMock()
@@ -62,6 +77,7 @@ class TestRunDialogueEndpoint:
         mock_runner.extract_text = MagicMock(return_value="テスト")
 
         app.dependency_overrides[get_agent_runner_service] = lambda: mock_runner
+        app.dependency_overrides[get_session_service] = create_mock_session_service
 
         try:
             client = TestClient(app)
@@ -82,7 +98,10 @@ class TestRunDialogueEndpoint:
 
     def test_sends_done_event_on_completion(self) -> None:
         """完了時にdoneイベントを送信する"""
-        from app.api.v1.dialogue_runner import get_agent_runner_service
+        from app.api.v1.dialogue_runner import (
+            get_agent_runner_service,
+            get_session_service,
+        )
         from app.main import app
 
         mock_runner = MagicMock()
@@ -90,6 +109,7 @@ class TestRunDialogueEndpoint:
         mock_runner.extract_text = MagicMock(return_value=None)
 
         app.dependency_overrides[get_agent_runner_service] = lambda: mock_runner
+        app.dependency_overrides[get_session_service] = create_mock_session_service
 
         try:
             client = TestClient(app)
@@ -110,11 +130,15 @@ class TestRunDialogueEndpoint:
 
     def test_validation_error_returns_422(self) -> None:
         """バリデーションエラーで422を返す"""
-        from app.api.v1.dialogue_runner import get_agent_runner_service
+        from app.api.v1.dialogue_runner import (
+            get_agent_runner_service,
+            get_session_service,
+        )
         from app.main import app
 
         mock_runner = MagicMock()
         app.dependency_overrides[get_agent_runner_service] = lambda: mock_runner
+        app.dependency_overrides[get_session_service] = create_mock_session_service
 
         try:
             client = TestClient(app)
@@ -135,11 +159,15 @@ class TestRunDialogueEndpoint:
 
     def test_missing_fields_returns_422(self) -> None:
         """必須フィールド欠落で422を返す"""
-        from app.api.v1.dialogue_runner import get_agent_runner_service
+        from app.api.v1.dialogue_runner import (
+            get_agent_runner_service,
+            get_session_service,
+        )
         from app.main import app
 
         mock_runner = MagicMock()
         app.dependency_overrides[get_agent_runner_service] = lambda: mock_runner
+        app.dependency_overrides[get_session_service] = create_mock_session_service
 
         try:
             client = TestClient(app)
@@ -172,9 +200,12 @@ class TestEventGenerator:
         mock_runner.run = MagicMock(return_value=async_iter([mock_event]))
         mock_runner.extract_text = MagicMock(return_value="テスト回答")
 
+        mock_session_service = create_mock_session_service()
+
         events = []
         async for event in event_generator(
             runner=mock_runner,
+            session_service=mock_session_service,
             user_id="user-123",
             session_id="session-456",
             message="テスト",
@@ -198,9 +229,12 @@ class TestEventGenerator:
         mock_runner.run = MagicMock(return_value=async_iter([mock_event]))
         mock_runner.extract_text = MagicMock(return_value=None)
 
+        mock_session_service = create_mock_session_service()
+
         events = []
         async for event in event_generator(
             runner=mock_runner,
+            session_service=mock_session_service,
             user_id="user-123",
             session_id="session-456",
             message="テスト",
@@ -223,9 +257,12 @@ class TestEventGenerator:
         mock_runner = MagicMock()
         mock_runner.run = MagicMock(return_value=error_generator())
 
+        mock_session_service = create_mock_session_service()
+
         events = []
         async for event in event_generator(
             runner=mock_runner,
+            session_service=mock_session_service,
             user_id="user-123",
             session_id="session-456",
             message="テスト",

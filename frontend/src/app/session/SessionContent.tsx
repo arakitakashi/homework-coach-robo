@@ -185,19 +185,31 @@ export function SessionContent({ characterType }: SessionContentProps) {
 					/>
 				</div>
 
-				{/* 音声インターフェース（将来のために残す） */}
-				<div className="w-full max-w-md opacity-50">
-					<p className="mb-2 text-center text-sm text-gray-500">
-						（おんせいにゅうりょくはじゅんびちゅう）
-					</p>
-					<VoiceInterface
-						isRecording={isRecording}
-						audioLevel={0}
-						isConnected={isVoiceConnected}
-						isPlaying={false}
-						onToggleRecording={handleToggleRecording}
-					/>
-				</div>
+				{/* 音声インターフェース */}
+				{isVoiceEnabled ? (
+					<div className="w-full max-w-md">
+						<VoiceInterface
+							isRecording={isRecording}
+							audioLevel={0}
+							isConnected={isVoiceConnected}
+							isPlaying={false}
+							onToggleRecording={handleToggleRecording}
+						/>
+					</div>
+				) : (
+					<div className="w-full max-w-md opacity-50">
+						<p className="mb-2 text-center text-sm text-gray-500">
+							（おんせいにゅうりょくはじゅんびちゅう）
+						</p>
+						<VoiceInterface
+							isRecording={isRecording}
+							audioLevel={0}
+							isConnected={isVoiceConnected}
+							isPlaying={false}
+							onToggleRecording={handleToggleRecording}
+						/>
+					</div>
+				)}
 			</div>
 		</main>
 	)
