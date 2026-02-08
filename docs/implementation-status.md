@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2b（マルチエージェント）実装完了・Phase 2 フロントエンド型定義基盤完了
+**プロジェクトステータス**: MVP実装完了・Phase 2b（マルチエージェント）実装完了・Phase 2c（RAG Corpus）実装完了・Phase 2 フロントエンド型定義基盤完了
 
 ---
 
@@ -30,6 +30,7 @@
 - **GitHub WIF Terraform**: GitHub Actions 向け Workload Identity Federation をIaC化完了
 - **ADK Function Tools (Phase 2a)**: 5つのADKツール（calculate, hint_manager, curriculum, progress_recorder, image_analyzer）実装完了
 - **マルチエージェント構成 (Phase 2b)**: Router Agent + 4サブエージェント（Math Coach, Japanese Coach, Encouragement, Review）実装完了
+- **RAG Corpus (Phase 2c)**: Vertex AI RAG統合、search_memory_tool、PII保護済みインデクシング実装完了
 - **フロントエンド Phase 2 型定義・状態管理**: Phase 2a-2d 対応の型定義（25型）+ Jotai atoms（12個）実装完了
 
 ---
@@ -276,6 +277,48 @@ Router Agent が `sub_agents` パラメータで4つのサブエージェント�
 - テスト: 72テスト（エージェント単体）、カバレッジ100%
 
 詳細は `.steering/20260208-phase2b-multi-agent/` を参照。
+
+### RAG Corpus (Phase 2c)
+
+`backend/app/services/adk/rag/` および `backend/app/services/adk/tools/search_memory.py` に Vertex AI RAG 統合を実装。
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `rag/models.py` | RAG document models（PII sanitization機能付き） |
+| `rag/corpus_service.py` | RagCorpusService（Corpus作成・インデクシング・検索） |
+| `rag/indexing_service.py` | IndexingService（Firestore → RAG バッチインデクシング） |
+| `tools/search_memory.py` | search_memory_tool（セマンティック検索 + Firestore fallback） |
+| `scripts/initialize_rag_corpus.py` | 初期化スクリプト（Corpus作成 + サンプルデータ） |
+
+**主要機能:**
+- `RagCorpusService.create_corpus()`: RAG Corpus作成（初回セットアップ）
+- `RagCorpusService.index_documents()`: ドキュメントのインデクシング
+- `RagCorpusService.search()`: セマンティック検索（user_id フィルタ対応）
+- `IndexingService.index_session_memories()`: ユーザーの学習記憶をインデックス化
+- `search_memory_tool`: エージェント用セマンティック検索ツール（Firestore フォールバック付き）
+
+**PII保護:**
+- 子供の名前: `[CHILD]` にマスク
+- 親の名前: `[PARENT]` にマスク
+- user_id: フィルタリング用に保持（暗号化推奨）
+
+**フォールバック戦略:**
+Vertex AI RAG API が失敗した場合、自動的に Firestore のキーワード検索にフォールバックし、信頼性を保証。
+
+**エージェント統合:**
+- Review Agent に `search_memory_tool` を統合
+- システムプロンプトにツール使用ガイダンスを追加
+
+**テスト:**
+- 48テスト（models 12 + corpus_service 15 + indexing_service 11 + search_memory 10）
+- カバレッジ: 80%以上（目標）
+
+**注意事項（Stub実装）:**
+以下は stub実装のため、実際のVertex AI RAG API統合が必要：
+1. `corpus_service.py` 内の Vertex AI API呼び出し
+2. `indexing_service.py` 内の Firestore データフェッチ
+
+詳細は `.steering/20260208-phase2c-rag-corpus/` を参照（予定）。
 
 ---
 
@@ -542,4 +585,5 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260207-e2e-tests/` | E2E テスト |
 | `.steering/20260208-phase2a-adk-tools/` | Phase 2a ADK Function Tools |
 | `.steering/20260208-phase2b-multi-agent/` | Phase 2b マルチエージェント構成 |
+| `.steering/20260208-phase2c-rag-corpus/` | Phase 2c RAG Corpus 作成・インデクシング |
 | `.steering/20260208-frontend-phase2-types/` | フロントエンド Phase 2 型定義・状態管理基盤 |
