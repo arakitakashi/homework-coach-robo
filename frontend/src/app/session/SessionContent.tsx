@@ -8,6 +8,7 @@ import {
 	DialogueHistory,
 	HintIndicator,
 	ProgressDisplay,
+	ToolExecutionDisplay,
 	VoiceInterface,
 } from "@/components/features"
 import { Button } from "@/components/ui/Button"
@@ -17,6 +18,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { TextInput } from "@/components/ui/TextInput"
 import { useDialogue, usePcmPlayer, useSession, useVoiceStream } from "@/lib/hooks"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
+import { activeToolExecutionsAtom, isToolRunningAtom } from "@/store/atoms/phase2"
 import { learningProgressAtom } from "@/store/atoms/session"
 import type { CharacterType, DialogueTurn } from "@/types"
 
@@ -37,6 +39,8 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [hintLevel] = useAtom(hintLevelAtom)
 	const [characterState, setCharacterState] = useAtom(characterStateAtom)
 	const [learningProgress] = useAtom(learningProgressAtom)
+	const [activeToolExecutions] = useAtom(activeToolExecutionsAtom)
+	const [isToolRunning] = useAtom(isToolRunningAtom)
 
 	// 音声入力の有効化状態
 	const [isVoiceEnabled] = useState(true)
@@ -228,6 +232,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 				<div className="mb-4">
 					<CharacterDisplay character={characterType} state={characterState} />
 				</div>
+
+				{/* ツール実行表示 */}
+				<ToolExecutionDisplay executions={activeToolExecutions} isRunning={isToolRunning} />
 
 				{/* 対話履歴 */}
 				<Card padding="medium" className="mb-4 w-full max-w-md flex-1">

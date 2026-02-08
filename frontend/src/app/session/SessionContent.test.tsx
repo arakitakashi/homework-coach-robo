@@ -7,6 +7,8 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { type ReactNode, useMemo } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { activeToolExecutionsAtom } from "@/store/atoms/phase2"
+import type { ToolExecution } from "@/types"
 import { SessionContent } from "./SessionContent"
 
 // Next.js router mock
@@ -297,6 +299,46 @@ describe("SessionContent", () => {
 			await waitFor(() => {
 				expect(mockPush).toHaveBeenCalledWith("/")
 			})
+		})
+	})
+
+	describe("ツール実行表示", () => {
+		it("ツール実行中にToolExecutionDisplayが表示される", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// ツール実行中の状態をatomに設定
+			const toolExecution: ToolExecution = {
+				toolName: "calculate_tool",
+				status: "running",
+				timestamp: new Date(),
+			}
+			store.set(activeToolExecutionsAtom, [toolExecution])
+
+			// ToolExecutionDisplayが表示される
+			await waitFor(() => {
+				expect(screen.getByText("けいさん")).toBeInTheDocument()
+			})
+		})
+
+		it("ツール実行がない場合はToolExecutionDisplayが非表示", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// ToolExecutionDisplayが表示されない
+			expect(screen.queryByText("けいさん")).not.toBeInTheDocument()
 		})
 	})
 })
