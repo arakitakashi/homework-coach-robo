@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2b（マルチエージェント）実装完了・Phase 2 フロントエンド型定義基盤完了
+**プロジェクトステータス**: MVP実装完了・Phase 2c（Memory Bank統合）実装完了・Phase 2 フロントエンド型定義基盤完了
 
 ---
 
@@ -31,6 +31,7 @@
 - **ADK Function Tools (Phase 2a)**: 5つのADKツール（calculate, hint_manager, curriculum, progress_recorder, image_analyzer）実装完了
 - **マルチエージェント構成 (Phase 2b)**: Router Agent + 4サブエージェント（Math Coach, Japanese Coach, Encouragement, Review）実装完了
 - **フロントエンド Phase 2 型定義・状態管理**: Phase 2a-2d 対応の型定義（25型）+ Jotai atoms（12個）実装完了
+- **Memory Bank 統合 (Phase 2c+3)**: VertexAiMemoryBankService ファクトリパターン + Agent Engine 作成スクリプト + Review Agent に load_memory ツール追加
 
 ---
 
@@ -83,7 +84,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 90%（494テスト）
+**テストカバレッジ**: 90%（504テスト）
 
 ### Firestore Session Persistence
 
@@ -154,9 +155,9 @@ AgentRunnerService
 │   │   ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
 │   │   ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
 │   │   ├── Encouragement Agent (tools=[progress])
-│   │   └── Review Agent (tools=[progress])
+│   │   └── Review Agent (tools=[progress, load_memory])
 │   ├── FirestoreSessionService
-│   └── FirestoreMemoryService
+│   └── BaseMemoryService (factory: Firestore or VertexAiMemoryBank)
 └── types (google.genai)
 ```
 
@@ -260,7 +261,7 @@ Server → Client:
 | `math_coach` | `math_coach.py` | 算数専門のソクラテス式対話 | calculate, hint, curriculum, progress |
 | `japanese_coach` | `japanese_coach.py` | 国語専門のソクラテス式対話 | hint, curriculum, progress |
 | `encouragement_agent` | `encouragement.py` | 感情サポート・休憩提案 | progress |
-| `review_agent` | `review.py` | セッション振り返り・保護者レポート | progress |
+| `review_agent` | `review.py` | セッション振り返り・保護者レポート | progress, load_memory |
 
 **プロンプト構成:**
 
@@ -276,6 +277,49 @@ Router Agent が `sub_agents` パラメータで4つのサブエージェント�
 - テスト: 72テスト（エージェント単体）、カバレッジ100%
 
 詳細は `.steering/20260208-phase2b-multi-agent/` を参照。
+
+### Memory Bank 統合 (Phase 2c+3)
+
+`backend/app/services/adk/memory/` にメモリサービスファクトリパターンを導入。ADK 公式の `VertexAiMemoryBankService` を使用し、LLM による事実抽出 + セマンティック検索を実現する。
+
+| コンポーネント | ファイル | 説明 |
+|--------------|---------|------|
+| `memory_factory.py` | `memory/memory_factory.py` | `create_memory_service()` ファクトリ関数 |
+| `create_agent_engine.py` | `scripts/create_agent_engine.py` | Agent Engine 作成 CLI スクリプト |
+
+**メモリサービス切り替え:**
+
+| 環境変数 | 使用サービス | 検索方式 |
+|---------|------------|---------|
+| `AGENT_ENGINE_ID` 未設定 | `FirestoreMemoryService` | キーワードマッチ（フォールバック） |
+| `AGENT_ENGINE_ID` 設定済み | `VertexAiMemoryBankService` | LLM事実抽出 + セマンティック検索 |
+
+**環境変数:**
+
+| 変数名 | 必須 | 説明 |
+|--------|------|------|
+| `AGENT_ENGINE_ID` | 任意 | Agent Engine ID（設定時 Memory Bank 有効化） |
+| `GCP_PROJECT_ID` | 任意 | GCP プロジェクト ID（Memory Bank 使用時） |
+| `GCP_LOCATION` | 任意 | GCP ロケーション（Memory Bank 使用時） |
+
+**DI 更新:**
+- `dialogue_runner.py` と `voice_stream.py` の `get_memory_service()` をファクトリベースに変更
+- 型を `FirestoreMemoryService` → `BaseMemoryService` に抽象化
+
+**Review Agent 拡張:**
+- ADK 組み込み `load_memory` ツールを追加（過去の学習履歴のセマンティック検索）
+- ツール数: 1 → 2（`record_progress_tool` + `load_memory`）
+
+**Agent Engine 作成手順:**
+```bash
+uv run python scripts/create_agent_engine.py --project <project-id> --location us-central1
+# 出力された ID を環境変数に設定:
+# export AGENT_ENGINE_ID=<engine-id>
+```
+
+**テスト:** 10テスト（ファクトリ8 + Review Agent 2）、カバレッジ100%
+
+詳細は `.steering/20260209-phase2c-vertex-ai-rag/` を参照。
 
 ---
 
@@ -543,3 +587,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260208-phase2a-adk-tools/` | Phase 2a ADK Function Tools |
 | `.steering/20260208-phase2b-multi-agent/` | Phase 2b マルチエージェント構成 |
 | `.steering/20260208-frontend-phase2-types/` | フロントエンド Phase 2 型定義・状態管理基盤 |
+| `.steering/20260209-phase2c-vertex-ai-rag/` | Phase 2c Memory Bank 統合 + Agent Engine |
