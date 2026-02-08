@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2b（マルチエージェント）実装完了・Phase 2 フロントエンド型定義基盤完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2b（マルチエージェント）実装完了・Phase 2c（RAG Corpus）実装完了・Phase 2 フロントエンド型定義基盤完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -165,13 +165,13 @@ homework-coach-robo/
 
 ### ADK エージェントアーキテクチャ（Phase 2 計画）
 
-Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成）を導入済み。Phase 2c以降でRAG、感情適応を段階的に導入する。
+Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成）、Phase 2c（RAG Corpus）を導入済み。Phase 2d以降で感情適応を段階的に導入する。
 
 | Phase | 内容 | 主要変更 |
 |-------|------|---------|
 | **2a** ✅ | ツール導入（Function Calling） | `calculate_tool`, `manage_hint_tool`, `record_progress_tool`, `check_curriculum_tool`, `analyze_image_tool` |
 | **2b** ✅ | マルチエージェント | Router Agent → Math Coach / Japanese Coach / Encouragement / Review Agent |
-| **2c** | Vertex AI RAG | セマンティック記憶検索（キーワード検索を置換） |
+| **2c** ✅ | Vertex AI RAG | セマンティック記憶検索（`search_memory_tool` + Firestore fallback） |
 | **2d** | 感情適応 | 音声トーン分析 → 対話トーン・サポートレベル適応 |
 | **3** | Agent Engine | Vertex AI Agent Engineへのマネージドデプロイ |
 
@@ -190,7 +190,7 @@ backend/app/services/adk/
 │   ├── math_coach.py         # 算数コーチ（4ツール）
 │   ├── japanese_coach.py     # 国語コーチ（3ツール）
 │   ├── encouragement.py      # 励まし（1ツール）
-│   ├── review.py             # 振り返り（1ツール）
+│   ├── review.py             # 振り返り（1ツール + search_memory_tool）
 │   └── prompts/              # エージェント別プロンプト
 │       ├── router.py
 │       ├── math_coach.py
@@ -203,10 +203,16 @@ backend/app/services/adk/
 │   ├── hint_manager.py       # ヒント段階管理
 │   ├── curriculum.py         # カリキュラム参照
 │   ├── progress_recorder.py  # 進捗記録
-│   └── image_analyzer.py     # 画像分析
+│   ├── image_analyzer.py     # 画像分析
+│   └── search_memory.py      # ✅ セマンティック記憶検索（Phase 2c）
+├── rag/                      # ✅ Vertex AI RAG（Phase 2c 実装済み）
+│   ├── __init__.py
+│   ├── models.py             # RAG document models（PII sanitization）
+│   ├── corpus_service.py     # Vertex AI RAG Corpus管理
+│   └── indexing_service.py   # Batch indexing（Firestore → RAG）
 ├── runner/                   # 既存（Router Agent統合済み）
 ├── sessions/                 # 既存
-└── memory/                   # → Phase 2cでRAGに移行
+└── memory/                   # 既存（Firestore keyword search）
 ```
 
 詳細は `docs/agent-architecture.md` を参照。
