@@ -87,6 +87,20 @@ class TestRouterSystemPrompt:
 
         assert "解いたり" in ROUTER_SYSTEM_PROMPT or "教えたり" in ROUTER_SYSTEM_PROMPT
 
+    def test_contains_emotion_analysis_instruction(self) -> None:
+        """感情分析の指示が含まれる"""
+        from app.services.adk.agents.prompts.router import ROUTER_SYSTEM_PROMPT
+
+        assert "update_emotion" in ROUTER_SYSTEM_PROMPT
+        assert "感情" in ROUTER_SYSTEM_PROMPT
+
+    def test_contains_emotion_based_routing(self) -> None:
+        """感情ベースのルーティング基準が含まれる"""
+        from app.services.adk.agents.prompts.router import ROUTER_SYSTEM_PROMPT
+
+        assert "frustration" in ROUTER_SYSTEM_PROMPT or "フラストレーション" in ROUTER_SYSTEM_PROMPT
+        assert "encouragement_agent" in ROUTER_SYSTEM_PROMPT
+
 
 class TestCreateRouterAgent:
     """create_router_agent 関数のテスト"""
@@ -139,9 +153,10 @@ class TestCreateRouterAgent:
             call_kwargs = MockAgent.call_args[1]
             assert len(call_kwargs["description"]) > 0
 
-    def test_has_no_tools(self) -> None:
-        """ツールを持たない（ルーティングのみ）"""
+    def test_has_update_emotion_tool(self) -> None:
+        """update_emotion_tool を持つ"""
         from app.services.adk.agents.router import create_router_agent
+        from app.services.adk.tools.emotion_analyzer import update_emotion_tool
 
         p_math, p_jp, p_enc, p_rev = _patch_all_sub_agents()
         with (
@@ -153,7 +168,7 @@ class TestCreateRouterAgent:
         ):
             create_router_agent()
             call_kwargs = MockAgent.call_args[1]
-            assert "tools" not in call_kwargs or call_kwargs.get("tools") is None
+            assert update_emotion_tool in call_kwargs["tools"]
 
     def test_has_four_sub_agents(self) -> None:
         """4つのサブエージェントが設定される"""
