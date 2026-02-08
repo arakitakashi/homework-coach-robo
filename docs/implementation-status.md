@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2a（ツール導入）実装完了・Phase 2 フロントエンド型定義基盤完了
+**プロジェクトステータス**: MVP実装完了・Phase 2b（マルチエージェント）実装完了・Phase 2 フロントエンド型定義基盤完了
 
 ---
 
@@ -29,6 +29,7 @@
 - **E2Eテスト**: Playwright によるスモーク・機能・統合テスト（9テストファイル）実装完了
 - **GitHub WIF Terraform**: GitHub Actions 向け Workload Identity Federation をIaC化完了
 - **ADK Function Tools (Phase 2a)**: 5つのADKツール（calculate, hint_manager, curriculum, progress_recorder, image_analyzer）実装完了
+- **マルチエージェント構成 (Phase 2b)**: Router Agent + 4サブエージェント（Math Coach, Japanese Coach, Encouragement, Review）実装完了
 - **フロントエンド Phase 2 型定義・状態管理**: Phase 2a-2d 対応の型定義（25型）+ Jotai atoms（12個）実装完了
 
 ---
@@ -82,7 +83,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 96%（352テスト）
+**テストカバレッジ**: 90%（494テスト）
 
 ### Firestore Session Persistence
 
@@ -136,11 +137,12 @@ cd backend && uv run uvicorn app.main:app --reload
 
 | コンポーネント | 説明 |
 |--------------|------|
-| `agent.py` | SOCRATIC_SYSTEM_PROMPT, create_socratic_agent() |
-| `runner_service.py` | AgentRunnerService（SessionService/MemoryService統合） |
+| `agent.py` | SOCRATIC_SYSTEM_PROMPT, create_socratic_agent()（音声ストリーミング用） |
+| `runner_service.py` | AgentRunnerService（Router Agent + SessionService/MemoryService統合） |
 
 **主要機能:**
-- `create_socratic_agent()`: 3段階ヒントシステム原則を組み込んだADK Agent作成
+- `create_socratic_agent()`: 音声ストリーミング用の単一エージェント（レガシー）
+- `create_router_agent()`: マルチエージェント構成のルートエージェント（Phase 2b）
 - `AgentRunnerService.run()`: 非同期イベントストリームでエージェント実行
 - `AgentRunnerService.extract_text()`: イベントからテキスト抽出
 
@@ -148,7 +150,11 @@ cd backend && uv run uvicorn app.main:app --reload
 ```
 AgentRunnerService
 ├── Runner (ADK)
-│   ├── SocraticDialogueAgent
+│   ├── Router Agent (AutoFlow)
+│   │   ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
+│   │   ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
+│   │   ├── Encouragement Agent (tools=[progress])
+│   │   └── Review Agent (tools=[progress])
 │   ├── FirestoreSessionService
 │   └── FirestoreMemoryService
 └── types (google.genai)
@@ -243,6 +249,33 @@ Server → Client:
 - ツールカバレッジ: 88%
 
 詳細は `.steering/20260208-phase2a-adk-tools/` を参照。
+
+### マルチエージェント構成 (Phase 2b)
+
+`backend/app/services/adk/agents/` に ADK マルチエージェント構成を実装。Router Agent が子供の入力を分析し、ADK AutoFlow で最適なサブエージェントに委譲する。
+
+| エージェント | ファイル | 役割 | ツール |
+|-------------|---------|------|--------|
+| `router_agent` | `router.py` | 入力を分析し最適なサブエージェントに委譲 | なし（ルーティングのみ） |
+| `math_coach` | `math_coach.py` | 算数専門のソクラテス式対話 | calculate, hint, curriculum, progress |
+| `japanese_coach` | `japanese_coach.py` | 国語専門のソクラテス式対話 | hint, curriculum, progress |
+| `encouragement_agent` | `encouragement.py` | 感情サポート・休憩提案 | progress |
+| `review_agent` | `review.py` | セッション振り返り・保護者レポート | progress |
+
+**プロンプト構成:**
+
+各エージェントは `agents/prompts/` 配下に専用のシステムプロンプトを持つ。すべてのプロンプトはソクラテス式対話の原則（答えを教えない、プロセスを評価）に従う。
+
+**エージェント間委譲（ADK AutoFlow）:**
+
+Router Agent が `sub_agents` パラメータで4つのサブエージェントを保持。LLMが入力内容に基づき `transfer_to_agent(agent_name='...')` を自動生成し、適切なエージェントに委譲する。
+
+**統合:**
+- `AgentRunnerService` が `create_router_agent()` をルートエージェントとして使用
+- 既存の SSE エンドポイント（`/api/v1/dialogue/run`）は変更なしで動作
+- テスト: 72テスト（エージェント単体）、カバレッジ100%
+
+詳細は `.steering/20260208-phase2b-multi-agent/` を参照。
 
 ---
 
@@ -508,4 +541,5 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260207-frontend-websocket-integration/` | フロントエンド WebSocket 統合 |
 | `.steering/20260207-e2e-tests/` | E2E テスト |
 | `.steering/20260208-phase2a-adk-tools/` | Phase 2a ADK Function Tools |
+| `.steering/20260208-phase2b-multi-agent/` | Phase 2b マルチエージェント構成 |
 | `.steering/20260208-frontend-phase2-types/` | フロントエンド Phase 2 型定義・状態管理基盤 |

@@ -25,7 +25,7 @@ class TestAgentRunnerServiceInit:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner"),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=mock_session_service,
@@ -42,7 +42,7 @@ class TestAgentRunnerServiceInit:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner"),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=mock_session_service,
@@ -61,7 +61,7 @@ class TestAgentRunnerServiceInit:
         with (
             patch("app.services.adk.runner.runner_service.Runner") as MockRunner,
             patch(
-                "app.services.adk.runner.runner_service.create_socratic_agent",
+                "app.services.adk.runner.runner_service.create_router_agent",
                 return_value=mock_agent,
             ),
         ):
@@ -81,7 +81,7 @@ class TestAgentRunnerServiceInit:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner") as MockRunner,
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             AgentRunnerService(
                 session_service=MagicMock(),
@@ -96,7 +96,7 @@ class TestAgentRunnerServiceInit:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner") as MockRunner,
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             AgentRunnerService(
                 session_service=MagicMock(),
@@ -123,7 +123,7 @@ class TestAgentRunnerServiceRun:
                 "app.services.adk.runner.runner_service.Runner",
                 return_value=mock_runner,
             ),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=MagicMock(),
@@ -158,7 +158,7 @@ class TestAgentRunnerServiceRun:
                 "app.services.adk.runner.runner_service.Runner",
                 return_value=mock_runner,
             ),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=MagicMock(),
@@ -190,7 +190,7 @@ class TestAgentRunnerServiceRun:
                 "app.services.adk.runner.runner_service.Runner",
                 return_value=mock_runner,
             ),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
             patch("app.services.adk.runner.runner_service.types") as mock_types,
         ):
             mock_content = MagicMock()
@@ -223,7 +223,7 @@ class TestAgentRunnerServiceExtractText:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner"),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=MagicMock(),
@@ -242,7 +242,7 @@ class TestAgentRunnerServiceExtractText:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner"),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=MagicMock(),
@@ -261,7 +261,7 @@ class TestAgentRunnerServiceExtractText:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner"),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=MagicMock(),
@@ -280,7 +280,7 @@ class TestAgentRunnerServiceExtractText:
 
         with (
             patch("app.services.adk.runner.runner_service.Runner"),
-            patch("app.services.adk.runner.runner_service.create_socratic_agent"),
+            patch("app.services.adk.runner.runner_service.create_router_agent"),
         ):
             service = AgentRunnerService(
                 session_service=MagicMock(),

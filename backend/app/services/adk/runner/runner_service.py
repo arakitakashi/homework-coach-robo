@@ -11,7 +11,7 @@ from google.adk.memory import BaseMemoryService
 from google.adk.sessions import BaseSessionService
 from google.genai import types
 
-from app.services.adk.runner.agent import create_socratic_agent
+from app.services.adk.agents import create_router_agent
 
 if TYPE_CHECKING:
     from google.adk.events import Event
@@ -23,7 +23,9 @@ DEFAULT_APP_NAME = "homework-coach"
 class AgentRunnerService:
     """エージェントランナーサービス
 
-    ADK Runnerを使用して、ソクラテス式対話エージェントを実行する。
+    ADK Runnerを使用して、マルチエージェント構成の対話エージェントを実行する。
+
+    Router Agent が子供の入力を分析し、最適な専門エージェントに委譲する。
 
     Attributes:
         _session_service: セッション管理サービス
@@ -46,7 +48,7 @@ class AgentRunnerService:
         """
         self._session_service = session_service
         self._memory_service = memory_service
-        self._agent = create_socratic_agent()
+        self._agent = create_router_agent()
         self._runner = Runner(
             app_name=app_name,
             agent=self._agent,
