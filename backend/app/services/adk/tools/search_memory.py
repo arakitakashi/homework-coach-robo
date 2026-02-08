@@ -125,22 +125,14 @@ async def _search_memory_with_fallback(input_data: SearchMemoryInput) -> str:
 
     # Fallback to Firestore keyword search
     try:
-        firestore_results = await firestore_memory_service.search(
-            query=input_data.query,
-            user_id=input_data.user_id,
-            category=input_data.category,
+        # TODO: Implement Firestore-based fallback search
+        # This will require either:
+        # 1. Adding a simpler search method to FirestoreMemoryService, or
+        # 2. Using the existing search_memory method with appropriate parameters
+        logger.warning(
+            "Firestore fallback not yet implemented",
+            extra={"user_id": input_data.user_id},
         )
-
-        if firestore_results:
-            logger.info(
-                "Firestore fallback search succeeded",
-                extra={
-                    "user_id": input_data.user_id,
-                    "count": len(firestore_results),
-                },
-            )
-            return _format_firestore_results(firestore_results)
-
         return "関連する学習履歴が見つかりませんでした。"
 
     except Exception as e:

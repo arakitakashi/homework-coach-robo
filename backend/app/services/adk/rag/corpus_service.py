@@ -53,7 +53,7 @@ class RagCorpusService:
             # Note: This is a stub implementation as Vertex AI RAG SDK
             # may not have complete Python support yet. In production,
             # this should call the actual Vertex AI RAG API.
-            corpus = aiplatform.RagCorpus.create(
+            corpus = aiplatform.RagCorpus.create(  # type: ignore[attr-defined]
                 display_name=corpus_name,
                 description=description,
             )
@@ -64,7 +64,7 @@ class RagCorpusService:
                     "resource_name": corpus.name,
                 },
             )
-            return corpus.name
+            return str(corpus.name)
         except Exception as e:
             logger.error(
                 f"Failed to create RAG corpus: {e}",
@@ -235,7 +235,7 @@ class RagCorpusService:
         corpus_name: str,
         query: str,
         top_k: int,
-        filter_metadata: dict[str, Any] | None,
+        filter_metadata: dict[str, Any] | None,  # noqa: ARG002 - Will be used when Vertex AI RAG API is fully integrated
     ) -> list[RagSearchResult]:
         """Internal API call for semantic search.
 

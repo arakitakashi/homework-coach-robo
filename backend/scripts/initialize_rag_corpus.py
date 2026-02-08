@@ -8,9 +8,8 @@ import argparse
 import asyncio
 import logging
 import os
-from typing import Any
 
-from app.services.adk.rag import IndexingService, RagCorpusService, RagDocument
+from app.services.adk.rag import RagCorpusService, RagDocument
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -152,7 +151,7 @@ async def main(env: str) -> None:
 
     except Exception as e:
         if "already exists" in str(e).lower():
-            logger.warning(f"Corpus already exists, continuing with indexing...")
+            logger.warning("Corpus already exists, continuing with indexing...")
         else:
             logger.error(f"Failed to create corpus: {e}")
             raise
