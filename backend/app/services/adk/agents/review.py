@@ -6,6 +6,7 @@
 from typing import TYPE_CHECKING
 
 from google.adk.agents import Agent
+from google.adk.tools import load_memory  # type: ignore[attr-defined]
 
 from app.services.adk.agents.prompts.review import REVIEW_SYSTEM_PROMPT
 from app.services.adk.tools import record_progress_tool
@@ -32,5 +33,6 @@ def create_review_agent(model: str | None = None) -> "AgentType":
         description="今日の学習を振り返り、何を頑張ったかを一緒に確認する。保護者向けのサマリーも作る。",
         tools=[
             record_progress_tool,
+            load_memory,
         ],
     )

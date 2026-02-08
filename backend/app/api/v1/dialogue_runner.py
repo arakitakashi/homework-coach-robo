@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+from google.adk.memory import BaseMemoryService
 
 from app.schemas.dialogue_runner import (
     DoneEvent,
@@ -15,7 +16,7 @@ from app.schemas.dialogue_runner import (
     RunDialogueRequest,
     TextEvent,
 )
-from app.services.adk.memory import FirestoreMemoryService
+from app.services.adk.memory.memory_factory import create_memory_service
 from app.services.adk.runner import AgentRunnerService
 from app.services.adk.sessions import FirestoreSessionService
 
@@ -32,14 +33,14 @@ def get_session_service() -> FirestoreSessionService:
     return FirestoreSessionService()
 
 
-def get_memory_service() -> FirestoreMemoryService:
-    """FirestoreMemoryServiceを取得する"""
-    return FirestoreMemoryService()
+def get_memory_service() -> BaseMemoryService:
+    """メモリサービスを取得する（環境変数ベースで切り替え）"""
+    return create_memory_service()
 
 
 def get_agent_runner_service(
     session_service: FirestoreSessionService = Depends(get_session_service),
-    memory_service: FirestoreMemoryService = Depends(get_memory_service),
+    memory_service: BaseMemoryService = Depends(get_memory_service),
 ) -> AgentRunnerService:
     """AgentRunnerServiceを取得する"""
     return AgentRunnerService(

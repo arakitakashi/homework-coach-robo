@@ -44,6 +44,12 @@ class TestReviewSystemPrompt:
 
         assert "record_progress" in REVIEW_SYSTEM_PROMPT
 
+    def test_mentions_load_memory_tool(self) -> None:
+        """load_memory ツールの使用指示がある"""
+        from app.services.adk.agents.prompts.review import REVIEW_SYSTEM_PROMPT
+
+        assert "load_memory" in REVIEW_SYSTEM_PROMPT
+
 
 class TestCreateReviewAgent:
     """create_review_agent 関数のテスト"""
@@ -75,14 +81,14 @@ class TestCreateReviewAgent:
             call_kwargs = MockAgent.call_args[1]
             assert len(call_kwargs["description"]) > 0
 
-    def test_has_one_tool(self) -> None:
-        """1つのツールが設定される"""
+    def test_has_two_tools(self) -> None:
+        """2つのツールが設定される（record_progress + load_memory）"""
         from app.services.adk.agents.review import create_review_agent
 
         with patch("app.services.adk.agents.review.Agent") as MockAgent:
             create_review_agent()
             call_kwargs = MockAgent.call_args[1]
-            assert len(call_kwargs["tools"]) == 1
+            assert len(call_kwargs["tools"]) == 2
 
     def test_includes_record_progress_tool(self) -> None:
         """record_progress_tool が含まれる"""
@@ -93,6 +99,17 @@ class TestCreateReviewAgent:
             create_review_agent()
             call_kwargs = MockAgent.call_args[1]
             assert record_progress_tool in call_kwargs["tools"]
+
+    def test_includes_load_memory_tool(self) -> None:
+        """load_memory ツールが含まれる"""
+        from google.adk.tools import load_memory  # type: ignore[attr-defined]
+
+        from app.services.adk.agents.review import create_review_agent
+
+        with patch("app.services.adk.agents.review.Agent") as MockAgent:
+            create_review_agent()
+            call_kwargs = MockAgent.call_args[1]
+            assert load_memory in call_kwargs["tools"]
 
     def test_has_no_sub_agents(self) -> None:
         """サブエージェントを持たない"""
