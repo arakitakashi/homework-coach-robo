@@ -27,14 +27,14 @@
 
 | ADK機能 | 利用状況 | 備考 |
 |---------|---------|------|
-| `Agent`（単一） | ✅ 使用中 | `tools=[5ツール]`（Phase 2a完了） |
+| `Agent`（マルチ） | ✅ 使用中 | Router Agent + 4サブエージェント（Phase 2b完了） |
 | `Runner.run_async()` | ✅ 使用中 | テキスト対話（SSE） |
 | `Runner.run_live()` | ✅ 使用中 | 音声ストリーミング |
 | `BaseSessionService` | ✅ 使用中 | Firestore永続化を自前実装 |
 | `BaseMemoryService` | ✅ 使用中 | Firestore永続化を自前実装 |
 | Tool / Function Calling | ✅ 使用中 | Phase 2a で5ツール導入 |
-| マルチエージェント | ❌ 未使用 | |
-| サブエージェント委譲 | ❌ 未使用 | |
+| マルチエージェント | ✅ 使用中 | Phase 2b で導入（AutoFlow委譲） |
+| サブエージェント委譲 | ✅ 使用中 | Router → Math/Japanese/Encouragement/Review |
 | Agent Engine（マネージド） | ❌ 未使用 | Cloud Runに直接デプロイ |
 | Vertex AI RAG | ❌ 未使用 | キーワード検索のみ |
 
@@ -45,14 +45,17 @@ FastAPI Endpoints
 ├── POST /api/v1/dialogue/run (SSE)
 │   └── AgentRunnerService
 │       └── Runner.run_async()
-│           └── Socratic Agent (instruction-only, tools=[])
-│               └── Gemini 2.5 Flash
+│           └── Router Agent (AutoFlow)
+│               ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
+│               ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
+│               ├── Encouragement Agent (tools=[progress])
+│               └── Review Agent (tools=[progress])
 │
 └── WebSocket /ws/{user_id}/{session_id}
     └── VoiceStreamingService
         ├── LiveRequestQueue (full-duplex)
         └── Runner.run_live()
-            └── Socratic Agent (instruction-only, tools=[])
+            └── Socratic Agent (instruction-only, tools=[5ツール])
                 └── Gemini Live 2.5 Flash (native audio)
 ```
 
@@ -61,9 +64,9 @@ FastAPI Endpoints
 | 制約 | 影響 | 原因 |
 |------|------|------|
 | ~~ツールなし~~ | ~~計算検証が不正確（LLMの幻覚リスク）~~ | ✅ Phase 2a で解決 |
-| 単一エージェント | 教科ごとの最適化不可 | エージェント1つ |
+| ~~単一エージェント~~ | ~~教科ごとの最適化不可~~ | ✅ Phase 2b で解決（Router + 4サブエージェント） |
 | キーワード検索のみ | 過去の学習履歴を活かせない | セマンティック検索なし |
-| 感情認識なし | サポートレベルの適応が不十分 | Phase 2で計画 |
+| 感情認識なし | サポートレベルの適応が不十分 | Phase 2dで計画 |
 | ~~プロンプト依存~~ | ~~ヒント段階の管理が不確実~~ | ✅ Phase 2a で解決（manage_hint_tool） |
 
 ---
@@ -284,10 +287,11 @@ def analyze_homework_image(
 
 **使用API**: Gemini Vision API（プライマリ）+ Cloud Vision API（OCRフォールバック）
 
-### 3.3 エージェント定義（実装済み）
+### 3.3 エージェント定義（Phase 2b でマルチエージェントに移行済み）
 
 ```python
-# runner/agent.py - create_socratic_agent()
+# Phase 2a 時点の定義（現在は agents/router.py の Router Agent に置き換え済み）
+# runner/agent.py - create_socratic_agent() は音声ストリーミング用に残存
 agent = Agent(
     name="socratic_dialogue_agent",
     model="gemini-2.5-flash",
@@ -302,11 +306,27 @@ agent = Agent(
 )
 ```
 
+> **Note**: テキスト対話（SSE）は Phase 2b で Router Agent に移行。音声ストリーミング（WebSocket）は引き続き単一エージェントを使用。
+
 ### 3.4 ファイル構成
 
 ```
 backend/app/services/adk/
-├── tools/
+├── agents/                   # ✅ Phase 2b 実装済み
+│   ├── __init__.py
+│   ├── router.py             # Router Agent (AutoFlow → sub_agents)
+│   ├── math_coach.py         # Math Coach Agent (4ツール)
+│   ├── japanese_coach.py     # Japanese Coach Agent (3ツール)
+│   ├── encouragement.py      # Encouragement Agent (1ツール)
+│   ├── review.py             # Review Agent (1ツール)
+│   └── prompts/
+│       ├── __init__.py
+│       ├── router.py
+│       ├── math_coach.py
+│       ├── japanese_coach.py
+│       ├── encouragement.py
+│       └── review.py
+├── tools/                    # ✅ Phase 2a 実装済み
 │   ├── __init__.py
 │   ├── calculate.py          # calculate_tool
 │   ├── hint_manager.py       # manage_hint_tool
@@ -314,8 +334,8 @@ backend/app/services/adk/
 │   ├── progress_recorder.py  # record_progress_tool
 │   └── image_analyzer.py     # analyze_image_tool
 ├── runner/
-│   ├── agent.py              # create_socratic_agent() ← tools追加
-│   └── runner_service.py
+│   ├── agent.py              # create_socratic_agent()（音声用、レガシー）
+│   └── runner_service.py     # AgentRunnerService（Router Agent使用）
 ├── sessions/
 └── memory/
 ```
@@ -329,11 +349,13 @@ backend/app/services/adk/
 
 ---
 
-## 4. Phase 2b: マルチエージェント構成
+## 4. Phase 2b: マルチエージェント構成 ✅ 実装完了
 
 ### 4.1 概要
 
-単一のソクラテスエージェントを、教科・役割ごとに特化した複数エージェントに分離する。ルーターエージェントが子供の入力を分析し、最適なエージェントに委譲する。
+単一のソクラテスエージェントを、教科・役割ごとに特化した複数エージェントに分離。ルーターエージェントが子供の入力を分析し、ADK AutoFlow で最適なエージェントに委譲する。
+
+> **Status**: PR #69 で実装完了。5エージェント（72テスト、カバレッジ100%）。
 
 ### 4.2 エージェント構成
 
@@ -411,12 +433,11 @@ japanese_coach_agent = Agent(
         manage_hint_tool,
         check_curriculum_tool,
         record_progress_tool,
-        # 国語専用ツール
-        kanji_lookup_tool,      # 漢字辞書参照
-        reading_comprehension_tool,  # 読解支援
     ],
 )
 ```
+
+> **Note**: 国語専用ツール（`kanji_lookup_tool`, `reading_comprehension_tool`）は将来のフェーズで追加予定。現在はLLMのプロンプトベースで対応。
 
 **特化ポイント**:
 - 漢字の書き順・部首の指導
@@ -463,10 +484,11 @@ review_agent = Agent(
     instruction=REVIEW_PROMPT,
     tools=[
         record_progress_tool,
-        search_memory_tool,  # 過去の学習記録を参照
     ],
 )
 ```
+
+> **Note**: `search_memory_tool` は Phase 2c（Vertex AI RAG）で追加予定。
 
 **機能**:
 - 今日のセッションの要約（何を頑張ったか）
@@ -817,7 +839,8 @@ Phase 2d（感情）───────────┘
 ```
 
 - **Phase 2a は実装完了** ✅（他の全フェーズの基盤）
-- **Phase 2b, 2c, 2d は並行可能**（ただし2bを先に推奨）
+- **Phase 2b は実装完了** ✅（Router Agent + 4サブエージェント）
+- **Phase 2c, 2d は並行可能**
 - **Phase 3 は全Phase 2完了後**
 
 ### 8.3 優先度と推奨実装順序
@@ -825,7 +848,7 @@ Phase 2d（感情）───────────┘
 | 順序 | フェーズ | 優先度 | 理由 |
 |------|---------|-------|------|
 | 1 | Phase 2a: ツール導入 | ✅ 完了 | 全フェーズの基盤。PR #59 で実装完了 |
-| 2 | Phase 2b: マルチエージェント | 高 | 教科最適化で学習効果が大幅向上 |
+| 2 | Phase 2b: マルチエージェント | ✅ 完了 | 教科最適化で学習効果が大幅向上。PR #69 で実装完了 |
 | 3 | Phase 2c: RAG記憶 | 高 | 個別化学習の実現。長期利用の鍵 |
 | 4 | Phase 2d: 感情適応 | 中 | UX向上。まずはテキストベースから開始可能 |
 | 5 | Phase 3: Agent Engine | 中 | 運用改善。Phase 2が安定してから移行 |
