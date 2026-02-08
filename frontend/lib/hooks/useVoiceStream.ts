@@ -21,6 +21,8 @@ export interface UseVoiceStreamOptions {
 	onTurnComplete?: () => void
 	/** 中断コールバック */
 	onInterrupted?: () => void
+	/** Phase 2a: ツール実行コールバック */
+	onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
 }
 
 /** フックの戻り値 */
@@ -62,7 +64,7 @@ function convertFloat32ToPCM16(float32Array: Float32Array): ArrayBuffer {
  * 双方向音声ストリーミングを管理するフック
  */
 export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStreamReturn {
-	const { onAudioData, onTranscription, onTurnComplete, onInterrupted } = options
+	const { onAudioData, onTranscription, onTurnComplete, onInterrupted, onToolExecution } = options
 
 	// 状態
 	const [connectionState, setConnectionState] = useState<VoiceConnectionState>("disconnected")
@@ -138,12 +140,17 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 				onConnectionChange: (state) => {
 					setConnectionState(state)
 				},
+				onToolExecution: onToolExecution
+					? (toolName, status, result) => {
+							onToolExecution(toolName, status, result)
+						}
+					: undefined,
 			})
 
 			clientRef.current = client
 			client.connect()
 		},
-		[onAudioData, onTranscription, onTurnComplete, onInterrupted],
+		[onAudioData, onTranscription, onTurnComplete, onInterrupted, onToolExecution],
 	)
 
 	/**
