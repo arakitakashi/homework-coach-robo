@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2c（Memory Bank統合）実装完了・Phase 2 フロントエンド型定義基盤完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2c（Memory Bank統合）実装完了・Phase 2a フロントエンドUI実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -179,7 +179,8 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 - ✅ 型定義（`frontend/types/phase2.ts`）: Phase 2a-2d 全サブフェーズの25型定義（PR #60）
 - ✅ 状態管理（`frontend/store/atoms/phase2.ts`）: 12個のJotai atoms（11 writable + 1 derived）
 - ✅ 既存型の後方互換拡張: `DialogueTurn`, `LearningProgress`, `WebSocketIncomingMessage`
-- ✅ テスト: 64テスト（37型テスト + 27 atomテスト）
+- ✅ Phase 2a ツール実行状態UI（PR #74）: `ToolExecutionDisplay`コンポーネント + WebSocket/フック拡張 + SessionContent統合
+- ✅ テスト: 277テスト（26テストファイル）
 
 **Phase 2 ファイル構成:**
 ```
