@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2c（Memory Bank統合）実装完了・Phase 2a フロントエンドUI実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2a フロントエンドUI実装完了
 
 ---
 
@@ -32,6 +32,7 @@
 - **マルチエージェント構成 (Phase 2b)**: Router Agent + 4サブエージェント（Math Coach, Japanese Coach, Encouragement, Review）実装完了
 - **フロントエンド Phase 2 型定義・状態管理**: Phase 2a-2d 対応の型定義（25型）+ Jotai atoms（12個）実装完了
 - **Memory Bank 統合 (Phase 2c+3)**: VertexAiMemoryBankService ファクトリパターン + Agent Engine 作成スクリプト + Review Agent に load_memory ツール追加
+- **感情適応 (Phase 2d)**: update_emotion_tool + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト参照
 - **フロントエンド Phase 2a ツール実行状態UI**: ToolExecutionDisplayコンポーネント + WebSocket/フック拡張 + SessionContent統合（277テスト）
 
 ---
@@ -85,7 +86,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 90%（504テスト）
+**テストカバレッジ**: 90%（526テスト）
 
 ### Firestore Session Persistence
 
@@ -152,7 +153,7 @@ cd backend && uv run uvicorn app.main:app --reload
 ```
 AgentRunnerService
 ├── Runner (ADK)
-│   ├── Router Agent (AutoFlow)
+│   ├── Router Agent (AutoFlow, tools=[update_emotion])
 │   │   ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
 │   │   ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
 │   │   ├── Encouragement Agent (tools=[progress])
@@ -258,7 +259,7 @@ Server → Client:
 
 | エージェント | ファイル | 役割 | ツール |
 |-------------|---------|------|--------|
-| `router_agent` | `router.py` | 入力を分析し最適なサブエージェントに委譲 | なし（ルーティングのみ） |
+| `router_agent` | `router.py` | 感情を分析し最適なサブエージェントに委譲 | update_emotion |
 | `math_coach` | `math_coach.py` | 算数専門のソクラテス式対話 | calculate, hint, curriculum, progress |
 | `japanese_coach` | `japanese_coach.py` | 国語専門のソクラテス式対話 | hint, curriculum, progress |
 | `encouragement_agent` | `encouragement.py` | 感情サポート・休憩提案 | progress |
@@ -321,6 +322,43 @@ uv run python scripts/create_agent_engine.py --project <project-id> --location u
 **テスト:** 10テスト（ファクトリ8 + Review Agent 2）、カバレッジ100%
 
 詳細は `.steering/20260209-phase2c-vertex-ai-rag/` を参照。
+
+### 感情適応 (Phase 2d)
+
+`backend/app/services/adk/tools/emotion_analyzer.py` に感情分析ツールを実装。Router Agent が毎ターン感情を分析し、感情ベースのルーティングを行う。サブエージェントのプロンプトにも感情コンテキスト参照セクションを追加。
+
+| コンポーネント | ファイル | 説明 |
+|--------------|---------|------|
+| `update_emotion_tool` | `tools/emotion_analyzer.py` | 感情スコア記録 + support_level/action_recommended 計算 |
+| Router Agent 更新 | `agents/router.py` | `tools=[update_emotion_tool]` 追加 |
+| Router プロンプト更新 | `agents/prompts/router.py` | 感情分析指示 + 感情ベースルーティング基準 |
+| サブエージェントプロンプト | `agents/prompts/*.py` | 感情コンテキスト参照セクション追加 |
+
+**感情スコア（session.state["emotion"]に記録）:**
+
+| スコア | 範囲 | 説明 |
+|--------|------|------|
+| `frustration` | 0.0-1.0 | イライラ度 |
+| `confidence` | 0.0-1.0 | 自信度 |
+| `fatigue` | 0.0-1.0 | 疲労度 |
+| `excitement` | 0.0-1.0 | 興奮度 |
+| `primary_emotion` | enum | frustrated/confident/confused/happy/tired/neutral |
+
+**サポートレベル計算:**
+
+| 条件 | support_level | action_recommended |
+|------|--------------|-------------------|
+| frustration > 0.7 OR fatigue > 0.6 | intensive | encourage / rest |
+| frustration > 0.4 OR fatigue > 0.3 | moderate | continue |
+| それ以外 | minimal | continue |
+
+**感情ベースルーティング（内容より優先）:**
+- `frustration > 0.7` → encouragement_agent に委譲
+- `fatigue > 0.6` → encouragement_agent に委譲（休憩提案）
+
+**テスト:** 22テスト（ツール20 + Router 2）、カバレッジ90%
+
+詳細は `.steering/20260209-phase2d-emotion-adaptation/` を参照。
 
 ---
 
@@ -630,3 +668,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260208-frontend-phase2-types/` | フロントエンド Phase 2 型定義・状態管理基盤 |
 | `.steering/20260209-phase2a-tool-execution-ui/` | Phase 2a フロントエンド ツール実行状態UI |
 | `.steering/20260209-phase2c-vertex-ai-rag/` | Phase 2c Memory Bank 統合 + Agent Engine |
+| `.steering/20260209-phase2d-emotion-adaptation/` | Phase 2d 感情適応（update_emotion_tool + 感情ベースルーティング） |

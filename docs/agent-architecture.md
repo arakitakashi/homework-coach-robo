@@ -2,7 +2,7 @@
 
 **Document Version**: 1.0
 **Last Updated**: 2026-02-09
-**Status**: Phase 2c 実装完了
+**Status**: Phase 2d 実装完了
 
 ---
 
@@ -45,7 +45,7 @@ FastAPI Endpoints
 ├── POST /api/v1/dialogue/run (SSE)
 │   └── AgentRunnerService
 │       └── Runner.run_async()
-│           └── Router Agent (AutoFlow)
+│           └── Router Agent (AutoFlow, tools=[update_emotion])
 │               ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
 │               ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
 │               ├── Encouragement Agent (tools=[progress])
@@ -66,7 +66,7 @@ FastAPI Endpoints
 | ~~ツールなし~~ | ~~計算検証が不正確（LLMの幻覚リスク）~~ | ✅ Phase 2a で解決 |
 | ~~単一エージェント~~ | ~~教科ごとの最適化不可~~ | ✅ Phase 2b で解決（Router + 4サブエージェント） |
 | ~~キーワード検索のみ~~ | ~~過去の学習履歴を活かせない~~ | ✅ Phase 2c で解決（VertexAiMemoryBankService + load_memory） |
-| 感情認識なし | サポートレベルの適応が不十分 | Phase 2dで計画 |
+| ~~感情認識なし~~ | ~~サポートレベルの適応が不十分~~ | ✅ Phase 2d で解決（update_emotion_tool + 感情ベースルーティング） |
 | ~~プロンプト依存~~ | ~~ヒント段階の管理が不確実~~ | ✅ Phase 2a で解決（manage_hint_tool） |
 
 ---
@@ -332,7 +332,8 @@ backend/app/services/adk/
 │   ├── hint_manager.py       # manage_hint_tool
 │   ├── curriculum.py         # check_curriculum_tool
 │   ├── progress_recorder.py  # record_progress_tool
-│   └── image_analyzer.py     # analyze_image_tool
+│   ├── image_analyzer.py     # analyze_image_tool
+│   └── emotion_analyzer.py   # ✅ Phase 2d: update_emotion_tool
 ├── runner/
 │   ├── agent.py              # create_socratic_agent()（音声用、レガシー）
 │   └── runner_service.py     # AgentRunnerService（Router Agent使用）
@@ -661,90 +662,98 @@ uv run python scripts/create_agent_engine.py --project <project-id> --location u
 
 ---
 
-## 6. Phase 2d: 感情適応エージェント
+## 6. Phase 2d: 感情適応 ✅ 実装完了
 
 ### 6.1 概要
 
-音声のトーン分析を行い、子供の感情状態を推定する。感情状態に基づいて、エージェントの対話トーンとサポートレベルを動的に調整する。
+Router Agent が毎ターン子供の発言内容から感情状態を分析し、`session.state["emotion"]` に記録する。感情状態に基づいて、エージェントの対話トーンとサポートレベルを動的に調整する。
 
-### 6.2 アーキテクチャ
+> **Status**: PR #75 で実装完了。update_emotion_tool + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト参照。
+
+### 6.2 設計判断: Router Agent + ツール方式
+
+感情分析の方式として「別の Emotion Agent を追加」ではなく「Router Agent にツールを追加」を採用。
+
+| 方式 | メリット | デメリット |
+|------|---------|----------|
+| 別 Emotion Agent | 関心の分離 | 追加の LLM コール（レイテンシ増大） |
+| **Router Agent + ツール（採用）** | レイテンシなし、Router が直接感情を判断 | Router の責務増加 |
+
+Router は全メッセージを最初に処理するため、感情分析も同時に行うのが最も効率的。
+
+### 6.3 アーキテクチャ
 
 ```
-音声入力（PCM 16kHz）
+子供の発言
     │
-    ├──▶ Gemini Live API（通常の対話処理）
+    ▼
+Router Agent
     │
-    └──▶ Emotion Analysis Agent
-              │
-              ▼
-         ┌──────────────────┐
-         │ 感情状態の推定     │
-         │                  │
-         │ - frustration    │
-         │ - confidence     │
-         │ - fatigue        │
-         │ - excitement     │
-         └────────┬─────────┘
-                  │
-                  ▼
-         session.state["emotion"] に反映
-                  │
-                  ▼
-         対話エージェントが参照して適応
+    ├── 1. update_emotion ツール呼び出し
+    │       └── session.state["emotion"] に記録
+    │           ├── frustration, confidence, fatigue, excitement
+    │           ├── primary_emotion
+    │           ├── support_level (intensive/moderate/minimal)
+    │           └── action_recommended (continue/encourage/rest)
+    │
+    ├── 2. 感情ベースルーティング（内容より優先）
+    │       ├── frustration > 0.7 → encouragement_agent
+    │       └── fatigue > 0.6 → encouragement_agent（休憩提案）
+    │
+    └── 3. 内容ベースルーティング（通常）
+            ├── 算数 → math_coach
+            ├── 国語 → japanese_coach
+            └── 振り返り → review_agent
 ```
 
-### 6.3 感情分析の手法
-
-#### 方法1: Gemini マルチモーダル分析（推奨）
-
-Gemini Live APIの音声入力を分析エージェントにも共有し、テキスト内容と音声トーンの両方から感情を推定する。
+### 6.4 update_emotion_tool
 
 ```python
-emotion_agent = Agent(
-    name="emotion_analyzer",
-    model="gemini-2.5-flash",
-    instruction="""
-    子供の発言内容と話し方から感情状態を分析してください。
-    以下のスケールで評価:
-    - frustration: 0.0-1.0（イライラ度）
-    - confidence: 0.0-1.0（自信度）
-    - fatigue: 0.0-1.0（疲労度）
-    - excitement: 0.0-1.0（興奮度）
+from google.adk.tools import FunctionTool
 
-    分析結果は update_emotion ツールで記録してください。
-    """,
-    tools=[update_emotion_tool],
-)
+def update_emotion(
+    frustration: float,      # 0.0-1.0（範囲外はクランプ）
+    confidence: float,       # 0.0-1.0
+    fatigue: float,          # 0.0-1.0
+    excitement: float,       # 0.0-1.0
+    primary_emotion: str,    # frustrated/confident/confused/happy/tired/neutral
+    tool_context: Any = None,
+) -> dict[str, object]:
+    """感情スコアを session.state["emotion"] に記録する。"""
+    ...
+
+update_emotion_tool = FunctionTool(func=update_emotion)
 ```
 
-#### 方法2: Vertex AI AutoML（高精度、Phase 3以降）
+**サポートレベル計算:**
 
-カスタム音声感情認識モデルをVertex AI AutoMLでトレーニングする。
+| 条件 | support_level |
+|------|--------------|
+| frustration > 0.7 OR fatigue > 0.6 | intensive |
+| frustration > 0.4 OR fatigue > 0.3 | moderate |
+| それ以外 | minimal |
 
-- 訓練データ: 児童の音声サンプル（同意取得済み）
-- ラベル: 感情カテゴリ（ポジティブ/ニュートラル/ネガティブ/疲労）
-- 推論: Vertex AI Prediction Endpointとして提供
+**アクション推奨:**
 
-### 6.4 適応ロジック
+| 条件 | action_recommended |
+|------|-------------------|
+| fatigue > 0.6（優先） | rest |
+| frustration > 0.7 | encourage |
+| それ以外 | continue |
 
-```python
-# session.state に基づく適応
-emotion = session.state.get("emotion", {})
+### 6.5 サブエージェントの感情コンテキスト参照
 
-if emotion.get("frustration", 0) > 0.7:
-    # 高フラストレーション → 励ましエージェントに委譲
-    transfer_to(encouragement_agent)
+各サブエージェントのプロンプトに「感情への配慮」セクションを追加。`session.state["emotion"]` を参照して対応を調整する。
 
-elif emotion.get("fatigue", 0) > 0.6:
-    # 高疲労 → 休憩提案
-    suggest_break()
+| エージェント | 感情対応 |
+|-------------|---------|
+| Math Coach | 高frustration → 小さいステップ、高confidence → チャレンジ促進、高fatigue → 短い問題 |
+| Japanese Coach | 高frustration → やさしくゆっくり、高confidence → 応用問題、高fatigue → 無理させない |
+| Encouragement | 高frustration → 気持ち受容＋成功体験、高fatigue → 休憩提案、confused → 安心させる |
 
-elif emotion.get("confidence", 0) > 0.8:
-    # 高自信 → 難易度を少し上げる
-    increase_difficulty()
-```
+### 6.6 感情状態と対話トーンのマッピング（将来拡張）
 
-### 6.5 感情状態と対話トーンのマッピング
+音声ストリーミング（TTS）での対話トーン調整は将来フェーズで実装予定。
 
 | 感情状態 | 対話トーン | speaking_rate | pitch | 例 |
 |---------|-----------|--------------|-------|-----|
@@ -752,6 +761,12 @@ elif emotion.get("confidence", 0) > 0.8:
 | 高自信 | 明るく・テンポよく | 1.1 | +3.0 | 「すごいね！もっと難しいのやる？」 |
 | 高疲労 | 穏やかに | 0.85 | +1.5 | 「頑張ったね。少し休もうか」 |
 | 高興奮 | 一緒に楽しむ | 1.05 | +2.5 | 「やったー！正解だよ！」 |
+
+### 6.7 将来の高度化（Phase 3以降）
+
+- **Vertex AI AutoML**: カスタム音声感情認識モデル（児童の音声サンプル + ラベル）
+- **TTS パラメータ連動**: speaking_rate / pitch を感情に応じて動的調整
+- **感情履歴分析**: セッション全体の感情推移を記録・分析
 
 ---
 
@@ -840,10 +855,10 @@ Phase 2c: Memory Bank (✅ 完了)
 ├── Step 2: Review Agent に load_memory ツール追加
 └── Step 3: Agent Engine 作成スクリプト
 
-Phase 2d: 感情適応
-├── Step 1: テキストベースの感情分析（Gemini）
-├── Step 2: 感情→対話トーン適応ロジック
-└── Step 3: 音声トーン分析の高度化
+Phase 2d: 感情適応 (✅ 完了)
+├── Step 1: update_emotion_tool（感情スコア記録 + support_level/action 計算）
+├── Step 2: Router Agent 感情ベースルーティング
+└── Step 3: サブエージェントプロンプト感情コンテキスト参照
 
 Phase 3: Agent Engine
 ├── Step 1: Agent Engine へのデプロイ
@@ -867,8 +882,8 @@ Phase 2d（感情）───────────┘
 - **Phase 2a は実装完了** ✅（他の全フェーズの基盤）
 - **Phase 2b は実装完了** ✅（Router Agent + 4サブエージェント）
 - **Phase 2c は実装完了** ✅（Memory Bank ファクトリ + Agent Engine + load_memory）
+- **Phase 2d は実装完了** ✅（update_emotion_tool + 感情ベースルーティング + サブエージェントプロンプト更新）
 - **フロントエンド Phase 2 型定義・状態管理基盤** ✅（Phase 2a-2d 全サブフェーズの型定義25型 + Jotai atoms 12個。PR #60）
-- **Phase 2d は独立して実装可能**
 - **Phase 3 は Phase 2c の Agent Engine 基盤を活用**
 
 ### 8.3 優先度と推奨実装順序
@@ -878,7 +893,7 @@ Phase 2d（感情）───────────┘
 | 1 | Phase 2a: ツール導入 | ✅ 完了 | 全フェーズの基盤。PR #59 で実装完了 |
 | 2 | Phase 2b: マルチエージェント | ✅ 完了 | 教科最適化で学習効果が大幅向上。PR #69 で実装完了 |
 | 3 | Phase 2c: Memory Bank | ✅ 完了 | VertexAiMemoryBankService + Agent Engine。PR #73 で実装完了 |
-| 4 | Phase 2d: 感情適応 | 中 | UX向上。まずはテキストベースから開始可能 |
+| 4 | Phase 2d: 感情適応 | ✅ 完了 | update_emotion_tool + 感情ベースルーティング。PR #75 で実装完了 |
 | 5 | Phase 3: Agent Engine | 中 | 運用改善。Phase 2が安定してから移行 |
 
 ---
