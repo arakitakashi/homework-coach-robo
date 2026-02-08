@@ -103,7 +103,6 @@ class TestCreateJapaneseCoachAgent:
     def test_includes_manage_hint_tool(self) -> None:
         """manage_hint_tool が含まれる"""
         from app.services.adk.agents.japanese_coach import create_japanese_coach_agent
-
         from app.services.adk.tools.hint_manager import manage_hint_tool
 
         with patch("app.services.adk.agents.japanese_coach.Agent") as MockAgent:
@@ -114,7 +113,6 @@ class TestCreateJapaneseCoachAgent:
     def test_includes_check_curriculum_tool(self) -> None:
         """check_curriculum_tool が含まれる"""
         from app.services.adk.agents.japanese_coach import create_japanese_coach_agent
-
         from app.services.adk.tools.curriculum import check_curriculum_tool
 
         with patch("app.services.adk.agents.japanese_coach.Agent") as MockAgent:
@@ -125,7 +123,6 @@ class TestCreateJapaneseCoachAgent:
     def test_includes_record_progress_tool(self) -> None:
         """record_progress_tool が含まれる"""
         from app.services.adk.agents.japanese_coach import create_japanese_coach_agent
-
         from app.services.adk.tools.progress_recorder import record_progress_tool
 
         with patch("app.services.adk.agents.japanese_coach.Agent") as MockAgent:
@@ -136,7 +133,6 @@ class TestCreateJapaneseCoachAgent:
     def test_does_not_include_calculate_tool(self) -> None:
         """calculate_tool は含まれない（Math Coach 専用）"""
         from app.services.adk.agents.japanese_coach import create_japanese_coach_agent
-
         from app.services.adk.tools.calculate import calculate_tool
 
         with patch("app.services.adk.agents.japanese_coach.Agent") as MockAgent:
