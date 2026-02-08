@@ -18,11 +18,23 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { TextInput } from "@/components/ui/TextInput"
 import { useDialogue, usePcmPlayer, useSession, useVoiceStream } from "@/lib/hooks"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
-import { activeToolExecutionsAtom, isToolRunningAtom } from "@/store/atoms/phase2"
+import {
+	activeAgentAtom,
+	activeToolExecutionsAtom,
+	agentTransitionHistoryAtom,
+	emotionAnalysisAtom,
+	emotionHistoryAtom,
+	isToolRunningAtom,
+} from "@/store/atoms/phase2"
 import { learningProgressAtom } from "@/store/atoms/session"
 import type {
+	ActiveAgent,
+	AgentTransition,
+	AgentType,
 	CharacterType,
 	DialogueTurn,
+	EmotionAnalysis,
+	EmotionType,
 	ToolExecution,
 	ToolExecutionStatus,
 	ToolName,
@@ -47,6 +59,10 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [learningProgress] = useAtom(learningProgressAtom)
 	const [activeToolExecutions, setActiveToolExecutions] = useAtom(activeToolExecutionsAtom)
 	const [isToolRunning] = useAtom(isToolRunningAtom)
+	const [, _setActiveAgent] = useAtom(activeAgentAtom)
+	const [, _setAgentTransitionHistory] = useAtom(agentTransitionHistoryAtom)
+	const [, _setEmotionAnalysis] = useAtom(emotionAnalysisAtom)
+	const [, _setEmotionHistory] = useAtom(emotionHistoryAtom)
 
 	// 音声入力の有効化状態
 	const [isVoiceEnabled] = useState(true)
@@ -147,6 +163,43 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		[setActiveToolExecutions],
 	)
 
+	// エージェント遷移イベントハンドラ
+	const handleAgentTransition = useCallback(
+		(fromAgent: string, toAgent: string, reason: string) => {
+			const agent: ActiveAgent = {
+				type: toAgent as AgentType,
+				name: toAgent,
+				startedAt: new Date(),
+			}
+			_setActiveAgent(agent)
+
+			const transition: AgentTransition = {
+				fromAgent: fromAgent as AgentType,
+				toAgent: toAgent as AgentType,
+				reason,
+				timestamp: new Date(),
+			}
+			_setAgentTransitionHistory((prev) => [...prev, transition])
+		},
+		[_setActiveAgent, _setAgentTransitionHistory],
+	)
+
+	// 感情更新イベントハンドラ
+	const handleEmotionUpdate = useCallback(
+		(emotion: string, frustrationLevel: number, engagementLevel: number) => {
+			const analysis: EmotionAnalysis = {
+				primaryEmotion: emotion as EmotionType,
+				confidence: 1.0,
+				frustrationLevel,
+				engagementLevel,
+				timestamp: new Date(),
+			}
+			_setEmotionAnalysis(analysis)
+			_setEmotionHistory((prev) => [...prev, analysis])
+		},
+		[_setEmotionAnalysis, _setEmotionHistory],
+	)
+
 	// 音声ストリーミングフック
 	const {
 		connectionState: voiceConnectionState,
@@ -162,6 +215,8 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		onTurnComplete: handleTurnComplete,
 		onInterrupted: handleInterrupted,
 		onToolExecution: handleToolExecution,
+		onAgentTransition: handleAgentTransition,
+		onEmotionUpdate: handleEmotionUpdate,
 	})
 
 	// 初期化時にセッションを作成

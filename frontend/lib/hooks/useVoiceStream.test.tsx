@@ -34,6 +34,8 @@ const {
 		onError: (error: string) => void
 		onConnectionChange: (state: string) => void
 		onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
+		onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
+		onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
 	}
 
 	let mockClientOptions: MockClientOptions | null = null
@@ -359,6 +361,56 @@ describe("useVoiceStream", () => {
 			})
 
 			expect(onToolExecution).toHaveBeenCalledWith("calculate_tool", "running", undefined)
+		})
+	})
+
+	describe("エージェント遷移イベント", () => {
+		it("onAgentTransitionコールバックがVoiceWebSocketClientに渡される", () => {
+			const { TestWrapper } = createTestWrapper()
+			const onAgentTransition = vi.fn()
+			const { result } = renderHook(() => useVoiceStream({ onAgentTransition }), {
+				wrapper: TestWrapper,
+			})
+
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+
+			// VoiceWebSocketClient のオプションにonAgentTransitionが渡されていることを確認
+			const clientOptions = getMockClientOptions()
+			expect(clientOptions).not.toBeNull()
+
+			// エージェント遷移イベントをシミュレート
+			act(() => {
+				clientOptions?.onAgentTransition?.("router", "math_coach", "算数の問題を検出")
+			})
+
+			expect(onAgentTransition).toHaveBeenCalledWith("router", "math_coach", "算数の問題を検出")
+		})
+	})
+
+	describe("感情更新イベント", () => {
+		it("onEmotionUpdateコールバックがVoiceWebSocketClientに渡される", () => {
+			const { TestWrapper } = createTestWrapper()
+			const onEmotionUpdate = vi.fn()
+			const { result } = renderHook(() => useVoiceStream({ onEmotionUpdate }), {
+				wrapper: TestWrapper,
+			})
+
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+
+			// VoiceWebSocketClient のオプションにonEmotionUpdateが渡されていることを確認
+			const clientOptions = getMockClientOptions()
+			expect(clientOptions).not.toBeNull()
+
+			// 感情更新イベントをシミュレート
+			act(() => {
+				clientOptions?.onEmotionUpdate?.("frustrated", 0.8, 0.3)
+			})
+
+			expect(onEmotionUpdate).toHaveBeenCalledWith("frustrated", 0.8, 0.3)
 		})
 	})
 
