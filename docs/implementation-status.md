@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンド型定義基盤完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2a フロントエンドUI実装完了
 
 ---
 
@@ -33,6 +33,7 @@
 - **フロントエンド Phase 2 型定義・状態管理**: Phase 2a-2d 対応の型定義（25型）+ Jotai atoms（12個）実装完了
 - **Memory Bank 統合 (Phase 2c+3)**: VertexAiMemoryBankService ファクトリパターン + Agent Engine 作成スクリプト + Review Agent に load_memory ツール追加
 - **感情適応 (Phase 2d)**: update_emotion_tool + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト参照
+- **フロントエンド Phase 2a ツール実行状態UI**: ToolExecutionDisplayコンポーネント + WebSocket/フック拡張 + SessionContent統合（277テスト）
 
 ---
 
@@ -439,9 +440,49 @@ uv run python scripts/create_agent_engine.py --project <project-id> --location u
 
 詳細は `.steering/20260208-frontend-phase2-types/COMPLETED.md` を参照。
 
+### Phase 2a ツール実行状態UIコンポーネント
+
+バックエンドのADK Function Tools（calculate_tool等）がリアルタイムで実行される際、その状態をフロントエンドUIに表示する機能を実装。
+
+**新規コンポーネント:**
+
+| コンポーネント | 説明 |
+|-------------|------|
+| `ToolExecutionDisplay` | ツール実行状態のリアルタイム表示（ローディング/完了/エラー） |
+
+**ツール名の日本語マッピング:**
+
+| ToolName | 表示名 |
+|----------|--------|
+| `calculate_tool` | けいさん |
+| `manage_hint_tool` | ヒント |
+| `record_progress_tool` | きろく |
+| `check_curriculum_tool` | きょうかしょ |
+| `analyze_image_tool` | しゃしん |
+
+**WebSocket/フック拡張:**
+- `ADKEvent` 型に `toolExecution` フィールド追加（`ADKToolExecutionEvent`）
+- `VoiceWebSocketOptions` に `onToolExecution` コールバック追加
+- `VoiceWebSocketClient.processADKEvent` でツール実行イベントをハンドリング
+- `useVoiceStream` フックに `onToolExecution` パススルー追加
+
+**SessionContent統合:**
+- Jotai atoms（`activeToolExecutionsAtom`, `isToolRunningAtom`）経由で`ToolExecutionDisplay`に接続
+- `CharacterDisplay`と`DialogueHistory`の間に配置
+- アクセシビリティ対応（`role="status"`, `aria-live="polite"`）
+
+**データフロー:**
+```
+VoiceWebSocketClient (ADKEvent) → useVoiceStream (callback) → SessionContent (Jotai atoms) → ToolExecutionDisplay (UI)
+```
+
+**テスト:** ToolExecutionDisplay(13) + VoiceWebSocket(+3) + useVoiceStream(+1) + SessionContent(+2) = 19新規テスト
+
+詳細は `.steering/20260209-phase2a-tool-execution-ui/` を参照。
+
 ### テストカバレッジ
 
-- **ユニットテスト**: 25テストファイル、258テスト（Vitest + Testing Library）
+- **ユニットテスト**: 26テストファイル、277テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -625,5 +666,6 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260208-phase2a-adk-tools/` | Phase 2a ADK Function Tools |
 | `.steering/20260208-phase2b-multi-agent/` | Phase 2b マルチエージェント構成 |
 | `.steering/20260208-frontend-phase2-types/` | フロントエンド Phase 2 型定義・状態管理基盤 |
+| `.steering/20260209-phase2a-tool-execution-ui/` | Phase 2a フロントエンド ツール実行状態UI |
 | `.steering/20260209-phase2c-vertex-ai-rag/` | Phase 2c Memory Bank 統合 + Agent Engine |
 | `.steering/20260209-phase2d-emotion-adaptation/` | Phase 2d 感情適応（update_emotion_tool + 感情ベースルーティング） |

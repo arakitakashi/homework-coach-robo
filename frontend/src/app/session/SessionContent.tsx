@@ -8,6 +8,7 @@ import {
 	DialogueHistory,
 	HintIndicator,
 	ProgressDisplay,
+	ToolExecutionDisplay,
 	VoiceInterface,
 } from "@/components/features"
 import { Button } from "@/components/ui/Button"
@@ -17,8 +18,15 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { TextInput } from "@/components/ui/TextInput"
 import { useDialogue, usePcmPlayer, useSession, useVoiceStream } from "@/lib/hooks"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
+import { activeToolExecutionsAtom, isToolRunningAtom } from "@/store/atoms/phase2"
 import { learningProgressAtom } from "@/store/atoms/session"
-import type { CharacterType, DialogueTurn } from "@/types"
+import type {
+	CharacterType,
+	DialogueTurn,
+	ToolExecution,
+	ToolExecutionStatus,
+	ToolName,
+} from "@/types"
 
 interface SessionContentProps {
 	characterType: CharacterType
@@ -37,6 +45,8 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [hintLevel] = useAtom(hintLevelAtom)
 	const [characterState, setCharacterState] = useAtom(characterStateAtom)
 	const [learningProgress] = useAtom(learningProgressAtom)
+	const [activeToolExecutions, setActiveToolExecutions] = useAtom(activeToolExecutionsAtom)
+	const [isToolRunning] = useAtom(isToolRunningAtom)
 
 	// 音声入力の有効化状態
 	const [isVoiceEnabled] = useState(true)
@@ -114,6 +124,29 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		setCharacterState("listening")
 	}, [stopPlayback, setCharacterState])
 
+	// ツール実行イベントハンドラ
+	const handleToolExecution = useCallback(
+		(toolName: string, status: string, result?: Record<string, unknown>) => {
+			const execution: ToolExecution = {
+				toolName: toolName as ToolName,
+				status: status as ToolExecutionStatus,
+				output: result,
+				timestamp: new Date(),
+			}
+			setActiveToolExecutions((prev) => {
+				// 同じツール名の既存実行を更新、なければ追加
+				const existingIndex = prev.findIndex((e) => e.toolName === toolName)
+				if (existingIndex >= 0) {
+					const updated = [...prev]
+					updated[existingIndex] = execution
+					return updated
+				}
+				return [...prev, execution]
+			})
+		},
+		[setActiveToolExecutions],
+	)
+
 	// 音声ストリーミングフック
 	const {
 		connectionState: voiceConnectionState,
@@ -128,6 +161,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		onTranscription: handleTranscription,
 		onTurnComplete: handleTurnComplete,
 		onInterrupted: handleInterrupted,
+		onToolExecution: handleToolExecution,
 	})
 
 	// 初期化時にセッションを作成
@@ -228,6 +262,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 				<div className="mb-4">
 					<CharacterDisplay character={characterType} state={characterState} />
 				</div>
+
+				{/* ツール実行表示 */}
+				<ToolExecutionDisplay executions={activeToolExecutions} isRunning={isToolRunning} />
 
 				{/* 対話履歴 */}
 				<Card padding="medium" className="mb-4 w-full max-w-md flex-1">
