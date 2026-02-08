@@ -13,6 +13,7 @@ dependencies = [
     "google-genai>=1.0.0",
     "firebase-admin>=6.0.0",
     "google-cloud-firestore>=2.0.0",
+    "google-cloud-aiplatform>=1.60.0",
 ]
 
 [project.optional-dependencies]
