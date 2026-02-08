@@ -160,6 +160,15 @@ export class VoiceWebSocketClient {
 			)
 		}
 
+		// Phase 2a: ツール実行イベント
+		if (event.toolExecution) {
+			this.options.onToolExecution?.(
+				event.toolExecution.toolName,
+				event.toolExecution.status,
+				event.toolExecution.result,
+			)
+		}
+
 		// コンテンツ（音声データまたはテキスト）
 		if (event.content?.parts) {
 			for (const part of event.content.parts) {

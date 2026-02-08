@@ -33,6 +33,7 @@ const {
 		onInterrupted: () => void
 		onError: (error: string) => void
 		onConnectionChange: (state: string) => void
+		onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
 	}
 
 	let mockClientOptions: MockClientOptions | null = null
@@ -333,6 +334,31 @@ describe("useVoiceStream", () => {
 			})
 
 			expect(result.current.audioLevel).toBe(0)
+		})
+	})
+
+	describe("ツール実行イベント", () => {
+		it("onToolExecutionコールバックがVoiceWebSocketClientに渡される", () => {
+			const { TestWrapper } = createTestWrapper()
+			const onToolExecution = vi.fn()
+			const { result } = renderHook(() => useVoiceStream({ onToolExecution }), {
+				wrapper: TestWrapper,
+			})
+
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+
+			// VoiceWebSocketClient のオプションにonToolExecutionが渡されていることを確認
+			const clientOptions = getMockClientOptions()
+			expect(clientOptions).not.toBeNull()
+
+			// ツール実行イベントをシミュレート
+			act(() => {
+				clientOptions?.onToolExecution?.("calculate_tool", "running")
+			})
+
+			expect(onToolExecution).toHaveBeenCalledWith("calculate_tool", "running", undefined)
 		})
 	})
 

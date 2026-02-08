@@ -73,6 +73,16 @@ export interface TranscriptionEvent {
 	finished: boolean
 }
 
+/** ADKツール実行イベント */
+export interface ADKToolExecutionEvent {
+	/** ツール名 */
+	toolName: string
+	/** 実行ステータス */
+	status: string
+	/** 実行結果（完了時） */
+	result?: Record<string, unknown>
+}
+
 /** ADKイベント - サーバーからのWebSocketメッセージ */
 export interface ADKEvent {
 	/** イベント発行者 */
@@ -89,6 +99,8 @@ export interface ADKEvent {
 	content?: {
 		parts: ADKContentPart[]
 	}
+	/** Phase 2a: ツール実行イベント */
+	toolExecution?: ADKToolExecutionEvent
 }
 
 /** ADKコンテンツパート */
@@ -128,4 +140,6 @@ export interface VoiceWebSocketOptions {
 	onError: (error: string) => void
 	/** 接続状態変更コールバック */
 	onConnectionChange: (state: VoiceConnectionState) => void
+	/** Phase 2a: ツール実行コールバック */
+	onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
 }

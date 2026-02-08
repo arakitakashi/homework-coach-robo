@@ -2,11 +2,13 @@
  * SessionContent コンポーネントテスト
  */
 
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { type ReactNode, useMemo } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { activeToolExecutionsAtom } from "@/store/atoms/phase2"
+import type { ToolExecution } from "@/types"
 import { SessionContent } from "./SessionContent"
 
 // Next.js router mock
@@ -30,20 +32,32 @@ let mockCreateSessionError: Error | null = null
 let mockDialogueText = ""
 let mockDialogueError: string | null = null
 
-// useVoiceStreamをモック
+// useVoiceStreamのコールバックをキャプチャする変数
+let capturedVoiceStreamOptions: {
+	onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
+} = {}
+
+// useVoiceStreamをモック（optionsをキャプチャ）
 vi.mock("@/lib/hooks/useVoiceStream", () => ({
-	useVoiceStream: () => ({
-		connectionState: "disconnected",
-		isRecording: false,
-		audioLevel: 0,
-		error: null,
-		connect: vi.fn(),
-		disconnect: vi.fn(),
-		startRecording: vi.fn(),
-		stopRecording: vi.fn(),
-		sendText: vi.fn(),
-		clearError: vi.fn(),
-	}),
+	useVoiceStream: (options?: {
+		onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
+	}) => {
+		if (options) {
+			capturedVoiceStreamOptions = options
+		}
+		return {
+			connectionState: "disconnected",
+			isRecording: false,
+			audioLevel: 0,
+			error: null,
+			connect: vi.fn(),
+			disconnect: vi.fn(),
+			startRecording: vi.fn(),
+			stopRecording: vi.fn(),
+			sendText: vi.fn(),
+			clearError: vi.fn(),
+		}
+	},
 }))
 
 // usePcmPlayerをモック
@@ -144,6 +158,7 @@ describe("SessionContent", () => {
 		mockDialogueText = "ロボットからの回答"
 		mockDialogueError = null
 		mockPush.mockClear()
+		capturedVoiceStreamOptions = {}
 	})
 
 	afterEach(() => {
@@ -296,6 +311,100 @@ describe("SessionContent", () => {
 
 			await waitFor(() => {
 				expect(mockPush).toHaveBeenCalledWith("/")
+			})
+		})
+	})
+
+	describe("ツール実行表示", () => {
+		it("ツール実行中にToolExecutionDisplayが表示される", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// ツール実行中の状態をatomに設定
+			const toolExecution: ToolExecution = {
+				toolName: "calculate_tool",
+				status: "running",
+				timestamp: new Date(),
+			}
+			store.set(activeToolExecutionsAtom, [toolExecution])
+
+			// ToolExecutionDisplayが表示される
+			await waitFor(() => {
+				expect(screen.getByText("けいさん")).toBeInTheDocument()
+			})
+		})
+
+		it("ツール実行がない場合はToolExecutionDisplayが非表示", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// ToolExecutionDisplayが表示されない
+			expect(screen.queryByText("けいさん")).not.toBeInTheDocument()
+		})
+
+		it("onToolExecutionコールバックがactiveToolExecutionsAtomを更新する", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// useVoiceStreamに渡されたonToolExecutionコールバックが存在することを確認
+			expect(capturedVoiceStreamOptions.onToolExecution).toBeDefined()
+
+			// コールバックを実行してツール実行イベントをシミュレート
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("calculate_tool", "running")
+			})
+
+			// ToolExecutionDisplayにツール名が表示される
+			await waitFor(() => {
+				expect(screen.getByText("けいさん")).toBeInTheDocument()
+			})
+		})
+
+		it("onToolExecutionコールバックでcompletedステータスを処理できる", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// ツール実行開始
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("calculate_tool", "running")
+			})
+
+			await waitFor(() => {
+				expect(screen.getByText("けいさん")).toBeInTheDocument()
+			})
+
+			// ツール実行完了
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("calculate_tool", "completed", { answer: 42 })
+			})
+
+			// completedステータスで更新される
+			await waitFor(() => {
+				expect(screen.getByText("けいさん")).toBeInTheDocument()
 			})
 		})
 	})

@@ -278,6 +278,70 @@ describe("VoiceWebSocketClient", () => {
 		})
 	})
 
+	describe("ツール実行イベント", () => {
+		it("ツール実行イベントを受信してonToolExecutionコールバックを呼ぶ", () => {
+			const options = {
+				...createDefaultOptions(),
+				onToolExecution: vi.fn(),
+			}
+			const client = new VoiceWebSocketClient(options)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				toolExecution: {
+					toolName: "calculate_tool",
+					status: "running",
+				},
+			}
+			mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+			expect(options.onToolExecution).toHaveBeenCalledWith("calculate_tool", "running", undefined)
+		})
+
+		it("ツール実行完了時に結果も渡す", () => {
+			const options = {
+				...createDefaultOptions(),
+				onToolExecution: vi.fn(),
+			}
+			const client = new VoiceWebSocketClient(options)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				toolExecution: {
+					toolName: "calculate_tool",
+					status: "completed",
+					result: { expression: "2+3", result: 5, isCorrect: true },
+				},
+			}
+			mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+			expect(options.onToolExecution).toHaveBeenCalledWith("calculate_tool", "completed", {
+				expression: "2+3",
+				result: 5,
+				isCorrect: true,
+			})
+		})
+
+		it("onToolExecutionが未設定でもエラーにならない", () => {
+			const client = new VoiceWebSocketClient(defaultOptions)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				toolExecution: {
+					toolName: "calculate_tool",
+					status: "running",
+				},
+			}
+
+			expect(() => {
+				mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+			}).not.toThrow()
+		})
+	})
+
 	describe("エラーハンドリング", () => {
 		it("WebSocketエラー時にerror状態を通知する", () => {
 			const client = new VoiceWebSocketClient(defaultOptions)
