@@ -328,7 +328,8 @@ class TestUpdateEmotionTool:
 
     def test_is_function_tool_instance(self) -> None:
         """FunctionTool インスタンスである"""
-        from app.services.adk.tools.emotion_analyzer import update_emotion_tool
         from google.adk.tools import FunctionTool
+
+        from app.services.adk.tools.emotion_analyzer import update_emotion_tool
 
         assert isinstance(update_emotion_tool, FunctionTool)
