@@ -1,8 +1,8 @@
 # 宿題コーチロボット - エージェントアーキテクチャ設計書
 
 **Document Version**: 1.0
-**Last Updated**: 2026-02-08
-**Status**: Phase 2 設計完了
+**Last Updated**: 2026-02-09
+**Status**: Phase 2c 実装完了
 
 ---
 
@@ -35,8 +35,8 @@
 | Tool / Function Calling | ✅ 使用中 | Phase 2a で5ツール導入 |
 | マルチエージェント | ✅ 使用中 | Phase 2b で導入（AutoFlow委譲） |
 | サブエージェント委譲 | ✅ 使用中 | Router → Math/Japanese/Encouragement/Review |
-| Agent Engine（マネージド） | ❌ 未使用 | Cloud Runに直接デプロイ |
-| Vertex AI RAG | ❌ 未使用 | キーワード検索のみ |
+| Agent Engine（マネージド） | ✅ 準備済み | Agent Engine 作成スクリプト + Memory Bank 用 |
+| VertexAiMemoryBankService | ✅ 準備済み | ファクトリパターンで切り替え（AGENT_ENGINE_ID） |
 
 ### 1.2 現在のアーキテクチャ
 
@@ -49,7 +49,7 @@ FastAPI Endpoints
 │               ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
 │               ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
 │               ├── Encouragement Agent (tools=[progress])
-│               └── Review Agent (tools=[progress])
+│               └── Review Agent (tools=[progress, load_memory])
 │
 └── WebSocket /ws/{user_id}/{session_id}
     └── VoiceStreamingService
@@ -65,7 +65,7 @@ FastAPI Endpoints
 |------|------|------|
 | ~~ツールなし~~ | ~~計算検証が不正確（LLMの幻覚リスク）~~ | ✅ Phase 2a で解決 |
 | ~~単一エージェント~~ | ~~教科ごとの最適化不可~~ | ✅ Phase 2b で解決（Router + 4サブエージェント） |
-| キーワード検索のみ | 過去の学習履歴を活かせない | セマンティック検索なし |
+| ~~キーワード検索のみ~~ | ~~過去の学習履歴を活かせない~~ | ✅ Phase 2c で解決（VertexAiMemoryBankService + load_memory） |
 | 感情認識なし | サポートレベルの適応が不十分 | Phase 2dで計画 |
 | ~~プロンプト依存~~ | ~~ヒント段階の管理が不確実~~ | ✅ Phase 2a で解決（manage_hint_tool） |
 
@@ -318,7 +318,7 @@ backend/app/services/adk/
 │   ├── math_coach.py         # Math Coach Agent (4ツール)
 │   ├── japanese_coach.py     # Japanese Coach Agent (3ツール)
 │   ├── encouragement.py      # Encouragement Agent (1ツール)
-│   ├── review.py             # Review Agent (1ツール)
+│   ├── review.py             # Review Agent (2ツール: progress + load_memory)
 │   └── prompts/
 │       ├── __init__.py
 │       ├── router.py
@@ -338,6 +338,10 @@ backend/app/services/adk/
 │   └── runner_service.py     # AgentRunnerService（Router Agent使用）
 ├── sessions/
 └── memory/
+    ├── __init__.py
+    ├── converters.py
+    ├── firestore_memory_service.py
+    └── memory_factory.py         # ✅ Phase 2c: メモリサービスファクトリ
 ```
 
 ### 3.5 テスト戦略
@@ -484,11 +488,12 @@ review_agent = Agent(
     instruction=REVIEW_PROMPT,
     tools=[
         record_progress_tool,
+        load_memory,  # ADK 組み込みツール（Phase 2c で追加）
     ],
 )
 ```
 
-> **Note**: `search_memory_tool` は Phase 2c（Vertex AI RAG）で追加予定。
+> **Note**: `load_memory` は ADK 組み込みのメモリ検索ツール。Phase 2c で追加済み。
 
 **機能**:
 - 今日のセッションの要約（何を頑張ったか）
@@ -544,77 +549,99 @@ backend/app/services/adk/
 
 ---
 
-## 5. Phase 2c: Vertex AI RAG（セマンティック記憶）
+## 5. Phase 2c: Vertex AI Memory Bank（セマンティック記憶）✅ 実装完了
 
 ### 5.1 概要
 
-現在のキーワードベースの記憶検索を、Vertex AI RAG Engine を使用したセマンティック検索に置き換える。これにより、子供の過去の学習パターンを文脈的に検索し、個別化された学習体験を提供する。
+現在のキーワードベースの記憶検索を、ADK 公式の `VertexAiMemoryBankService` を使用したセマンティック検索に置き換える。Memory Bank は LLM による事実抽出（Fact Extraction）+ セマンティック検索を提供し、対話履歴から自動的に「事実」を抽出・保存する。
 
-### 5.2 記憶の種類
+> **Status**: PR #73 で実装完了。ファクトリパターン + Agent Engine 作成スクリプト + load_memory ツール。
 
-| 記憶タイプ | 保存先 | 用途 |
-|-----------|-------|------|
-| **対話履歴** | Vertex AI RAG Corpus | 過去の対話から関連する指導パターンを検索 |
-| **苦手分野** | Firestore + RAG | 「繰り上がりで3回つまずいた」等のパターン |
-| **成功体験** | Firestore + RAG | 「前回は自力で解けた」等のポジティブ記録 |
-| **カリキュラム** | RAG Corpus | 学習指導要領、教科書の内容 |
+### 5.2 VertexAiMemoryBankService vs FirestoreMemoryService
+
+| 機能 | FirestoreMemoryService（フォールバック） | VertexAiMemoryBankService（推奨） |
+|------|----------------------------------------|----------------------------------|
+| 保存 | テキストをそのまま保存 | LLM が事実（Fact）を自動抽出して保存 |
+| 検索 | キーワードマッチ（英語のみ） | セマンティック類似度検索（日本語対応） |
+| 精度 | 低（完全一致のみ） | 高（意味的な類似度） |
+| 依存 | Firestore のみ | Agent Engine + Memory Bank |
 
 ### 5.3 アーキテクチャ
 
 ```
-子供の発言
+セッション完了
     │
     ▼
-┌──────────────────┐
-│ Vertex AI RAG    │
-│ Engine           │
-│                  │
-│ ┌──────────────┐ │
-│ │ Corpus:      │ │
-│ │ - 対話履歴   │ │     ┌──────────────┐
-│ │ - 苦手分野   │ │────▶│ 関連コンテキスト │
-│ │ - 成功体験   │ │     │ をエージェント  │
-│ │ - カリキュラム│ │     │ に注入          │
-│ └──────────────┘ │     └──────────────┘
-└──────────────────┘
+┌──────────────────────────────┐
+│ VertexAiMemoryBankService    │
+│ .add_session_to_memory()     │
+│                              │
+│ 1. セッション events を送信  │
+│ 2. LLM が事実を自動抽出     │
+│    - 「繰り上がりで3回つまずいた」 │
+│    - 「九九の7の段が苦手」     │
+│    - 「前回は自力で解けた」    │
+│ 3. Memory Bank に保存        │
+└──────────────────────────────┘
+
+エージェント対話中
+    │
+    ▼
+┌──────────────────────────────┐
+│ load_memory ツール (ADK組み込み) │
+│                              │
+│ - 過去の学習履歴を検索       │
+│ - セマンティック類似度で     │
+│   関連する事実を取得         │
+│ - エージェントが参照して     │
+│   個別化された対話を生成     │
+└──────────────────────────────┘
 ```
 
-### 5.4 RAGツール定義
+### 5.4 メモリサービスファクトリ
 
 ```python
-from google.adk.tools import VertexAiSearchTool
+# memory_factory.py
+def create_memory_service() -> BaseMemoryService:
+    agent_engine_id = os.environ.get("AGENT_ENGINE_ID", "").strip()
+    if not agent_engine_id:
+        return FirestoreMemoryService()  # フォールバック
+    from google.adk.memory import VertexAiMemoryBankService
+    return VertexAiMemoryBankService(
+        agent_engine_id=agent_engine_id,
+        project=os.environ.get("GCP_PROJECT_ID") or None,
+        location=os.environ.get("GCP_LOCATION") or None,
+    )
+```
 
-# Vertex AI RAG をツールとして統合
-search_memory_tool = VertexAiSearchTool(
-    data_store_id="homework-coach-memory-store",
-    description="子供の過去の学習履歴や苦手分野を検索する",
+### 5.5 load_memory ツール（ADK 組み込み）
+
+Review Agent に ADK 組み込みの `load_memory` ツールを追加。エージェントが明示的に過去の学習履歴を検索できる。
+
+```python
+from google.adk.tools import load_memory
+
+review_agent = Agent(
+    name="review_agent",
+    tools=[record_progress_tool, load_memory],
 )
 ```
 
-### 5.5 記憶の保存フロー
+### 5.6 Agent Engine 作成
 
-```
-セッション終了
-    │
-    ▼
-┌──────────────────┐
-│ add_session_to_  │
-│ memory()         │
-│                  │
-│ 1. 対話要約生成  │
-│ 2. 苦手分野抽出  │
-│ 3. 成功体験抽出  │
-│ 4. RAG Corpusに  │
-│    インデクシング │
-└──────────────────┘
+Memory Bank は Agent Engine を前提とするため、Agent Engine 作成スクリプトを提供。
+
+```bash
+uv run python scripts/create_agent_engine.py --project <project-id> --location us-central1
+# → export AGENT_ENGINE_ID=<出力された ID>
 ```
 
-### 5.6 個別化された対話の例
+### 5.7 個別化された対話の例
 
 ```
 [子供]: 23 + 45 がわからない
 
-[RAG検索結果]:
+[load_memory 検索結果]:
 - 2日前: 繰り上がりの足し算で3回つまずいた
 - 先週: 10の位の足し算は自力で解けた
 - 苦手パターン: 一の位の繰り上がり時に10の位を忘れる
@@ -624,14 +651,13 @@ search_memory_tool = VertexAiSearchTool(
  まず一の位から計算してみよう。3 + 5 はいくつかな？」
 ```
 
-### 5.7 FirestoreMemoryServiceからの移行
+### 5.8 環境変数
 
-| 機能 | 現在（Firestore） | Phase 2c（RAG） |
-|------|-------------------|-----------------|
-| 保存 | テキスト保存 | ベクトル埋め込み + テキスト |
-| 検索 | キーワードマッチ | セマンティック類似度検索 |
-| 言語 | 英語のみ | 日本語対応 |
-| 精度 | 低（完全一致のみ） | 高（意味的な類似度） |
+| 変数名 | 必須 | 説明 |
+|--------|------|------|
+| `AGENT_ENGINE_ID` | 任意 | Agent Engine ID（設定時 Memory Bank 有効化） |
+| `GCP_PROJECT_ID` | 任意 | GCP プロジェクト ID |
+| `GCP_LOCATION` | 任意 | GCP ロケーション |
 
 ---
 
@@ -809,10 +835,10 @@ Phase 2b: マルチエージェント
 ├── Step 3: Encouragement Agent
 └── Step 4: Review Agent
 
-Phase 2c: Vertex AI RAG
-├── Step 1: RAG Corpus作成 + インデクシング
-├── Step 2: search_memory_tool統合
-└── Step 3: FirestoreMemoryServiceからの移行
+Phase 2c: Memory Bank (✅ 完了)
+├── Step 1: memory_factory + VertexAiMemoryBankService 切り替え
+├── Step 2: Review Agent に load_memory ツール追加
+└── Step 3: Agent Engine 作成スクリプト
 
 Phase 2d: 感情適応
 ├── Step 1: テキストベースの感情分析（Gemini）
@@ -840,9 +866,10 @@ Phase 2d（感情）───────────┘
 
 - **Phase 2a は実装完了** ✅（他の全フェーズの基盤）
 - **Phase 2b は実装完了** ✅（Router Agent + 4サブエージェント）
+- **Phase 2c は実装完了** ✅（Memory Bank ファクトリ + Agent Engine + load_memory）
 - **フロントエンド Phase 2 型定義・状態管理基盤** ✅（Phase 2a-2d 全サブフェーズの型定義25型 + Jotai atoms 12個。PR #60）
-- **Phase 2c, 2d は並行可能**
-- **Phase 3 は全Phase 2完了後**
+- **Phase 2d は独立して実装可能**
+- **Phase 3 は Phase 2c の Agent Engine 基盤を活用**
 
 ### 8.3 優先度と推奨実装順序
 
@@ -850,7 +877,7 @@ Phase 2d（感情）───────────┘
 |------|---------|-------|------|
 | 1 | Phase 2a: ツール導入 | ✅ 完了 | 全フェーズの基盤。PR #59 で実装完了 |
 | 2 | Phase 2b: マルチエージェント | ✅ 完了 | 教科最適化で学習効果が大幅向上。PR #69 で実装完了 |
-| 3 | Phase 2c: RAG記憶 | 高 | 個別化学習の実現。長期利用の鍵 |
+| 3 | Phase 2c: Memory Bank | ✅ 完了 | VertexAiMemoryBankService + Agent Engine。PR #73 で実装完了 |
 | 4 | Phase 2d: 感情適応 | 中 | UX向上。まずはテキストベースから開始可能 |
 | 5 | Phase 3: Agent Engine | 中 | 運用改善。Phase 2が安定してから移行 |
 

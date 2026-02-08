@@ -10,8 +10,9 @@ import logging
 from typing import Any
 
 from fastapi import Depends, WebSocket, WebSocketDisconnect
+from google.adk.memory import BaseMemoryService
 
-from app.services.adk.memory import FirestoreMemoryService
+from app.services.adk.memory.memory_factory import create_memory_service
 from app.services.adk.sessions import FirestoreSessionService
 from app.services.voice.streaming_service import VoiceStreamingService
 
@@ -26,9 +27,9 @@ def get_session_service() -> FirestoreSessionService:
     return FirestoreSessionService()
 
 
-def get_memory_service() -> FirestoreMemoryService:
-    """FirestoreMemoryServiceを取得する"""
-    return FirestoreMemoryService()
+def get_memory_service() -> BaseMemoryService:
+    """メモリサービスを取得する（環境変数ベースで切り替え）"""
+    return create_memory_service()
 
 
 async def _ensure_session_exists(
@@ -101,7 +102,7 @@ async def voice_stream_endpoint(
     user_id: str,
     session_id: str,
     session_service: FirestoreSessionService = Depends(get_session_service),
-    memory_service: FirestoreMemoryService = Depends(get_memory_service),
+    memory_service: BaseMemoryService = Depends(get_memory_service),
 ) -> None:
     """音声ストリームWebSocketエンドポイント
 
