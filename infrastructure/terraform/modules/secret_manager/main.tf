@@ -50,6 +50,23 @@ resource "google_secret_manager_secret" "jwt_secret" {
   }
 }
 
+# Gemini API key for Phase 2 (ADK tools, multi-agent)
+resource "google_secret_manager_secret" "gemini_api_key" {
+  count     = var.create_gemini_api_key_secret ? 1 : 0
+  secret_id = "${var.name_prefix}-gemini-api-key"
+  project   = var.project_id
+
+  labels = {
+    environment = var.environment
+    managed_by  = "terraform"
+    phase       = "phase2"
+  }
+
+  replication {
+    auto {}
+  }
+}
+
 # IAM binding for backend service account to access secrets
 resource "google_secret_manager_secret_iam_member" "backend_firebase_config" {
   secret_id = google_secret_manager_secret.firebase_config.secret_id
@@ -68,6 +85,14 @@ resource "google_secret_manager_secret_iam_member" "backend_jwt_secret" {
 resource "google_secret_manager_secret_iam_member" "backend_api_key" {
   count     = var.create_api_key_secret ? 1 : 0
   secret_id = google_secret_manager_secret.api_key[0].secret_id
+  project   = var.project_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${var.backend_service_account_email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "backend_gemini_api_key" {
+  count     = var.create_gemini_api_key_secret ? 1 : 0
+  secret_id = google_secret_manager_secret.gemini_api_key[0].secret_id
   project   = var.project_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${var.backend_service_account_email}"

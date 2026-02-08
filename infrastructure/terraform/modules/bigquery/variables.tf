@@ -27,3 +27,10 @@ variable "backend_service_account_email" {
   description = "Email of the backend service account for dataset access"
   type        = string
 }
+
+# Phase 2 Feature Flags
+variable "enable_phase2_tables" {
+  description = "Enable Phase 2 BigQuery tables (agent_metrics, emotion_analysis, rag_metrics)"
+  type        = bool
+  default     = false
+}

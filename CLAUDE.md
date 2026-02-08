@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2b（マルチエージェント）実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2b（マルチエージェント）実装完了・Phase 2 フロントエンド型定義基盤完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -174,6 +174,12 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 | **2c** | Vertex AI RAG | セマンティック記憶検索（キーワード検索を置換） |
 | **2d** | 感情適応 | 音声トーン分析 → 対話トーン・サポートレベル適応 |
 | **3** | Agent Engine | Vertex AI Agent Engineへのマネージドデプロイ |
+
+**フロントエンド Phase 2 対応状況:**
+- ✅ 型定義（`frontend/types/phase2.ts`）: Phase 2a-2d 全サブフェーズの25型定義（PR #60）
+- ✅ 状態管理（`frontend/store/atoms/phase2.ts`）: 12個のJotai atoms（11 writable + 1 derived）
+- ✅ 既存型の後方互換拡張: `DialogueTurn`, `LearningProgress`, `WebSocketIncomingMessage`
+- ✅ テスト: 64テスト（37型テスト + 27 atomテスト）
 
 **Phase 2 ファイル構成:**
 ```

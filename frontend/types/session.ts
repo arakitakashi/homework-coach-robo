@@ -21,9 +21,17 @@ export interface Session {
 /** セッション作成時の入力 */
 export type SessionCreation = Omit<Session, "id" | "startTime" | "endTime">
 
+import type { SubjectType, ThinkingTendencies } from "./phase2"
+
 /** 学習進捗 */
 export interface LearningProgress {
 	selfDiscoveryCount: number
 	hintDiscoveryCount: number
 	togetherCount: number
+	/** Phase 2b: 現在の科目 */
+	currentSubject?: SubjectType
+	/** Phase 2b: 現在のトピック */
+	currentTopic?: string
+	/** Phase 2c/2d: 思考の傾向 */
+	thinkingTendencies?: ThinkingTendencies
 }

@@ -840,6 +840,7 @@ Phase 2d（感情）───────────┘
 
 - **Phase 2a は実装完了** ✅（他の全フェーズの基盤）
 - **Phase 2b は実装完了** ✅（Router Agent + 4サブエージェント）
+- **フロントエンド Phase 2 型定義・状態管理基盤** ✅（Phase 2a-2d 全サブフェーズの型定義25型 + Jotai atoms 12個。PR #60）
 - **Phase 2c, 2d は並行可能**
 - **Phase 3 は全Phase 2完了後**
 
