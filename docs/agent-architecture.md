@@ -727,6 +727,8 @@ update_emotion_tool = FunctionTool(func=update_emotion)
 
 **サポートレベル計算:**
 
+> **注記（AutoML）**: Vertex AI AutoMLによる音声トーン分析の高度化は現時点ではスコープ外とし、将来ユーザーデータが蓄積され精度向上が必要になった段階で再検討する（GitHub Issue #52 クローズ済み）。
+
 | 条件 | support_level |
 |------|--------------|
 | frustration > 0.7 OR fatigue > 0.6 | intensive |
@@ -805,7 +807,9 @@ Step 4: フロントエンドの接続先更新
 Step 5: Cloud Run のエージェント関連サービスを削除
 ```
 
-### 7.4 A/Bテスト活用例
+### 7.4 A/Bテスト活用例（将来検討）
+
+> **注記**: A/Bテスト環境構築は現時点ではスコープ外とし、ユーザーベースが確立された後に再検討する（GitHub Issue #55 クローズ済み）。Agent Engine の組み込みA/Bテスト機能を活用予定。
 
 | テスト項目 | バリアントA | バリアントB | 評価指標 |
 |-----------|-----------|-----------|---------|
@@ -859,11 +863,12 @@ Phase 2d: 感情適応 (✅ 完了)
 ├── Step 1: update_emotion_tool（感情スコア記録 + support_level/action 計算）
 ├── Step 2: Router Agent 感情ベースルーティング
 └── Step 3: サブエージェントプロンプト感情コンテキスト参照
+    ※ 音声トーン分析の高度化（AutoML）は将来検討（#52 クローズ）
 
 Phase 3: Agent Engine
 ├── Step 1: Agent Engine へのデプロイ
-├── Step 2: セッション管理の移行
-└── Step 3: A/Bテスト環境の構築
+└── Step 2: セッション管理の移行
+    ※ A/Bテスト環境構築は将来検討（#55 クローズ）
 ```
 
 ### 8.2 依存関係
