@@ -24,7 +24,9 @@ class TestRagCorpusService:
         """Test creating a RAG corpus."""
         with patch("google.cloud.aiplatform.RagCorpus") as mock_rag_corpus:
             mock_instance = MagicMock()
-            mock_instance.name = "projects/test-project/locations/us-central1/ragCorpora/test-corpus"
+            mock_instance.name = (
+                "projects/test-project/locations/us-central1/ragCorpora/test-corpus"
+            )
             mock_rag_corpus.create.return_value = mock_instance
 
             corpus_name = await service.create_corpus(
@@ -32,7 +34,10 @@ class TestRagCorpusService:
                 description="Test corpus for unit tests",
             )
 
-            assert corpus_name == "projects/test-project/locations/us-central1/ragCorpora/test-corpus"
+            assert (
+                corpus_name
+                == "projects/test-project/locations/us-central1/ragCorpora/test-corpus"
+            )
             mock_rag_corpus.create.assert_called_once()
 
     @pytest.mark.asyncio

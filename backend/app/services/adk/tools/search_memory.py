@@ -159,9 +159,7 @@ def _format_rag_results(results: list[Any]) -> str:
 
     for i, result in enumerate(results[:3], 1):  # Top 3 results
         score_percent = int(result.relevance_score * 100)
-        formatted_lines.append(
-            f"{i}. {result.content} " f"（関連度: {score_percent}%）"
-        )
+        formatted_lines.append(f"{i}. {result.content} （関連度: {score_percent}%）")
 
     return "\n".join(formatted_lines)
 

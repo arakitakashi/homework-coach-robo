@@ -37,8 +37,12 @@ class TestIndexingService:
         ]
 
         with (
-            patch.object(service, "_fetch_session_memories", new_callable=AsyncMock) as mock_fetch,
-            patch.object(service.corpus_service, "index_documents_batch", new_callable=AsyncMock) as mock_index,
+            patch.object(
+                service, "_fetch_session_memories", new_callable=AsyncMock
+            ) as mock_fetch,
+            patch.object(
+                service.corpus_service, "index_documents_batch", new_callable=AsyncMock
+            ) as mock_index,
         ):
             mock_fetch.return_value = mock_memories
             mock_index.return_value = ["mem-1", "mem-2"]
@@ -72,9 +76,15 @@ class TestIndexingService:
         ]
 
         with (
-            patch.object(service, "_fetch_user_sessions", new_callable=AsyncMock) as mock_sessions_fetch,
-            patch.object(service, "_fetch_session_memories", new_callable=AsyncMock) as mock_mem_fetch,
-            patch.object(service.corpus_service, "index_documents_batch", new_callable=AsyncMock) as mock_index,
+            patch.object(
+                service, "_fetch_user_sessions", new_callable=AsyncMock
+            ) as mock_sessions_fetch,
+            patch.object(
+                service, "_fetch_session_memories", new_callable=AsyncMock
+            ) as mock_mem_fetch,
+            patch.object(
+                service.corpus_service, "index_documents_batch", new_callable=AsyncMock
+            ) as mock_index,
         ):
             mock_sessions_fetch.return_value = mock_sessions
             mock_mem_fetch.return_value = mock_memories
@@ -101,8 +111,12 @@ class TestIndexingService:
         ]
 
         with (
-            patch.object(service, "_fetch_session_memories", new_callable=AsyncMock) as mock_fetch,
-            patch.object(service.corpus_service, "index_documents_batch", new_callable=AsyncMock) as mock_index,
+            patch.object(
+                service, "_fetch_session_memories", new_callable=AsyncMock
+            ) as mock_fetch,
+            patch.object(
+                service.corpus_service, "index_documents_batch", new_callable=AsyncMock
+            ) as mock_index,
         ):
             mock_fetch.return_value = mock_memories
             mock_index.return_value = ["mem-1"]
@@ -142,9 +156,15 @@ class TestIndexingService:
         ]
 
         with (
-            patch.object(service, "_fetch_session_memories", new_callable=AsyncMock) as mock_fetch,
-            patch.object(service.corpus_service, "index_documents_batch", new_callable=AsyncMock) as mock_index,
-            patch.object(service, "_mark_as_indexed", new_callable=AsyncMock) as mock_mark,
+            patch.object(
+                service, "_fetch_session_memories", new_callable=AsyncMock
+            ) as mock_fetch,
+            patch.object(
+                service.corpus_service, "index_documents_batch", new_callable=AsyncMock
+            ) as mock_index,
+            patch.object(
+                service, "_mark_as_indexed", new_callable=AsyncMock
+            ) as mock_mark,
         ):
             mock_fetch.return_value = mock_memories
             mock_index.return_value = ["mem-1"]
@@ -194,8 +214,12 @@ class TestIndexingService:
         ]
 
         with (
-            patch.object(service, "_fetch_session_memories", new_callable=AsyncMock) as mock_fetch,
-            patch.object(service.corpus_service, "index_documents_batch", new_callable=AsyncMock) as mock_index,
+            patch.object(
+                service, "_fetch_session_memories", new_callable=AsyncMock
+            ) as mock_fetch,
+            patch.object(
+                service.corpus_service, "index_documents_batch", new_callable=AsyncMock
+            ) as mock_index,
         ):
             mock_fetch.return_value = mock_memories
             mock_index.return_value = [f"mem-{i}" for i in range(150)]
