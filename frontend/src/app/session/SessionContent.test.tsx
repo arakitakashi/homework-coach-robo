@@ -518,5 +518,32 @@ describe("SessionContent", () => {
 			expect(history[0].frustrationLevel).toBe(0.8)
 			expect(history[0].engagementLevel).toBe(0.3)
 		})
+
+		it("感情更新後にEmotionIndicatorが表示される", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// 初期状態ではEmotionIndicatorは表示されない（emotionAnalysisがnull）
+			expect(screen.queryByRole("status", { name: "感情状態" })).not.toBeInTheDocument()
+
+			// 感情更新イベントをシミュレート
+			act(() => {
+				capturedVoiceStreamOptions.onEmotionUpdate?.("frustrated", 8, 3)
+			})
+
+			// EmotionIndicatorが表示される
+			await waitFor(() => {
+				expect(screen.getByRole("status", { name: "感情状態" })).toBeInTheDocument()
+			})
+
+			// "困っている"ラベルが表示される
+			expect(screen.getByText("困っている")).toBeInTheDocument()
+		})
 	})
 })

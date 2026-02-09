@@ -1,5 +1,6 @@
 "use client"
 
+import { AnimatePresence } from "framer-motion"
 import { useAtom } from "jotai"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -7,6 +8,7 @@ import {
 	AgentIndicator,
 	CharacterDisplay,
 	DialogueHistory,
+	EmotionIndicator,
 	HintIndicator,
 	ProgressDisplay,
 	ToolExecutionDisplay,
@@ -339,6 +341,13 @@ export function SessionContent({ characterType }: SessionContentProps) {
 						/>
 					</div>
 				)}
+
+				{/* 感情インジケーター */}
+				<AnimatePresence mode="wait">
+					<div className="mb-4 w-full max-w-md">
+						<EmotionIndicator />
+					</div>
+				</AnimatePresence>
 
 				{/* 進捗表示 */}
 				<div className="mb-4 w-full max-w-md">
