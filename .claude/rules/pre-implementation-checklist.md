@@ -125,11 +125,21 @@ bun test      # Vitest（bunx vitest run）
 ```bash
 cd backend
 uv run ruff check .  # Ruff lint
-uv run mypy .        # Type check
+uv run mypy .        # Type check（app/ + tests/ 両方）
 uv run pytest        # pytest
 ```
 
 **すべてのチェックがパスするまでPRを作成しない。**
+
+### ドキュメント更新（バックエンド・フロントエンド共通）
+
+実装完了後、PR作成前に以下のドキュメント更新を確認すること：
+
+- [ ] `CLAUDE.md` の Development Context が最新の実装状態を反映しているか
+- [ ] `docs/implementation-status.md` の完了済み機能一覧に今回の作業が記載されているか
+- [ ] `docs/implementation-status.md` のステアリングディレクトリ一覧に今回の `.steering/` が追加されているか
+
+**ドキュメント更新をスキップしてPRを作成しない。**
 
 ### よくあるCI失敗パターン
 
