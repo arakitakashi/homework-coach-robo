@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2c（Memory Bank統合）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -165,15 +165,15 @@ homework-coach-robo/
 
 ### ADK エージェントアーキテクチャ（Phase 2 計画）
 
-Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成）、Phase 2c（Memory Bank統合）を導入済み。Phase 2d以降で感情適応を段階的に導入する。
+Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成）、Phase 2c（Memory Bank統合）、Phase 2d（感情適応）を導入済み。Phase 3 で Agent Engine マネージドデプロイを計画。
 
 | Phase | 内容 | 主要変更 |
 |-------|------|---------|
 | **2a** ✅ | ツール導入（Function Calling） | `calculate_tool`, `manage_hint_tool`, `record_progress_tool`, `check_curriculum_tool`, `analyze_image_tool` |
 | **2b** ✅ | マルチエージェント | Router Agent → Math Coach / Japanese Coach / Encouragement / Review Agent |
 | **2c** ✅ | Memory Bank 統合 | `VertexAiMemoryBankService` ファクトリ + Agent Engine + `load_memory` ツール |
-| **2d** | 感情適応 | 音声トーン分析 → 対話トーン・サポートレベル適応 |
-| **3** | Agent Engine | Phase 2c で Agent Engine 基盤構築済み。マネージドデプロイは Phase 2 完了後 |
+| **2d** ✅ | 感情適応 | `update_emotion_tool` + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト ※AutoMLは将来検討（#52） |
+| **3** | Agent Engine | Phase 2c で Agent Engine 基盤構築済み。マネージドデプロイは Phase 2 完了後 ※A/Bテストは将来検討（#55） |
 
 **フロントエンド Phase 2 対応状況:**
 - ✅ 型定義（`frontend/types/phase2.ts`）: Phase 2a-2d 全サブフェーズの25型定義（PR #60）
@@ -188,7 +188,7 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 backend/app/services/adk/
 ├── agents/                   # ✅ マルチエージェント定義（Phase 2b 実装済み）
 │   ├── __init__.py           # エージェントエクスポート
-│   ├── router.py             # Router Agent（AutoFlow委譲）
+│   ├── router.py             # Router Agent（AutoFlow委譲、tools=[update_emotion]）
 │   ├── math_coach.py         # 算数コーチ（4ツール）
 │   ├── japanese_coach.py     # 国語コーチ（3ツール）
 │   ├── encouragement.py      # 励まし（1ツール）
@@ -199,13 +199,14 @@ backend/app/services/adk/
 │       ├── japanese_coach.py
 │       ├── encouragement.py
 │       └── review.py
-├── tools/                    # ✅ ADK Function Tools（Phase 2a 実装済み）
+├── tools/                    # ✅ ADK Function Tools（Phase 2a + 2d 実装済み）
 │   ├── __init__.py           # ツールエクスポート
 │   ├── calculate.py          # 計算検証
 │   ├── hint_manager.py       # ヒント段階管理
 │   ├── curriculum.py         # カリキュラム参照
 │   ├── progress_recorder.py  # 進捗記録
-│   └── image_analyzer.py     # 画像分析
+│   ├── image_analyzer.py     # 画像分析
+│   └── emotion_analyzer.py   # 感情分析（Phase 2d）
 ├── runner/                   # 既存（Router Agent統合済み）
 ├── sessions/                 # 既存
 └── memory/                   # ✅ Phase 2c: ファクトリパターンで Memory Bank 切り替え
