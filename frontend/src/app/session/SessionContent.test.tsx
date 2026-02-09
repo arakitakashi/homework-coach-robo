@@ -7,6 +7,7 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { type ReactNode, useMemo } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { gamificationStateAtom } from "@/store/atoms/gamification"
 import {
 	activeAgentAtom,
 	activeToolExecutionsAtom,
@@ -544,6 +545,144 @@ describe("SessionContent", () => {
 
 			// "困っている"ラベルが表示される
 			expect(screen.getByText("困っている")).toBeInTheDocument()
+		})
+	})
+
+	describe("ゲーミフィケーション要素", () => {
+		it("PointDisplayが表示される", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// ゲーミフィケーション状態を設定
+			store.set(gamificationStateAtom, {
+				totalPoints: 25,
+				sessionPoints: 25,
+				level: 1,
+				badges: [],
+				currentChapter: {
+					id: "ch1",
+					title: "冒険の始まり",
+					description: "ロボと一緒に最初の問題に挑戦しよう！",
+					requiredPoints: 10,
+					completed: false,
+				},
+				pointHistory: [],
+			})
+
+			// PointDisplayの要素が表示される
+			await waitFor(() => {
+				expect(screen.getByText("Level 1")).toBeInTheDocument()
+			})
+			expect(screen.getByText(/25.*50.*pts/i)).toBeInTheDocument()
+		})
+
+		it("StoryProgressが表示される", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// StoryProgressの要素が表示される（デフォルトのChapter 1）
+			await waitFor(() => {
+				expect(screen.getByText(/Chapter 1/i)).toBeInTheDocument()
+			})
+			expect(screen.getByText(/冒険の始まり/)).toBeInTheDocument()
+		})
+
+		it("バッジ獲得時にBadgeNotificationが表示される", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// バッジを獲得（recentBadgeに表示されるよう5秒以内のタイムスタンプ）
+			const now = Date.now()
+			store.set(gamificationStateAtom, {
+				totalPoints: 0,
+				sessionPoints: 0,
+				level: 1,
+				badges: [
+					{
+						id: "badge-1",
+						name: "はじめのいっぽ",
+						description: "初めての問題をクリア！",
+						iconName: "Award",
+						category: "achievement",
+						unlockedAt: now,
+					},
+				],
+				currentChapter: {
+					id: "ch1",
+					title: "冒険の始まり",
+					description: "ロボと一緒に最初の問題に挑戦しよう！",
+					requiredPoints: 10,
+					completed: false,
+				},
+				pointHistory: [],
+			})
+
+			// BadgeNotificationが表示される
+			await waitFor(() => {
+				expect(screen.getByRole("alert")).toBeInTheDocument()
+			})
+			expect(screen.getByText("🏆 バッジ獲得！")).toBeInTheDocument()
+			expect(screen.getByText("はじめのいっぽ")).toBeInTheDocument()
+			expect(screen.getByText("初めての問題をクリア！")).toBeInTheDocument()
+		})
+
+		it("古いバッジはBadgeNotificationに表示されない", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// 6秒以上前に獲得したバッジ（表示されない）
+			const oldTimestamp = Date.now() - 6000
+			store.set(gamificationStateAtom, {
+				totalPoints: 0,
+				sessionPoints: 0,
+				level: 1,
+				badges: [
+					{
+						id: "badge-1",
+						name: "はじめのいっぽ",
+						description: "初めての問題をクリア！",
+						iconName: "Award",
+						category: "achievement",
+						unlockedAt: oldTimestamp,
+					},
+				],
+				currentChapter: {
+					id: "ch1",
+					title: "冒険の始まり",
+					description: "ロボと一緒に最初の問題に挑戦しよう！",
+					requiredPoints: 10,
+					completed: false,
+				},
+				pointHistory: [],
+			})
+
+			// BadgeNotificationは表示されない
+			expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+			expect(screen.queryByText("🏆 バッジ獲得！")).not.toBeInTheDocument()
 		})
 	})
 })

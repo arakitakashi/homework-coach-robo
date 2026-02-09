@@ -6,11 +6,14 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
 	AgentIndicator,
+	BadgeNotification,
 	CharacterDisplay,
 	DialogueHistory,
 	EmotionIndicator,
 	HintIndicator,
+	PointDisplay,
 	ProgressDisplay,
+	StoryProgress,
 	ToolExecutionDisplay,
 	VoiceInterface,
 } from "@/components/features"
@@ -305,90 +308,101 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const isVoiceConnected = isVoiceEnabled && voiceConnectionState === "connected"
 
 	return (
-		<main className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-purple-50">
-			{/* ヘッダー */}
-			<header className="flex items-center justify-between p-4">
-				<HintIndicator currentLevel={hintLevel} />
-				<AgentIndicator />
-				<Button variant="secondary" size="medium" onClick={handleEndSession}>
-					おわる
-				</Button>
-			</header>
+		<>
+			{/* バッジ通知（フロート表示） */}
+			<BadgeNotification />
 
-			{/* メインコンテンツ */}
-			<div className="flex flex-1 flex-col items-center p-4">
-				{/* キャラクター表示 */}
-				<div className="mb-4">
-					<CharacterDisplay character={characterType} state={characterState} />
-				</div>
+			<main className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-purple-50">
+				{/* ヘッダー */}
+				<header className="flex items-center justify-between p-4">
+					<HintIndicator currentLevel={hintLevel} />
+					<PointDisplay />
+					<AgentIndicator />
+					<Button variant="secondary" size="medium" onClick={handleEndSession}>
+						おわる
+					</Button>
+				</header>
 
-				{/* ツール実行表示 */}
-				<ToolExecutionDisplay executions={activeToolExecutions} isRunning={isToolRunning} />
+				{/* メインコンテンツ */}
+				<div className="flex flex-1 flex-col items-center p-4">
+					{/* キャラクター表示 */}
+					<div className="mb-4">
+						<CharacterDisplay character={characterType} state={characterState} />
+					</div>
 
-				{/* 対話履歴 */}
-				<Card padding="medium" className="mb-4 w-full max-w-md flex-1">
-					<DialogueHistory turns={dialogueTurns} />
-				</Card>
+					{/* ツール実行表示 */}
+					<ToolExecutionDisplay executions={activeToolExecutions} isRunning={isToolRunning} />
 
-				{/* 対話エラー表示 */}
-				{dialogueError && (
+					{/* 対話履歴 */}
+					<Card padding="medium" className="mb-4 w-full max-w-md flex-1">
+						<DialogueHistory turns={dialogueTurns} />
+					</Card>
+
+					{/* 対話エラー表示 */}
+					{dialogueError && (
+						<div className="mb-4 w-full max-w-md">
+							<ErrorMessage
+								title="そうしんエラー"
+								message={dialogueError}
+								onRetry={clearDialogueError}
+								retryText="とじる"
+							/>
+						</div>
+					)}
+
+					{/* 感情インジケーター */}
+					<AnimatePresence mode="wait">
+						<div className="mb-4 w-full max-w-md">
+							<EmotionIndicator />
+						</div>
+					</AnimatePresence>
+
+					{/* 進捗表示 */}
 					<div className="mb-4 w-full max-w-md">
-						<ErrorMessage
-							title="そうしんエラー"
-							message={dialogueError}
-							onRetry={clearDialogueError}
-							retryText="とじる"
-						/>
+						<ProgressDisplay {...learningProgress} />
 					</div>
-				)}
 
-				{/* 感情インジケーター */}
-				<AnimatePresence mode="wait">
+					{/* ストーリー進捗 */}
 					<div className="mb-4 w-full max-w-md">
-						<EmotionIndicator />
+						<StoryProgress />
 					</div>
-				</AnimatePresence>
 
-				{/* 進捗表示 */}
-				<div className="mb-4 w-full max-w-md">
-					<ProgressDisplay {...learningProgress} />
-				</div>
-
-				{/* テキスト入力（MVP） */}
-				<div className="mb-4 w-full max-w-md">
-					<TextInput
-						onSubmit={handleSendMessage}
-						disabled={isSending || !isConnected}
-						placeholder="ここにかいてね"
-					/>
-				</div>
-
-				{/* 音声インターフェース */}
-				{isVoiceEnabled ? (
-					<div className="w-full max-w-md">
-						<VoiceInterface
-							isRecording={isRecording}
-							audioLevel={audioLevel}
-							isConnected={isVoiceConnected}
-							isPlaying={isPlaying}
-							onToggleRecording={handleToggleRecording}
+					{/* テキスト入力（MVP） */}
+					<div className="mb-4 w-full max-w-md">
+						<TextInput
+							onSubmit={handleSendMessage}
+							disabled={isSending || !isConnected}
+							placeholder="ここにかいてね"
 						/>
 					</div>
-				) : (
-					<div className="w-full max-w-md opacity-50">
-						<p className="mb-2 text-center text-sm text-gray-500">
-							（おんせいにゅうりょくはじゅんびちゅう）
-						</p>
-						<VoiceInterface
-							isRecording={isRecording}
-							audioLevel={audioLevel}
-							isConnected={isVoiceConnected}
-							isPlaying={isPlaying}
-							onToggleRecording={handleToggleRecording}
-						/>
-					</div>
-				)}
-			</div>
-		</main>
+
+					{/* 音声インターフェース */}
+					{isVoiceEnabled ? (
+						<div className="w-full max-w-md">
+							<VoiceInterface
+								isRecording={isRecording}
+								audioLevel={audioLevel}
+								isConnected={isVoiceConnected}
+								isPlaying={isPlaying}
+								onToggleRecording={handleToggleRecording}
+							/>
+						</div>
+					) : (
+						<div className="w-full max-w-md opacity-50">
+							<p className="mb-2 text-center text-sm text-gray-500">
+								（おんせいにゅうりょくはじゅんびちゅう）
+							</p>
+							<VoiceInterface
+								isRecording={isRecording}
+								audioLevel={audioLevel}
+								isConnected={isVoiceConnected}
+								isPlaying={isPlaying}
+								onToggleRecording={handleToggleRecording}
+							/>
+						</div>
+					)}
+				</div>
+			</main>
+		</>
 	)
 }
