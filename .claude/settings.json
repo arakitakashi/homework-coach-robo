@@ -15,6 +15,25 @@
 	},
 	"defaultModel": "sonnet",
 	"dangerMode": false,
+	"sandbox": {
+		"enabled": true,
+		"autoAllowBashIfSandboxed": true,
+		"excludedCommands": ["docker"],
+		"allowUnsandboxedCommands": true,
+		"network": {
+			"allowedDomains": [
+				"github.com",
+				"*.github.com",
+				"registry.npmjs.org",
+				"*.npmjs.org",
+				"registry.terraform.io",
+				"*.googleapis.com",
+				"pypi.org",
+				"files.pythonhosted.org",
+				"api.anthropic.com"
+			]
+		}
+	},
 	"commandPermissions": {
 		"blocked": [
 			"rm -rf /",
