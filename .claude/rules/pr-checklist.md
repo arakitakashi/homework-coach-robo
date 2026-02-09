@@ -28,7 +28,7 @@ cd backend
 uv run ruff check app tests
 
 # 2. 型チェック（mypy）
-uv run mypy app/
+uv run mypy .
 
 # 3. テスト（pytest）
 uv run pytest tests/ -v
@@ -64,7 +64,7 @@ PR作成前に以下のすべてが完了していることを確認：
 ### Backend
 
 - [ ] `uv run ruff check app tests` → エラーなし
-- [ ] `uv run mypy app/` → エラーなし
+- [ ] `uv run mypy .` → エラーなし（`app/` + `tests/` 両方）
 - [ ] `uv run pytest tests/` → 全テスト通過
 - [ ] カバレッジ80%以上
 
@@ -74,6 +74,13 @@ PR作成前に以下のすべてが完了していることを確認：
 - [ ] `bun typecheck` → エラーなし
 - [ ] `bun test` → 全テスト通過
 - [ ] `bun build` → ビルド成功
+
+### ドキュメント
+
+- [ ] `CLAUDE.md` の Development Context が最新か（新機能・アーキテクチャ変更時）
+- [ ] `docs/implementation-status.md` の完了済み機能一覧に今回の作業が記載されているか
+- [ ] `docs/implementation-status.md` のステアリングディレクトリ一覧が最新か
+- [ ] その他、変更内容に関連する `docs/` 配下のドキュメントが最新か
 
 ---
 
@@ -135,7 +142,7 @@ def func(
 ```bash
 cd backend && \
 uv run ruff check app tests && \
-uv run mypy app/ && \
+uv run mypy . && \
 uv run pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 
