@@ -1,5 +1,6 @@
 "use client"
 
+import { motion } from "framer-motion"
 import { useAtom } from "jotai"
 import {
 	AlertCircle,
@@ -93,11 +94,14 @@ export function EmotionIndicator() {
 	const Icon = config.icon
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: outputは不適切。動的な感情状態の更新を示すためrole="status"を使用
-		<div
+		<motion.div
 			role="status"
 			aria-label="感情状態"
 			className={`rounded-xl p-4 shadow-sm ${config.bgColor}`}
+			initial={{ opacity: 0, y: -10 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: -10 }}
+			transition={{ duration: 0.3 }}
 		>
 			{/* 感情タイプ */}
 			<div className="mb-3 flex items-center gap-2">
@@ -130,6 +134,6 @@ export function EmotionIndicator() {
 					})()}
 				</div>
 			)}
-		</div>
+		</motion.div>
 	)
 }
