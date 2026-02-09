@@ -4,6 +4,7 @@ import { useAtom } from "jotai"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+	AgentIndicator,
 	CharacterDisplay,
 	DialogueHistory,
 	HintIndicator,
@@ -306,6 +307,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 			{/* ヘッダー */}
 			<header className="flex items-center justify-between p-4">
 				<HintIndicator currentLevel={hintLevel} />
+				<AgentIndicator />
 				<Button variant="secondary" size="medium" onClick={handleEndSession}>
 					おわる
 				</Button>
