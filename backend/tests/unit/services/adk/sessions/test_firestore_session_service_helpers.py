@@ -105,3 +105,79 @@ class TestListAllSessionIds:
         await service.list_all_session_ids()
 
         mock_firestore_client.collection.assert_called_once_with("sessions")
+
+
+class TestGetSessionDataById:
+    """Tests for get_session_data_by_id method"""
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_session_not_found(
+        self,
+        service: FirestoreSessionService,
+        mock_firestore_client: MagicMock,
+    ) -> None:
+        """セッションが存在しない場合、Noneを返す"""
+        # ドキュメントが存在しない
+        mock_doc = MagicMock()
+        mock_doc.exists = False
+        mock_firestore_client.collection.return_value.document.return_value.get = AsyncMock(
+            return_value=mock_doc
+        )
+
+        result = await service.get_session_data_by_id("nonexistent_session")
+
+        assert result is None
+        mock_firestore_client.collection.assert_called_once_with("sessions")
+        mock_firestore_client.collection.return_value.document.assert_called_once_with(
+            "nonexistent_session"
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_session_data_when_found(
+        self,
+        service: FirestoreSessionService,
+        mock_firestore_client: MagicMock,
+    ) -> None:
+        """セッションが存在する場合、辞書データを返す"""
+        # ドキュメントが存在する
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        session_data = {
+            "id": "session_123",
+            "app_name": "homework_coach",
+            "user_id": "user_456",
+            "state": {"problem": "2 + 2 = ?"},
+            "last_update_time": 1234567890.0,
+        }
+        mock_doc.to_dict.return_value = session_data
+        mock_firestore_client.collection.return_value.document.return_value.get = AsyncMock(
+            return_value=mock_doc
+        )
+
+        result = await service.get_session_data_by_id("session_123")
+
+        assert result == session_data
+        mock_firestore_client.collection.assert_called_once_with("sessions")
+        mock_firestore_client.collection.return_value.document.assert_called_once_with(
+            "session_123"
+        )
+
+    @pytest.mark.asyncio
+    async def test_uses_correct_collection_and_document_path(
+        self,
+        service: FirestoreSessionService,
+        mock_firestore_client: MagicMock,
+    ) -> None:
+        """正しいコレクション名とドキュメントパスを使用する"""
+        mock_doc = MagicMock()
+        mock_doc.exists = False
+        mock_firestore_client.collection.return_value.document.return_value.get = AsyncMock(
+            return_value=mock_doc
+        )
+
+        await service.get_session_data_by_id("test_session_id")
+
+        mock_firestore_client.collection.assert_called_once_with("sessions")
+        mock_firestore_client.collection.return_value.document.assert_called_once_with(
+            "test_session_id"
+        )

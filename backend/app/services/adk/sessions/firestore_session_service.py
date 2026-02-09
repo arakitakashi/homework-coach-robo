@@ -376,3 +376,28 @@ class FirestoreSessionService(BaseSessionService):
             session_ids.append(doc.id)
 
         return session_ids
+
+    async def get_session_data_by_id(self, session_id: str) -> dict[str, Any] | None:
+        """セッションIDのみでセッションデータを取得する
+
+        移行などの管理操作で使用するヘルパーメソッド。
+        session_idだけでFirestoreドキュメントを読み取り、生データ（辞書）を返す。
+
+        Args:
+            session_id: セッションID
+
+        Returns:
+            セッションデータの辞書（存在しない場合はNone）
+
+        Note:
+            通常のアプリケーションロジックでは、app_nameとuser_idを指定する
+            get_sessionメソッドを使用してください。このメソッドは移行などの
+            特殊な用途でのみ使用します。
+        """
+        session_ref = self._db.collection("sessions").document(session_id)
+        session_doc = await session_ref.get()
+
+        if not session_doc.exists:
+            return None
+
+        return session_doc.to_dict()  # type: ignore[no-any-return]

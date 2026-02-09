@@ -35,31 +35,33 @@
 
 ### 3.1 FirestoreSessionService拡張（ヘルパーメソッド）
 
-- [ ] テスト作成: `tests/unit/services/adk/sessions/test_firestore_session_service_helpers.py`
-  - [ ] `test_list_all_session_ids()`: 全セッションID取得
-- [ ] 実装: `FirestoreSessionService.list_all_session_ids()` 追加
+- [x] テスト作成: `tests/unit/services/adk/sessions/test_firestore_session_service_helpers.py`
+  - [x] `test_list_all_session_ids()`: 全セッションID取得
+  - [x] `test_get_session_data_by_id()`: session_idのみでデータ取得（移行用）
+- [x] 実装: `FirestoreSessionService.list_all_session_ids()` 追加
+- [x] 実装: `FirestoreSessionService.get_session_data_by_id()` 追加
 
 ### 3.2 移行スクリプトテスト
 
-- [ ] テスト作成: `tests/integration/test_session_migration.py`
-  - [ ] `test_migrate_sessions_success()`: 正常移行フロー
-  - [ ] `test_migrate_sessions_dry_run()`: dry-run モード
-  - [ ] `test_migrate_sessions_skip_missing()`: 存在しないセッションをスキップ
-  - [ ] `test_migrate_sessions_retry_on_failure()`: 失敗時のリトライ
+- [x] テスト作成: `tests/integration/test_session_migration.py`
+  - [x] `test_migrate_sessions_success()`: 正常移行フロー
+  - [x] `test_migrate_sessions_dry_run()`: dry-run モード
+  - [x] `test_migrate_sessions_skip_missing()`: 存在しないセッションをスキップ
+  - [x] `test_migrate_sessions_retry_on_failure()`: 失敗時のリトライ
 
 ### 3.3 移行スクリプト実装
 
-- [ ] `scripts/migrate_sessions.py` 作成
-  - [ ] `migrate_sessions(dry_run)` 関数
-  - [ ] 並列処理（`asyncio.gather()`、最大10並列）
-  - [ ] エラーハンドリング（リトライ、ログ記録）
-  - [ ] 進捗ログ出力（1000セッションごと）
-  - [ ] CLI引数解析（`--dry-run`, `--verbose`）
+- [x] `scripts/migrate_sessions.py` 作成
+  - [x] `migrate_sessions(dry_run)` 関数
+  - [x] 並列処理（`asyncio.gather()`、最大10並列）
+  - [x] エラーハンドリング（リトライ、ログ記録）
+  - [x] 進捗ログ出力（1000セッションごと）
+  - [x] CLI引数解析（`--dry-run`, `--verbose`）
 
 ### 3.4 品質チェック
 
-- [ ] ruff / mypy チェック通過
-- [ ] 統合テスト通過
+- [x] ruff / mypy チェック通過
+- [x] 統合テスト通過
 
 ## Phase 4: データ検証ツール（TDD）
 
