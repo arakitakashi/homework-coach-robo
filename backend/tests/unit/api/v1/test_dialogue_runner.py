@@ -250,7 +250,7 @@ class TestEventGenerator:
         """例外発生時にエラーイベントを生成する"""
         from app.api.v1.dialogue_runner import event_generator
 
-        async def error_generator():
+        async def error_generator() -> AsyncIterator[Any]:
             raise RuntimeError("テストエラー")
             yield  # noqa: B901
 

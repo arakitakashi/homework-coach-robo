@@ -18,7 +18,7 @@ from app.schemas.dialogue import (
 class TestCreateSessionRequest:
     """CreateSessionRequestのテスト"""
 
-    def test_valid_request(self):
+    def test_valid_request(self) -> None:
         """有効なリクエストを作成できる"""
         request = CreateSessionRequest(
             problem="3 + 5 = ?",
@@ -29,7 +29,7 @@ class TestCreateSessionRequest:
         assert request.child_grade == 2
         assert request.character_type is None
 
-    def test_with_character_type(self):
+    def test_with_character_type(self) -> None:
         """キャラクタータイプを指定できる"""
         request = CreateSessionRequest(
             problem="3 + 5 = ?",
@@ -39,21 +39,21 @@ class TestCreateSessionRequest:
 
         assert request.character_type == "robot"
 
-    def test_problem_required(self):
+    def test_problem_required(self) -> None:
         """problemは必須"""
         with pytest.raises(ValidationError) as exc_info:
-            CreateSessionRequest(child_grade=2)
+            CreateSessionRequest(child_grade=2)  # type: ignore[call-arg]
 
         assert "problem" in str(exc_info.value)
 
-    def test_child_grade_required(self):
+    def test_child_grade_required(self) -> None:
         """child_gradeは必須"""
         with pytest.raises(ValidationError) as exc_info:
-            CreateSessionRequest(problem="3 + 5 = ?")
+            CreateSessionRequest(problem="3 + 5 = ?")  # type: ignore[call-arg]
 
         assert "child_grade" in str(exc_info.value)
 
-    def test_child_grade_range(self):
+    def test_child_grade_range(self) -> None:
         """child_gradeは1-3の範囲"""
         # 有効な値
         for grade in [1, 2, 3]:
@@ -67,7 +67,7 @@ class TestCreateSessionRequest:
         with pytest.raises(ValidationError):
             CreateSessionRequest(problem="test", child_grade=4)
 
-    def test_problem_not_empty(self):
+    def test_problem_not_empty(self) -> None:
         """problemは空文字列不可"""
         with pytest.raises(ValidationError):
             CreateSessionRequest(problem="", child_grade=2)
@@ -76,7 +76,7 @@ class TestCreateSessionRequest:
 class TestSessionResponse:
     """SessionResponseのテスト"""
 
-    def test_valid_response(self):
+    def test_valid_response(self) -> None:
         """有効なレスポンスを作成できる"""
         now = datetime.now()
         response = SessionResponse(
@@ -95,7 +95,7 @@ class TestSessionResponse:
         assert response.turns_count == 0
         assert response.created_at == now
 
-    def test_hint_level_range(self):
+    def test_hint_level_range(self) -> None:
         """hint_levelは1-3の範囲"""
         now = datetime.now()
 
@@ -132,7 +132,7 @@ class TestSessionResponse:
                 created_at=now,
             )
 
-    def test_turns_count_non_negative(self):
+    def test_turns_count_non_negative(self) -> None:
         """turns_countは0以上"""
         now = datetime.now()
 
@@ -162,19 +162,19 @@ class TestSessionResponse:
 class TestAnalyzeRequest:
     """AnalyzeRequestのテスト"""
 
-    def test_valid_request(self):
+    def test_valid_request(self) -> None:
         """有効なリクエストを作成できる"""
         request = AnalyzeRequest(child_response="8だと思う")
         assert request.child_response == "8だと思う"
 
-    def test_child_response_required(self):
+    def test_child_response_required(self) -> None:
         """child_responseは必須"""
         with pytest.raises(ValidationError) as exc_info:
-            AnalyzeRequest()
+            AnalyzeRequest()  # type: ignore[call-arg]
 
         assert "child_response" in str(exc_info.value)
 
-    def test_child_response_not_empty(self):
+    def test_child_response_not_empty(self) -> None:
         """child_responseは空文字列不可"""
         with pytest.raises(ValidationError):
             AnalyzeRequest(child_response="")
@@ -183,7 +183,7 @@ class TestAnalyzeRequest:
 class TestAnalyzeResponse:
     """AnalyzeResponseのテスト"""
 
-    def test_valid_response(self):
+    def test_valid_response(self) -> None:
         """有効なレスポンスを作成できる"""
         response = AnalyzeResponse(
             understanding_level=7,
@@ -207,7 +207,7 @@ class TestAnalyzeResponse:
         assert response.answer_request_detected is False
         assert response.answer_request_type == "none"
 
-    def test_understanding_level_range(self):
+    def test_understanding_level_range(self) -> None:
         """understanding_levelは0-10の範囲"""
         # 有効な値
         for level in [0, 5, 10]:
@@ -245,7 +245,7 @@ class TestAnalyzeResponse:
                 answer_request_detected=False,
             )
 
-    def test_key_insights_defaults_to_empty(self):
+    def test_key_insights_defaults_to_empty(self) -> None:
         """key_insightsはデフォルトで空リスト"""
         response = AnalyzeResponse(
             understanding_level=5,
@@ -258,7 +258,7 @@ class TestAnalyzeResponse:
         )
         assert response.key_insights == []
 
-    def test_answer_request_type_defaults_to_none(self):
+    def test_answer_request_type_defaults_to_none(self) -> None:
         """answer_request_typeはデフォルトで'none'"""
         response = AnalyzeResponse(
             understanding_level=5,
@@ -275,23 +275,23 @@ class TestAnalyzeResponse:
 class TestGenerateQuestionRequest:
     """GenerateQuestionRequestのテスト"""
 
-    def test_empty_request(self):
+    def test_empty_request(self) -> None:
         """空のリクエストを作成できる（すべてオプショナル）"""
         request = GenerateQuestionRequest()
         assert request.question_type is None
         assert request.tone is None
 
-    def test_with_question_type(self):
+    def test_with_question_type(self) -> None:
         """質問タイプを指定できる"""
         request = GenerateQuestionRequest(question_type="understanding_check")
         assert request.question_type == "understanding_check"
 
-    def test_with_tone(self):
+    def test_with_tone(self) -> None:
         """対話トーンを指定できる"""
         request = GenerateQuestionRequest(tone="encouraging")
         assert request.tone == "encouraging"
 
-    def test_with_both(self):
+    def test_with_both(self) -> None:
         """両方を指定できる"""
         request = GenerateQuestionRequest(
             question_type="hint",
@@ -304,7 +304,7 @@ class TestGenerateQuestionRequest:
 class TestQuestionResponse:
     """QuestionResponseのテスト"""
 
-    def test_valid_response(self):
+    def test_valid_response(self) -> None:
         """有効なレスポンスを作成できる"""
         response = QuestionResponse(
             question="この問題は何を聞いていると思う？",
@@ -316,36 +316,36 @@ class TestQuestionResponse:
         assert response.question_type == "understanding_check"
         assert response.tone == "encouraging"
 
-    def test_all_fields_required(self):
+    def test_all_fields_required(self) -> None:
         """すべてのフィールドが必須"""
         with pytest.raises(ValidationError):
-            QuestionResponse(question_type="hint", tone="neutral")
+            QuestionResponse(question_type="hint", tone="neutral")  # type: ignore[call-arg]
 
         with pytest.raises(ValidationError):
-            QuestionResponse(question="test", tone="neutral")
+            QuestionResponse(question="test", tone="neutral")  # type: ignore[call-arg]
 
         with pytest.raises(ValidationError):
-            QuestionResponse(question="test", question_type="hint")
+            QuestionResponse(question="test", question_type="hint")  # type: ignore[call-arg]
 
 
 class TestGenerateHintRequest:
     """GenerateHintRequestのテスト"""
 
-    def test_empty_request(self):
+    def test_empty_request(self) -> None:
         """空のリクエストを作成できる（force_levelはオプショナル）"""
         from app.schemas.dialogue import GenerateHintRequest
 
         request = GenerateHintRequest()
         assert request.force_level is None
 
-    def test_with_force_level(self):
+    def test_with_force_level(self) -> None:
         """force_levelを指定できる"""
         from app.schemas.dialogue import GenerateHintRequest
 
         request = GenerateHintRequest(force_level=2)
         assert request.force_level == 2
 
-    def test_force_level_range(self):
+    def test_force_level_range(self) -> None:
         """force_levelは1-3の範囲"""
         from app.schemas.dialogue import GenerateHintRequest
 
@@ -365,7 +365,7 @@ class TestGenerateHintRequest:
 class TestHintResponse:
     """HintResponseのテスト"""
 
-    def test_valid_response(self):
+    def test_valid_response(self) -> None:
         """有効なレスポンスを作成できる"""
         from app.schemas.dialogue import HintResponse
 
@@ -381,7 +381,7 @@ class TestHintResponse:
         assert response.hint_level_name == "問題理解の確認"
         assert response.is_answer_request_response is False
 
-    def test_hint_level_range(self):
+    def test_hint_level_range(self) -> None:
         """hint_levelは1-3の範囲"""
         from app.schemas.dialogue import HintResponse
 
@@ -416,23 +416,23 @@ class TestHintResponse:
 class TestAnswerRequestAnalysisRequest:
     """AnswerRequestAnalysisRequestのテスト"""
 
-    def test_valid_request(self):
+    def test_valid_request(self) -> None:
         """有効なリクエストを作成できる"""
         from app.schemas.dialogue import AnswerRequestAnalysisRequest
 
         request = AnswerRequestAnalysisRequest(child_response="答え教えて！")
         assert request.child_response == "答え教えて！"
 
-    def test_child_response_required(self):
+    def test_child_response_required(self) -> None:
         """child_responseは必須"""
         from app.schemas.dialogue import AnswerRequestAnalysisRequest
 
         with pytest.raises(ValidationError) as exc_info:
-            AnswerRequestAnalysisRequest()
+            AnswerRequestAnalysisRequest()  # type: ignore[call-arg]
 
         assert "child_response" in str(exc_info.value)
 
-    def test_child_response_not_empty(self):
+    def test_child_response_not_empty(self) -> None:
         """child_responseは空文字列不可"""
         from app.schemas.dialogue import AnswerRequestAnalysisRequest
 
@@ -443,7 +443,7 @@ class TestAnswerRequestAnalysisRequest:
 class TestAnswerRequestAnalysisResponse:
     """AnswerRequestAnalysisResponseのテスト"""
 
-    def test_valid_response(self):
+    def test_valid_response(self) -> None:
         """有効なレスポンスを作成できる"""
         from app.schemas.dialogue import AnswerRequestAnalysisResponse
 
@@ -457,7 +457,7 @@ class TestAnswerRequestAnalysisResponse:
         assert response.confidence == 0.95
         assert response.detected_phrases == ["答え教えて"]
 
-    def test_confidence_range(self):
+    def test_confidence_range(self) -> None:
         """confidenceは0.0-1.0の範囲"""
         from app.schemas.dialogue import AnswerRequestAnalysisResponse
 
@@ -482,7 +482,7 @@ class TestAnswerRequestAnalysisResponse:
                 confidence=1.1,
             )
 
-    def test_detected_phrases_defaults_to_empty(self):
+    def test_detected_phrases_defaults_to_empty(self) -> None:
         """detected_phrasesはデフォルトで空リスト"""
         from app.schemas.dialogue import AnswerRequestAnalysisResponse
 

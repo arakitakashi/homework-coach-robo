@@ -20,13 +20,13 @@ class TestHintFlowLevel1:
     """レベル1（問題理解の確認）のフローテスト"""
 
     @pytest.fixture
-    def manager_with_llm(self):
+    def manager_with_llm(self) -> SocraticDialogueManager:
         """LLMクライアント付きSocraticDialogueManagerインスタンス"""
         mock_llm = AsyncMock()
         return SocraticDialogueManager(llm_client=mock_llm)
 
     @pytest.fixture
-    def initial_context(self):
+    def initial_context(self) -> DialogueContext:
         """初期対話コンテキスト"""
         return DialogueContext(
             session_id="integration-test-001",
@@ -37,10 +37,12 @@ class TestHintFlowLevel1:
         )
 
     @pytest.mark.asyncio
-    async def test_level_1_flow_child_understands(self, manager_with_llm, initial_context):
+    async def test_level_1_flow_child_understands(
+        self, manager_with_llm: SocraticDialogueManager, initial_context: DialogueContext
+    ) -> None:
         """レベル1: 子供が理解している場合はレベル維持"""
         # LLMの応答を設定
-        manager_with_llm._llm_client.generate.return_value = "この問題は何を聞いていると思う？"
+        manager_with_llm._llm_client.generate.return_value = "この問題は何を聞いていると思う？"  # type: ignore[union-attr]
 
         # レベル1のヒントを生成
         response = await manager_with_llm.generate_hint_response(
@@ -67,13 +69,13 @@ class TestHintFlowLevelTransition:
     """レベル遷移のフローテスト"""
 
     @pytest.fixture
-    def manager_with_llm(self):
+    def manager_with_llm(self) -> SocraticDialogueManager:
         """LLMクライアント付きSocraticDialogueManagerインスタンス"""
         mock_llm = AsyncMock()
         return SocraticDialogueManager(llm_client=mock_llm)
 
     @pytest.mark.asyncio
-    async def test_transition_level_1_to_2(self, manager_with_llm):
+    async def test_transition_level_1_to_2(self, manager_with_llm: SocraticDialogueManager) -> None:
         """レベル1→2への遷移テスト"""
         # レベル1で2ターン対話した後の状態
         context = DialogueContext(
@@ -128,7 +130,7 @@ class TestHintFlowLevelTransition:
         assert "前" in prompt or "似た" in prompt or "思い出" in prompt
 
     @pytest.mark.asyncio
-    async def test_transition_level_2_to_3(self, manager_with_llm):
+    async def test_transition_level_2_to_3(self, manager_with_llm: SocraticDialogueManager) -> None:
         """レベル2→3への遷移テスト"""
         # レベル2で2ターン対話した後の状態
         context = DialogueContext(
@@ -189,13 +191,15 @@ class TestAnswerRequestHandling:
     """答えリクエスト対応のフローテスト"""
 
     @pytest.fixture
-    def manager_with_llm(self):
+    def manager_with_llm(self) -> SocraticDialogueManager:
         """LLMクライアント付きSocraticDialogueManagerインスタンス"""
         mock_llm = AsyncMock()
         return SocraticDialogueManager(llm_client=mock_llm)
 
     @pytest.mark.asyncio
-    async def test_answer_request_detection_and_response(self, manager_with_llm):
+    async def test_answer_request_detection_and_response(
+        self, manager_with_llm: SocraticDialogueManager
+    ) -> None:
         """答えリクエストを検出して適切に対応する"""
         context = DialogueContext(
             session_id="integration-test-004",
@@ -214,7 +218,7 @@ class TestAnswerRequestHandling:
         assert request_analysis.confidence >= 0.8
 
         # 励ましを含むヒントを生成
-        manager_with_llm._llm_client.generate.return_value = (
+        manager_with_llm._llm_client.generate.return_value = (  # type: ignore[union-attr]
             "大丈夫だよ、一緒に考えよう！この問題は何を聞いていると思う？"
         )
 
@@ -224,12 +228,14 @@ class TestAnswerRequestHandling:
         )
 
         # プロンプトに励ましの指示が含まれていることを確認
-        call_args = manager_with_llm._llm_client.generate.call_args
+        call_args = manager_with_llm._llm_client.generate.call_args  # type: ignore[union-attr]
         prompt = call_args[0][0]
         assert "大丈夫" in prompt or "一緒" in prompt or "励まし" in prompt
 
     @pytest.mark.asyncio
-    async def test_implicit_answer_request_handling(self, manager_with_llm):
+    async def test_implicit_answer_request_handling(
+        self, manager_with_llm: SocraticDialogueManager
+    ) -> None:
         """暗示的な答えリクエストを検出して対応する"""
         # 暗示的なリクエスト
         child_message = "もうできない、むずかしいよ..."
@@ -244,11 +250,11 @@ class TestLevelSkipPrevention:
     """レベルスキップ禁止のテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
         return SocraticDialogueManager()
 
-    def test_cannot_skip_from_1_to_3(self, manager):
+    def test_cannot_skip_from_1_to_3(self, manager: SocraticDialogueManager) -> None:
         """レベル1から直接レベル3へは進めない"""
         # レベル1で1回目の分析
         context = DialogueContext(
@@ -291,7 +297,7 @@ class TestLevelSkipPrevention:
         new_level = manager.advance_hint_level(context, analysis)
         assert new_level == 2  # レベル3ではなくレベル2へ
 
-    def test_each_level_requires_minimum_turns(self, manager):
+    def test_each_level_requires_minimum_turns(self, manager: SocraticDialogueManager) -> None:
         """各レベルで最低ターン数が必要"""
         # 1ターンのみの状態
         context = DialogueContext(
@@ -324,13 +330,15 @@ class TestEndToEndHintFlow:
     """エンドツーエンドのヒントフローテスト"""
 
     @pytest.fixture
-    def manager_with_llm(self):
+    def manager_with_llm(self) -> SocraticDialogueManager:
         """LLMクライアント付きSocraticDialogueManagerインスタンス"""
         mock_llm = AsyncMock()
         return SocraticDialogueManager(llm_client=mock_llm)
 
     @pytest.mark.asyncio
-    async def test_complete_hint_flow_to_level_3(self, manager_with_llm):
+    async def test_complete_hint_flow_to_level_3(
+        self, manager_with_llm: SocraticDialogueManager
+    ) -> None:
         """レベル1→2→3の完全なフロー"""
         context = DialogueContext(
             session_id="integration-test-007",
@@ -348,7 +356,7 @@ class TestEndToEndHintFlow:
         )
 
         # レベル1で対話
-        manager_with_llm._llm_client.generate.return_value = "この問題は何を聞いていると思う？"
+        manager_with_llm._llm_client.generate.return_value = "この問題は何を聞いていると思う？"  # type: ignore[union-attr]
         await manager_with_llm.generate_hint_response(context)
 
         # 2ターン追加
@@ -384,7 +392,7 @@ class TestEndToEndHintFlow:
         context.tone = DialogueTone.EMPATHETIC
 
         # レベル2で対話
-        manager_with_llm._llm_client.generate.return_value = "前に似たような問題をやったよね？"
+        manager_with_llm._llm_client.generate.return_value = "前に似たような問題をやったよね？"  # type: ignore[union-attr]
         await manager_with_llm.generate_hint_response(context)
 
         # さらに2ターン追加
@@ -409,7 +417,7 @@ class TestEndToEndHintFlow:
         context.current_hint_level = new_level
 
         # レベル3で対話（部分的支援）
-        manager_with_llm._llm_client.generate.return_value = (
+        manager_with_llm._llm_client.generate.return_value = (  # type: ignore[union-attr]
             "じゃあ、最初のステップだけ一緒にやろう。15という数字があるね。"
         )
         response = await manager_with_llm.generate_hint_response(context)

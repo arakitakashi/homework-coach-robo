@@ -8,7 +8,7 @@ import pytest
 class TestThinkingTendencies:
     """ThinkingTendencies Pydanticモデルのテスト"""
 
-    def test_thinking_tendencies_creation(self):
+    def test_thinking_tendencies_creation(self) -> None:
         """ThinkingTendenciesを作成できる"""
         from app.services.adk.dialogue.learning_profile import ThinkingTendencies
 
@@ -26,7 +26,7 @@ class TestThinkingTendencies:
         assert tendencies.hint_dependency == 0.3
         assert tendencies.updated_at == datetime(2026, 2, 2, 10, 0, 0)
 
-    def test_thinking_tendencies_score_range(self):
+    def test_thinking_tendencies_score_range(self) -> None:
         """スコアは0-10の範囲"""
         from pydantic import ValidationError
 
@@ -62,7 +62,7 @@ class TestThinkingTendencies:
                 updated_at=datetime(2026, 2, 2, 10, 0, 0),
             )
 
-    def test_thinking_tendencies_hint_dependency_range(self):
+    def test_thinking_tendencies_hint_dependency_range(self) -> None:
         """hint_dependencyは0-1の範囲"""
         from pydantic import ValidationError
 
@@ -110,7 +110,7 @@ class TestThinkingTendencies:
 class TestSubjectUnderstanding:
     """SubjectUnderstanding Pydanticモデルのテスト"""
 
-    def test_subject_understanding_creation(self):
+    def test_subject_understanding_creation(self) -> None:
         """SubjectUnderstandingを作成できる"""
         from app.services.adk.dialogue.learning_profile import SubjectUnderstanding
 
@@ -131,7 +131,7 @@ class TestSubjectUnderstanding:
         assert understanding.weak_points == ["繰り上がり"]
         assert understanding.strong_points == ["一桁の足し算"]
 
-    def test_subject_understanding_level_range(self):
+    def test_subject_understanding_level_range(self) -> None:
         """levelは0-10の範囲"""
         from pydantic import ValidationError
 
@@ -175,7 +175,7 @@ class TestSubjectUnderstanding:
                 assessed_at=datetime(2026, 2, 2, 10, 0, 0),
             )
 
-    def test_subject_understanding_trend_values(self):
+    def test_subject_understanding_trend_values(self) -> None:
         """trendはimproving/stable/decliningのみ"""
         from pydantic import ValidationError
 
@@ -187,7 +187,7 @@ class TestSubjectUnderstanding:
                 subject="math",
                 topic="addition",
                 level=5,
-                trend=trend,
+                trend=trend,  # type: ignore[arg-type]
                 assessed_at=datetime(2026, 2, 2, 10, 0, 0),
             )
             assert understanding.trend == trend
@@ -198,11 +198,11 @@ class TestSubjectUnderstanding:
                 subject="math",
                 topic="addition",
                 level=5,
-                trend="unknown",
+                trend="unknown",  # type: ignore[arg-type]
                 assessed_at=datetime(2026, 2, 2, 10, 0, 0),
             )
 
-    def test_subject_understanding_default_lists(self):
+    def test_subject_understanding_default_lists(self) -> None:
         """weak_pointsとstrong_pointsはデフォルトで空リスト"""
         from app.services.adk.dialogue.learning_profile import SubjectUnderstanding
 
@@ -221,7 +221,7 @@ class TestSubjectUnderstanding:
 class TestSessionSummary:
     """SessionSummary Pydanticモデルのテスト"""
 
-    def test_session_summary_creation(self):
+    def test_session_summary_creation(self) -> None:
         """SessionSummaryを作成できる"""
         from app.services.adk.dialogue.learning_profile import SessionSummary
 
@@ -244,7 +244,7 @@ class TestSessionSummary:
         assert summary.subjects_covered == ["math", "japanese"]
         assert summary.insights == ["足し算の概念を理解した"]
 
-    def test_session_summary_default_values(self):
+    def test_session_summary_default_values(self) -> None:
         """SessionSummaryのデフォルト値"""
         from app.services.adk.dialogue.learning_profile import SessionSummary
 
@@ -260,7 +260,7 @@ class TestSessionSummary:
 
         assert summary.insights == []
 
-    def test_session_summary_non_negative_values(self):
+    def test_session_summary_non_negative_values(self) -> None:
         """数値フィールドは非負"""
         from pydantic import ValidationError
 
@@ -294,7 +294,7 @@ class TestSessionSummary:
 class TestChildLearningProfile:
     """ChildLearningProfile Pydanticモデルのテスト"""
 
-    def test_child_learning_profile_creation(self):
+    def test_child_learning_profile_creation(self) -> None:
         """ChildLearningProfileを作成できる"""
         from app.services.adk.dialogue.learning_profile import (
             ChildLearningProfile,
@@ -336,7 +336,7 @@ class TestChildLearningProfile:
         assert profile.total_sessions == 10
         assert profile.total_problems_solved == 50
 
-    def test_child_learning_profile_empty_subjects(self):
+    def test_child_learning_profile_empty_subjects(self) -> None:
         """subjects は空リストでも作成可能"""
         from app.services.adk.dialogue.learning_profile import (
             ChildLearningProfile,
@@ -364,7 +364,7 @@ class TestChildLearningProfile:
         assert profile.subjects == []
         assert profile.total_sessions == 0
 
-    def test_child_learning_profile_non_negative_counts(self):
+    def test_child_learning_profile_non_negative_counts(self) -> None:
         """カウント系フィールドは非負"""
         from pydantic import ValidationError
 
@@ -396,7 +396,7 @@ class TestChildLearningProfile:
 class TestLearningMemory:
     """LearningMemory Pydanticモデルのテスト"""
 
-    def test_learning_memory_creation(self):
+    def test_learning_memory_creation(self) -> None:
         """LearningMemoryを作成できる"""
         from app.services.adk.dialogue.learning_profile import LearningMemory
 
@@ -411,7 +411,7 @@ class TestLearningMemory:
         assert "繰り上がり" in memory.content
         assert memory.tags == ["math", "addition", "weakness"]
 
-    def test_learning_memory_type_values(self):
+    def test_learning_memory_type_values(self) -> None:
         """memory_typeは指定された値のみ許可"""
         from pydantic import ValidationError
 
@@ -420,7 +420,7 @@ class TestLearningMemory:
         # 有効な値
         for memory_type in ["learning_insight", "thinking_pattern", "effective_approach"]:
             memory = LearningMemory(
-                memory_type=memory_type,
+                memory_type=memory_type,  # type: ignore[arg-type]
                 content="テスト",
                 created_at=datetime(2026, 2, 2, 10, 0, 0),
             )
@@ -429,12 +429,12 @@ class TestLearningMemory:
         # 無効な値
         with pytest.raises(ValidationError):
             LearningMemory(
-                memory_type="invalid_type",
+                memory_type="invalid_type",  # type: ignore[arg-type]
                 content="テスト",
                 created_at=datetime(2026, 2, 2, 10, 0, 0),
             )
 
-    def test_learning_memory_default_tags(self):
+    def test_learning_memory_default_tags(self) -> None:
         """tagsはデフォルトで空リスト"""
         from app.services.adk.dialogue.learning_profile import LearningMemory
 

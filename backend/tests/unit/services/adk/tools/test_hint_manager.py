@@ -94,6 +94,7 @@ class TestManageHintAdvance:
 
         ctx = _make_tool_context()
         result = manage_hint(session_id="sess1", action="advance", tool_context=ctx)
+        assert isinstance(result["hint_template"], str)
         assert "問題" in result["hint_template"]
 
     def test_hint_template_for_level_2(self) -> None:
@@ -111,6 +112,7 @@ class TestManageHintAdvance:
         ctx = _make_tool_context({"hint_level": 2, "hints_used_total": 2})
         result = manage_hint(session_id="sess1", action="advance", tool_context=ctx)
         assert result["current_level"] == 3
+        assert isinstance(result["hint_template"], str)
         assert "ステップ" in result["hint_template"] or "一緒" in result["hint_template"]
 
 
@@ -169,7 +171,7 @@ class TestManageHintTool:
 
     def test_is_function_tool_instance(self) -> None:
         """FunctionTool インスタンスである"""
-        from google.adk.tools import FunctionTool
+        from google.adk.tools import FunctionTool  # type: ignore[attr-defined]
 
         from app.services.adk.tools.hint_manager import manage_hint_tool
 

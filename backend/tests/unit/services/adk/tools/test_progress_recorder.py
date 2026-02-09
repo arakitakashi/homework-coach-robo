@@ -154,6 +154,7 @@ class TestRecordProgressEncouragement:
             time_spent_seconds=60,
             tool_context=ctx,
         )
+        assert isinstance(result["encouragement_message"], str)
         assert len(result["encouragement_message"]) > 0
 
     def test_encouragement_for_guided_is_positive(self) -> None:
@@ -170,6 +171,7 @@ class TestRecordProgressEncouragement:
             time_spent_seconds=300,
             tool_context=ctx,
         )
+        assert isinstance(result["encouragement_message"], str)
         assert len(result["encouragement_message"]) > 0
 
 
@@ -222,7 +224,7 @@ class TestRecordProgressTool:
 
     def test_is_function_tool_instance(self) -> None:
         """FunctionTool インスタンスである"""
-        from google.adk.tools import FunctionTool
+        from google.adk.tools import FunctionTool  # type: ignore[attr-defined]
 
         from app.services.adk.tools.progress_recorder import record_progress_tool
 
