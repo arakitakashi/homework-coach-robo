@@ -7,7 +7,7 @@ from app.main import app
 
 
 @pytest.fixture
-def client():
+def client() -> TestClient:
     """FastAPIテストクライアント"""
     return TestClient(app)
 
@@ -15,7 +15,7 @@ def client():
 class TestCompleteSessionFlow:
     """完全なセッションフローのテスト"""
 
-    def test_complete_session_flow(self, client):
+    def test_complete_session_flow(self, client: TestClient) -> None:
         """セッション作成→分析→質問→ヒント→削除の完全フロー"""
         # 1. セッションを作成
         create_response = client.post(
@@ -70,7 +70,7 @@ class TestCompleteSessionFlow:
 class TestHintProgressionFlow:
     """ヒント進行フローのテスト"""
 
-    def test_hint_level_progression(self, client):
+    def test_hint_level_progression(self, client: TestClient) -> None:
         """ヒントレベルの進行テスト"""
         # セッションを作成
         create_response = client.post(
@@ -110,7 +110,7 @@ class TestHintProgressionFlow:
 class TestAnswerRequestDetectionFlow:
     """答えリクエスト検出フローのテスト"""
 
-    def test_explicit_answer_request_in_session(self, client):
+    def test_explicit_answer_request_in_session(self, client: TestClient) -> None:
         """セッション内での明示的な答えリクエスト検出"""
         # セッションを作成
         create_response = client.post(
@@ -132,7 +132,7 @@ class TestAnswerRequestDetectionFlow:
         # クリーンアップ
         client.delete(f"/api/v1/dialogue/sessions/{session_id}")
 
-    def test_implicit_answer_request_in_session(self, client):
+    def test_implicit_answer_request_in_session(self, client: TestClient) -> None:
         """セッション内での暗示的な答えリクエスト検出"""
         # セッションを作成
         create_response = client.post(
@@ -154,7 +154,7 @@ class TestAnswerRequestDetectionFlow:
         # クリーンアップ
         client.delete(f"/api/v1/dialogue/sessions/{session_id}")
 
-    def test_standalone_answer_request_detection(self, client):
+    def test_standalone_answer_request_detection(self, client: TestClient) -> None:
         """スタンドアロンの答えリクエスト検出"""
         # 明示的
         explicit_response = client.post(
@@ -181,7 +181,7 @@ class TestAnswerRequestDetectionFlow:
 class TestErrorHandling:
     """エラーハンドリングのテスト"""
 
-    def test_nonexistent_session_errors(self, client):
+    def test_nonexistent_session_errors(self, client: TestClient) -> None:
         """存在しないセッションに対するエラー"""
         fake_id = "nonexistent-session-12345"
 
@@ -214,7 +214,7 @@ class TestErrorHandling:
         )
         assert hint_response.status_code == 404
 
-    def test_validation_errors(self, client):
+    def test_validation_errors(self, client: TestClient) -> None:
         """バリデーションエラー"""
         # 空の問題文
         response1 = client.post(

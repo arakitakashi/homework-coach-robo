@@ -124,6 +124,7 @@ class TestEventToMemoryDict:
 
         result = event_to_memory_dict(event, session_id="session-1")
 
+        assert result is not None
         assert result["event_id"] == "event-1"
         assert result["session_id"] == "session-1"
         assert result["author"] == "user"
@@ -149,6 +150,7 @@ class TestEventToMemoryDict:
 
         result = event_to_memory_dict(event, session_id="session-1")
 
+        assert result is not None
         assert result["author"] == "model"
         assert result["content"]["role"] == "model"
 
@@ -172,6 +174,7 @@ class TestEventToMemoryDict:
 
         result = event_to_memory_dict(event, session_id="session-1")
 
+        assert result is not None
         assert len(result["content"]["parts"]) == 2
         assert result["content"]["parts"][0]["text"] == "Part 1"
         assert result["content"]["parts"][1]["text"] == "Part 2"
@@ -196,6 +199,7 @@ class TestEventToMemoryDict:
             event, session_id="session-1", custom_metadata=custom_metadata
         )
 
+        assert result is not None
         assert result["custom_metadata"] == custom_metadata
 
     def test_returns_none_for_event_without_content(self) -> None:
@@ -238,6 +242,7 @@ class TestDictToMemoryEntry:
         assert isinstance(result, MemoryEntry)
         assert result.author == "user"
         assert result.content.role == "user"
+        assert result.content.parts is not None
         assert len(result.content.parts) == 1
 
     def test_converts_dict_with_custom_metadata(self) -> None:

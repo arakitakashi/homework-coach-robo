@@ -21,6 +21,7 @@ class TestCalculateAndVerify:
         assert result["is_correct"] is False
         assert result["correct_answer"] == "68"
         assert result["error_type"] == "calculation"
+        assert isinstance(result["hint"], str)
         assert len(result["hint"]) > 0
 
     def test_subtraction(self) -> None:
@@ -83,6 +84,7 @@ class TestCalculateAndVerify:
 
         result = calculate_and_verify(expression="3 + 5", child_answer="9", grade_level=1)
         assert result["is_correct"] is False
+        assert isinstance(result["hint"], str)
         assert len(result["hint"]) > 0
 
     def test_decimal_result(self) -> None:
@@ -98,6 +100,7 @@ class TestCalculateAndVerify:
 
         result = calculate_and_verify(expression="6 + 4", child_answer="10", grade_level=1)
         assert result["correct_answer"] == "10"
+        assert isinstance(result["correct_answer"], str)
         assert "." not in result["correct_answer"]
 
     def test_whitespace_handling(self) -> None:
@@ -123,7 +126,7 @@ class TestCalculateTool:
 
     def test_is_function_tool_instance(self) -> None:
         """FunctionTool インスタンスである"""
-        from google.adk.tools import FunctionTool
+        from google.adk.tools import FunctionTool  # type: ignore[attr-defined]
 
         from app.services.adk.tools.calculate import calculate_tool
 
