@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了
 
 ---
 
@@ -36,6 +36,7 @@
 - **フロントエンド Phase 2a ツール実行状態UI**: ToolExecutionDisplayコンポーネント + WebSocket/フック拡張 + SessionContent統合
 - **フロントエンド Phase 2 WebSocketハンドラ統合**: AgentTransition（Phase 2b）・EmotionUpdate（Phase 2d）イベントハンドラ + Jotai atoms接続
 - **フロントエンド Phase 2b エージェント切り替えUI**: AgentIndicator・AgentIconコンポーネント + Framer Motionアニメーション + SessionContent統合（309テスト）
+- **Agent Engine デプロイ基盤 (Phase 3)**: セッションファクトリ（Firestore/VertexAi切り替え）、Agent Engineクライアントラッパー（create_session, stream_query, extract_text）、テキスト対話エンドポイントのAgent Engine経由SSEストリーミング（AGENT_ENGINE_RESOURCE_NAME設定時、ローカルRunnerフォールバック付き）、デプロイスクリプト・テストスクリプト（548テスト、カバレッジ90%）
 
 ---
 
@@ -88,7 +89,7 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 cd backend && uv run uvicorn app.main:app --reload
 ```
 
-**テストカバレッジ**: 90%（526テスト）
+**テストカバレッジ**: 90%（548テスト）
 **mypy 型チェック**: `uv run mypy .` でプロジェクト全体（`app/` + `tests/`）が 0 errors
 
 ### Firestore Session Persistence
@@ -362,6 +363,53 @@ uv run python scripts/create_agent_engine.py --project <project-id> --location u
 **テスト:** 22テスト（ツール20 + Router 2）、カバレッジ90%
 
 詳細は `.steering/20260209-phase2d-emotion-adaptation/` を参照。
+
+### Agent Engine デプロイ基盤 (Phase 3)
+
+`backend/app/services/adk/` にAgent Engineデプロイ基盤を実装。テキスト対話エンドポイントをAgent Engine経由に切り替え可能にし、ローカルRunnerへのフォールバックも維持。
+
+| コンポーネント | ファイル | 説明 |
+|--------------|---------|------|
+| `session_factory.py` | `sessions/session_factory.py` | 環境変数ベースでFirestore/VertexAiSessionService切り替え |
+| `agent_engine_client.py` | `runner/agent_engine_client.py` | Agent Engine remote_appラッパー（create_session, stream_query, extract_text） |
+| `dialogue_runner.py` | `api/v1/dialogue_runner.py` | Agent Engine経由SSEストリーミング（AGENT_ENGINE_RESOURCE_NAME設定時）、ローカルRunnerフォールバック |
+| `deploy_agent_engine.py` | `scripts/deploy_agent_engine.py` | Router AgentのAgent Engineデプロイスクリプト |
+| `test_agent_engine.py` | `scripts/test_agent_engine.py` | デプロイ後テストスクリプト |
+
+**セッションファクトリ切り替え:**
+
+| 環境変数 | 値 | セッションサービス |
+|---------|---|-------------------|
+| `AGENT_ENGINE_ID` | 未設定 | `FirestoreSessionService` |
+| `AGENT_ENGINE_ID` | 設定済み | `VertexAiSessionService` |
+
+**対話エンドポイント切り替え:**
+
+| 環境変数 | 値 | 対話実行方式 |
+|---------|---|-------------|
+| `AGENT_ENGINE_RESOURCE_NAME` | 未設定 | ローカル Runner（AgentRunnerService） |
+| `AGENT_ENGINE_RESOURCE_NAME` | 設定済み | Agent Engine 経由（AgentEngineClient） |
+
+**デプロイ手順:**
+```bash
+# 1. Agent Engine にデプロイ
+uv run python scripts/deploy_agent_engine.py \
+  --project <project-id> \
+  --location us-central1 \
+  --bucket <staging-bucket>
+
+# 2. デプロイ後テスト
+uv run python scripts/test_agent_engine.py \
+  --resource-name <resource-name>
+
+# 3. 環境変数を設定して切り替え
+export AGENT_ENGINE_RESOURCE_NAME=<resource-name>
+export AGENT_ENGINE_ID=<engine-id>
+```
+
+**テスト:** 22テスト（session_factory 8 + agent_engine_client 10 + dialogue_runner 4）、カバレッジ90%
+
+詳細は `.steering/20260210-phase3-agent-engine-deploy/` を参照。
 
 ---
 
@@ -741,3 +789,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260209-phase2d-emotion-adaptation/` | Phase 2d 感情適応（update_emotion_tool + 感情ベースルーティング） |
 | `.steering/20260209-phase2-websocket-handlers/` | Phase 2 WebSocket メッセージハンドラ統合 |
 | `.steering/20260209-fix-mypy-test-errors/` | テストファイル mypy 型チェック全解消（264→0 errors） |
+| `.steering/20260210-phase3-agent-engine-deploy/` | Phase 3 Agent Engine デプロイ基盤 |
