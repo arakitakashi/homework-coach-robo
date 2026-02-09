@@ -89,3 +89,25 @@ variable "backend_memory" {
   type        = string
   default     = "1Gi"
 }
+
+# =============================================================================
+# Phase 3: Agent Engine Configuration
+# =============================================================================
+
+variable "agent_engine_resource_name" {
+  description = "Agent Engine resource name (empty for local runner)"
+  type        = string
+  default     = ""
+}
+
+variable "agent_engine_id" {
+  description = "Agent Engine ID (empty for local runner)"
+  type        = string
+  default     = ""
+}
+
+variable "gcp_location" {
+  description = "GCP location for Agent Engine (default: us-central1)"
+  type        = string
+  default     = "us-central1"
+}
