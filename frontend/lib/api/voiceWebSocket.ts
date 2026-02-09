@@ -169,6 +169,24 @@ export class VoiceWebSocketClient {
 			)
 		}
 
+		// Phase 2b: エージェント遷移イベント
+		if (event.agentTransition) {
+			this.options.onAgentTransition?.(
+				event.agentTransition.fromAgent,
+				event.agentTransition.toAgent,
+				event.agentTransition.reason,
+			)
+		}
+
+		// Phase 2d: 感情更新イベント
+		if (event.emotionUpdate) {
+			this.options.onEmotionUpdate?.(
+				event.emotionUpdate.emotion,
+				event.emotionUpdate.frustrationLevel,
+				event.emotionUpdate.engagementLevel,
+			)
+		}
+
 		// コンテンツ（音声データまたはテキスト）
 		if (event.content?.parts) {
 			for (const part of event.content.parts) {

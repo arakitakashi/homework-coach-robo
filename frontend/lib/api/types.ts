@@ -83,6 +83,26 @@ export interface ADKToolExecutionEvent {
 	result?: Record<string, unknown>
 }
 
+/** ADKエージェント遷移イベント */
+export interface ADKAgentTransitionEvent {
+	/** 遷移元エージェント */
+	fromAgent: string
+	/** 遷移先エージェント */
+	toAgent: string
+	/** 遷移理由 */
+	reason: string
+}
+
+/** ADK感情更新イベント */
+export interface ADKEmotionUpdateEvent {
+	/** 検出された感情 */
+	emotion: string
+	/** フラストレーションレベル（0-1） */
+	frustrationLevel: number
+	/** エンゲージメントレベル（0-1） */
+	engagementLevel: number
+}
+
 /** ADKイベント - サーバーからのWebSocketメッセージ */
 export interface ADKEvent {
 	/** イベント発行者 */
@@ -101,6 +121,10 @@ export interface ADKEvent {
 	}
 	/** Phase 2a: ツール実行イベント */
 	toolExecution?: ADKToolExecutionEvent
+	/** Phase 2b: エージェント遷移イベント */
+	agentTransition?: ADKAgentTransitionEvent
+	/** Phase 2d: 感情更新イベント */
+	emotionUpdate?: ADKEmotionUpdateEvent
 }
 
 /** ADKコンテンツパート */
@@ -142,4 +166,8 @@ export interface VoiceWebSocketOptions {
 	onConnectionChange: (state: VoiceConnectionState) => void
 	/** Phase 2a: ツール実行コールバック */
 	onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
+	/** Phase 2b: エージェント遷移コールバック */
+	onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
+	/** Phase 2d: 感情更新コールバック */
+	onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
 }

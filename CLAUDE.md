@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2a フロントエンドUI実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -172,15 +172,16 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 | **2a** ✅ | ツール導入（Function Calling） | `calculate_tool`, `manage_hint_tool`, `record_progress_tool`, `check_curriculum_tool`, `analyze_image_tool` |
 | **2b** ✅ | マルチエージェント | Router Agent → Math Coach / Japanese Coach / Encouragement / Review Agent |
 | **2c** ✅ | Memory Bank 統合 | `VertexAiMemoryBankService` ファクトリ + Agent Engine + `load_memory` ツール |
-| **2d** ✅ | 感情適応 | `update_emotion_tool` + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト |
-| **3** | Agent Engine | Phase 2c で Agent Engine 基盤構築済み。マネージドデプロイは Phase 2 完了後 |
+| **2d** ✅ | 感情適応 | `update_emotion_tool` + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト ※AutoMLは将来検討（#52） |
+| **3** | Agent Engine | Phase 2c で Agent Engine 基盤構築済み。マネージドデプロイは Phase 2 完了後 ※A/Bテストは将来検討（#55） |
 
 **フロントエンド Phase 2 対応状況:**
 - ✅ 型定義（`frontend/types/phase2.ts`）: Phase 2a-2d 全サブフェーズの25型定義（PR #60）
 - ✅ 状態管理（`frontend/store/atoms/phase2.ts`）: 12個のJotai atoms（11 writable + 1 derived）
 - ✅ 既存型の後方互換拡張: `DialogueTurn`, `LearningProgress`, `WebSocketIncomingMessage`
 - ✅ Phase 2a ツール実行状態UI（PR #74）: `ToolExecutionDisplay`コンポーネント + WebSocket/フック拡張 + SessionContent統合
-- ✅ テスト: 277テスト（26テストファイル）
+- ✅ Phase 2 WebSocketハンドラ統合（PR #77）: AgentTransition・EmotionUpdate イベントハンドラ + Jotai atoms接続
+- ✅ テスト: 291テスト（26テストファイル）
 
 **Phase 2 ファイル構成:**
 ```
