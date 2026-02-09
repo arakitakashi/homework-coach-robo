@@ -18,8 +18,23 @@
 	"sandbox": {
 		"enabled": true,
 		"autoAllowBashIfSandboxed": true,
-		"excludedCommands": ["docker", "gh"],
+		"excludedCommands": ["docker"],
 		"allowUnsandboxedCommands": true,
+		"filesystem": {
+			"read": {
+				"denyOnly": []
+			},
+			"write": {
+				"allowOnly": [
+					"/tmp/claude",
+					"/private/tmp/claude",
+					"/Users/arakitakashi/.bun",
+					"/Users/arakitakashi/.npm",
+					"/Users/arakitakashi/git/indie-dev/homework-coach-robo"
+				],
+				"denyWithinAllow": []
+			}
+		},
 		"network": {
 			"allowedDomains": [
 				"github.com",
@@ -90,6 +105,7 @@
 			"npm test*",
 			"npm run test*",
 			"npm run lint*",
+			"npm run build*",
 			"pytest*",
 			"python -m pytest*",
 			"uv run pytest*",
@@ -97,6 +113,13 @@
 			"uv run mypy*",
 			"uv sync*",
 			"bun test*",
+			"bun lint*",
+			"bun typecheck*",
+			"bun build*",
+			"bun add *",
+			"bun install*",
+			"bunx vitest*",
+			"bunx *",
 			"vitest*",
 			"git checkout -b feature/*",
 			"git checkout -b fix/*",
@@ -110,6 +133,8 @@
 			"gh pr create *",
 			"gh pr view *",
 			"gh pr list *",
+			"gh issue *",
+			"gh api *",
 			"echo *",
 			"cat *",
 			"ls *",
@@ -118,10 +143,14 @@
 			"grep *",
 			"sed *",
 			"awk *",
+			"perl *",
 			"touch *",
 			"mkdir *",
 			"cp * *",
-			"mv * *"
+			"mv * *",
+			"wc *",
+			"head *",
+			"tail *"
 		]
 	},
 	"requireApprovalPatterns": [
