@@ -18,7 +18,7 @@
 	"sandbox": {
 		"enabled": true,
 		"autoAllowBashIfSandboxed": true,
-		"excludedCommands": ["docker"],
+		"excludedCommands": ["docker", "gh"],
 		"allowUnsandboxedCommands": true,
 		"network": {
 			"allowedDomains": [
