@@ -93,6 +93,7 @@ export function EmotionIndicator() {
 	const Icon = config.icon
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: outputは不適切。動的な感情状態の更新を示すためrole="status"を使用
 		<div
 			role="status"
 			aria-label="感情状態"
