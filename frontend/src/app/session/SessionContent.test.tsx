@@ -7,7 +7,13 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { type ReactNode, useMemo } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { activeToolExecutionsAtom } from "@/store/atoms/phase2"
+import {
+	activeAgentAtom,
+	activeToolExecutionsAtom,
+	agentTransitionHistoryAtom,
+	emotionAnalysisAtom,
+	emotionHistoryAtom,
+} from "@/store/atoms/phase2"
 import type { ToolExecution } from "@/types"
 import { SessionContent } from "./SessionContent"
 
@@ -35,12 +41,16 @@ let mockDialogueError: string | null = null
 // useVoiceStreamのコールバックをキャプチャする変数
 let capturedVoiceStreamOptions: {
 	onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
+	onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
+	onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
 } = {}
 
 // useVoiceStreamをモック（optionsをキャプチャ）
 vi.mock("@/lib/hooks/useVoiceStream", () => ({
 	useVoiceStream: (options?: {
 		onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
+		onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
+		onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
 	}) => {
 		if (options) {
 			capturedVoiceStreamOptions = options
@@ -406,6 +416,107 @@ describe("SessionContent", () => {
 			await waitFor(() => {
 				expect(screen.getByText("けいさん")).toBeInTheDocument()
 			})
+		})
+	})
+
+	describe("エージェント遷移イベント", () => {
+		it("onAgentTransitionコールバックがactiveAgentAtomを更新する", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// onAgentTransitionコールバックが存在することを確認
+			expect(capturedVoiceStreamOptions.onAgentTransition).toBeDefined()
+
+			// エージェント遷移イベントをシミュレート
+			act(() => {
+				capturedVoiceStreamOptions.onAgentTransition?.("router", "math_coach", "算数の問題を検出")
+			})
+
+			// activeAgentAtomが更新される
+			const activeAgent = store.get(activeAgentAtom)
+			expect(activeAgent).not.toBeNull()
+			expect(activeAgent?.type).toBe("math_coach")
+			expect(activeAgent?.name).toBe("math_coach")
+		})
+
+		it("onAgentTransitionコールバックがagentTransitionHistoryAtomに履歴追加する", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// エージェント遷移イベントをシミュレート
+			act(() => {
+				capturedVoiceStreamOptions.onAgentTransition?.("router", "math_coach", "算数の問題を検出")
+			})
+
+			// agentTransitionHistoryAtomに履歴が追加される
+			const history = store.get(agentTransitionHistoryAtom)
+			expect(history).toHaveLength(1)
+			expect(history[0].fromAgent).toBe("router")
+			expect(history[0].toAgent).toBe("math_coach")
+			expect(history[0].reason).toBe("算数の問題を検出")
+		})
+	})
+
+	describe("感情更新イベント", () => {
+		it("onEmotionUpdateコールバックがemotionAnalysisAtomを更新する", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// onEmotionUpdateコールバックが存在することを確認
+			expect(capturedVoiceStreamOptions.onEmotionUpdate).toBeDefined()
+
+			// 感情更新イベントをシミュレート
+			act(() => {
+				capturedVoiceStreamOptions.onEmotionUpdate?.("frustrated", 0.8, 0.3)
+			})
+
+			// emotionAnalysisAtomが更新される
+			const emotion = store.get(emotionAnalysisAtom)
+			expect(emotion).not.toBeNull()
+			expect(emotion?.primaryEmotion).toBe("frustrated")
+			expect(emotion?.frustrationLevel).toBe(0.8)
+			expect(emotion?.engagementLevel).toBe(0.3)
+		})
+
+		it("onEmotionUpdateコールバックがemotionHistoryAtomに履歴追加する", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+			})
+
+			// 感情更新イベントをシミュレート
+			act(() => {
+				capturedVoiceStreamOptions.onEmotionUpdate?.("frustrated", 0.8, 0.3)
+			})
+
+			// emotionHistoryAtomに履歴が追加される
+			const history = store.get(emotionHistoryAtom)
+			expect(history).toHaveLength(1)
+			expect(history[0].primaryEmotion).toBe("frustrated")
+			expect(history[0].frustrationLevel).toBe(0.8)
+			expect(history[0].engagementLevel).toBe(0.3)
 		})
 	})
 })

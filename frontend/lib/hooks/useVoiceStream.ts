@@ -23,6 +23,10 @@ export interface UseVoiceStreamOptions {
 	onInterrupted?: () => void
 	/** Phase 2a: ツール実行コールバック */
 	onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
+	/** Phase 2b: エージェント遷移コールバック */
+	onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
+	/** Phase 2d: 感情更新コールバック */
+	onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
 }
 
 /** フックの戻り値 */
@@ -64,7 +68,15 @@ function convertFloat32ToPCM16(float32Array: Float32Array): ArrayBuffer {
  * 双方向音声ストリーミングを管理するフック
  */
 export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStreamReturn {
-	const { onAudioData, onTranscription, onTurnComplete, onInterrupted, onToolExecution } = options
+	const {
+		onAudioData,
+		onTranscription,
+		onTurnComplete,
+		onInterrupted,
+		onToolExecution,
+		onAgentTransition,
+		onEmotionUpdate,
+	} = options
 
 	// 状態
 	const [connectionState, setConnectionState] = useState<VoiceConnectionState>("disconnected")
@@ -145,12 +157,30 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 							onToolExecution(toolName, status, result)
 						}
 					: undefined,
+				onAgentTransition: onAgentTransition
+					? (fromAgent, toAgent, reason) => {
+							onAgentTransition(fromAgent, toAgent, reason)
+						}
+					: undefined,
+				onEmotionUpdate: onEmotionUpdate
+					? (emotion, frustrationLevel, engagementLevel) => {
+							onEmotionUpdate(emotion, frustrationLevel, engagementLevel)
+						}
+					: undefined,
 			})
 
 			clientRef.current = client
 			client.connect()
 		},
-		[onAudioData, onTranscription, onTurnComplete, onInterrupted, onToolExecution],
+		[
+			onAudioData,
+			onTranscription,
+			onTurnComplete,
+			onInterrupted,
+			onToolExecution,
+			onAgentTransition,
+			onEmotionUpdate,
+		],
 	)
 
 	/**

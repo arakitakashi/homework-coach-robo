@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2a フロントエンドUI実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了
 
 ---
 
@@ -33,7 +33,8 @@
 - **フロントエンド Phase 2 型定義・状態管理**: Phase 2a-2d 対応の型定義（25型）+ Jotai atoms（12個）実装完了
 - **Memory Bank 統合 (Phase 2c+3)**: VertexAiMemoryBankService ファクトリパターン + Agent Engine 作成スクリプト + Review Agent に load_memory ツール追加
 - **感情適応 (Phase 2d)**: update_emotion_tool + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト参照
-- **フロントエンド Phase 2a ツール実行状態UI**: ToolExecutionDisplayコンポーネント + WebSocket/フック拡張 + SessionContent統合（277テスト）
+- **フロントエンド Phase 2a ツール実行状態UI**: ToolExecutionDisplayコンポーネント + WebSocket/フック拡張 + SessionContent統合
+- **フロントエンド Phase 2 WebSocketハンドラ統合**: AgentTransition（Phase 2b）・EmotionUpdate（Phase 2d）イベントハンドラ + Jotai atoms接続（291テスト）
 
 ---
 
@@ -480,9 +481,35 @@ VoiceWebSocketClient (ADKEvent) → useVoiceStream (callback) → SessionContent
 
 詳細は `.steering/20260209-phase2a-tool-execution-ui/` を参照。
 
+### Phase 2 WebSocketメッセージハンドラ統合（PR #77）
+
+Phase 2a で実装した ToolExecution ハンドラと同一パターンで、残り2つの Phase 2 イベント（AgentTransition, EmotionUpdate）のWebSocketハンドラを追加。
+
+**追加イベントハンドラ:**
+
+| イベント | Phase | ハンドラ | 更新Jotai atoms |
+|---------|-------|---------|----------------|
+| AgentTransition | 2b | `handleAgentTransition` | `activeAgentAtom`, `agentTransitionHistoryAtom` |
+| EmotionUpdate | 2d | `handleEmotionUpdate` | `emotionAnalysisAtom`, `emotionHistoryAtom` |
+
+**変更ファイル:**
+- `frontend/lib/api/types.ts` - `ADKAgentTransitionEvent`, `ADKEmotionUpdateEvent` 型追加、`ADKEvent`・`VoiceWebSocketOptions` 拡張
+- `frontend/lib/api/voiceWebSocket.ts` - `processADKEvent()` にイベントディスパッチ追加
+- `frontend/lib/hooks/useVoiceStream.ts` - コールバックパススルー追加
+- `frontend/src/app/session/SessionContent.tsx` - ハンドラ実装 + Jotai atoms接続
+
+**データフロー:**
+```
+VoiceWebSocketClient (ADKEvent) → useVoiceStream (callback) → SessionContent (Jotai atoms) → UI
+```
+
+**テスト:** VoiceWebSocket(+6) + useVoiceStream(+2) + SessionContent(+4) = 12新規テスト
+
+詳細は `.steering/20260209-phase2-websocket-handlers/` を参照。
+
 ### テストカバレッジ
 
-- **ユニットテスト**: 26テストファイル、277テスト（Vitest + Testing Library）
+- **ユニットテスト**: 26テストファイル、291テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -669,3 +696,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260209-phase2a-tool-execution-ui/` | Phase 2a フロントエンド ツール実行状態UI |
 | `.steering/20260209-phase2c-vertex-ai-rag/` | Phase 2c Memory Bank 統合 + Agent Engine |
 | `.steering/20260209-phase2d-emotion-adaptation/` | Phase 2d 感情適応（update_emotion_tool + 感情ベースルーティング） |
+| `.steering/20260209-phase2-websocket-handlers/` | Phase 2 WebSocket メッセージハンドラ統合 |

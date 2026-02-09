@@ -342,6 +342,138 @@ describe("VoiceWebSocketClient", () => {
 		})
 	})
 
+	describe("エージェント遷移イベント", () => {
+		it("エージェント遷移イベントを受信してonAgentTransitionコールバックを呼ぶ", () => {
+			const options = {
+				...createDefaultOptions(),
+				onAgentTransition: vi.fn(),
+			}
+			const client = new VoiceWebSocketClient(options)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				agentTransition: {
+					fromAgent: "router",
+					toAgent: "math_coach",
+					reason: "算数の問題を検出",
+				},
+			}
+			mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+			expect(options.onAgentTransition).toHaveBeenCalledWith(
+				"router",
+				"math_coach",
+				"算数の問題を検出",
+			)
+		})
+
+		it("エージェント遷移でresult付きイベントを処理できる", () => {
+			const options = {
+				...createDefaultOptions(),
+				onAgentTransition: vi.fn(),
+			}
+			const client = new VoiceWebSocketClient(options)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				agentTransition: {
+					fromAgent: "math_coach",
+					toAgent: "encouragement",
+					reason: "フラストレーション検出",
+				},
+			}
+			mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+			expect(options.onAgentTransition).toHaveBeenCalledWith(
+				"math_coach",
+				"encouragement",
+				"フラストレーション検出",
+			)
+		})
+
+		it("onAgentTransitionが未設定でもエラーにならない", () => {
+			const client = new VoiceWebSocketClient(defaultOptions)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				agentTransition: {
+					fromAgent: "router",
+					toAgent: "math_coach",
+					reason: "算数の問題を検出",
+				},
+			}
+
+			expect(() => {
+				mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+			}).not.toThrow()
+		})
+	})
+
+	describe("感情更新イベント", () => {
+		it("感情更新イベントを受信してonEmotionUpdateコールバックを呼ぶ", () => {
+			const options = {
+				...createDefaultOptions(),
+				onEmotionUpdate: vi.fn(),
+			}
+			const client = new VoiceWebSocketClient(options)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				emotionUpdate: {
+					emotion: "frustrated",
+					frustrationLevel: 0.8,
+					engagementLevel: 0.3,
+				},
+			}
+			mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+			expect(options.onEmotionUpdate).toHaveBeenCalledWith("frustrated", 0.8, 0.3)
+		})
+
+		it("感情更新で各レベル値が正しく渡される", () => {
+			const options = {
+				...createDefaultOptions(),
+				onEmotionUpdate: vi.fn(),
+			}
+			const client = new VoiceWebSocketClient(options)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				emotionUpdate: {
+					emotion: "happy",
+					frustrationLevel: 0.1,
+					engagementLevel: 0.9,
+				},
+			}
+			mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+			expect(options.onEmotionUpdate).toHaveBeenCalledWith("happy", 0.1, 0.9)
+		})
+
+		it("onEmotionUpdateが未設定でもエラーにならない", () => {
+			const client = new VoiceWebSocketClient(defaultOptions)
+			client.connect()
+			mockWebSocketInstance?.simulateOpen()
+
+			const event: ADKEvent = {
+				emotionUpdate: {
+					emotion: "neutral",
+					frustrationLevel: 0.0,
+					engagementLevel: 0.5,
+				},
+			}
+
+			expect(() => {
+				mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+			}).not.toThrow()
+		})
+	})
+
 	describe("エラーハンドリング", () => {
 		it("WebSocketエラー時にerror状態を通知する", () => {
 			const client = new VoiceWebSocketClient(defaultOptions)

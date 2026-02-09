@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2a フロントエンドUI実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -180,7 +180,8 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 - ✅ 状態管理（`frontend/store/atoms/phase2.ts`）: 12個のJotai atoms（11 writable + 1 derived）
 - ✅ 既存型の後方互換拡張: `DialogueTurn`, `LearningProgress`, `WebSocketIncomingMessage`
 - ✅ Phase 2a ツール実行状態UI（PR #74）: `ToolExecutionDisplay`コンポーネント + WebSocket/フック拡張 + SessionContent統合
-- ✅ テスト: 277テスト（26テストファイル）
+- ✅ Phase 2 WebSocketハンドラ統合（PR #77）: AgentTransition・EmotionUpdate イベントハンドラ + Jotai atoms接続
+- ✅ テスト: 291テスト（26テストファイル）
 
 **Phase 2 ファイル構成:**
 ```
