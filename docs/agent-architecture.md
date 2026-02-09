@@ -1,8 +1,8 @@
 # 宿題コーチロボット - エージェントアーキテクチャ設計書
 
 **Document Version**: 1.0
-**Last Updated**: 2026-02-09
-**Status**: Phase 2d 実装完了
+**Last Updated**: 2026-02-10
+**Status**: Phase 3 Agent Engine デプロイ基盤 実装完了
 
 ---
 
@@ -35,21 +35,29 @@
 | Tool / Function Calling | ✅ 使用中 | Phase 2a で5ツール導入 |
 | マルチエージェント | ✅ 使用中 | Phase 2b で導入（AutoFlow委譲） |
 | サブエージェント委譲 | ✅ 使用中 | Router → Math/Japanese/Encouragement/Review |
-| Agent Engine（マネージド） | ✅ 準備済み | Agent Engine 作成スクリプト + Memory Bank 用 |
+| Agent Engine（マネージド） | ✅ 使用中 | デプロイスクリプト + AgentEngineClient + テキスト対話経由切り替え |
 | VertexAiMemoryBankService | ✅ 準備済み | ファクトリパターンで切り替え（AGENT_ENGINE_ID） |
+| VertexAiSessionService | ✅ 準備済み | セッションファクトリで切り替え（AGENT_ENGINE_ID） |
 
 ### 1.2 現在のアーキテクチャ
 
 ```
 FastAPI Endpoints
 ├── POST /api/v1/dialogue/run (SSE)
-│   └── AgentRunnerService
-│       └── Runner.run_async()
-│           └── Router Agent (AutoFlow, tools=[update_emotion])
-│               ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
-│               ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
-│               ├── Encouragement Agent (tools=[progress])
-│               └── Review Agent (tools=[progress, load_memory])
+│   ├── [AGENT_ENGINE_RESOURCE_NAME 設定時]
+│   │   └── AgentEngineClient
+│   │       └── remote_app.async_stream_query()
+│   │           └── Agent Engine (managed)
+│   │               └── Router Agent + 4 Sub-agents + 6 Tools
+│   │
+│   └── [AGENT_ENGINE_RESOURCE_NAME 未設定時 - フォールバック]
+│       └── AgentRunnerService
+│           └── Runner.run_async()
+│               └── Router Agent (AutoFlow, tools=[update_emotion])
+│                   ├── Math Coach Agent (tools=[calculate, hint, curriculum, progress])
+│                   ├── Japanese Coach Agent (tools=[hint, curriculum, progress])
+│                   ├── Encouragement Agent (tools=[progress])
+│                   └── Review Agent (tools=[progress, load_memory])
 │
 └── WebSocket /ws/{user_id}/{session_id}
     └── VoiceStreamingService
@@ -57,6 +65,10 @@ FastAPI Endpoints
         └── Runner.run_live()
             └── Socratic Agent (instruction-only, tools=[5ツール])
                 └── Gemini Live 2.5 Flash (native audio)
+
+Session:
+├── VertexAiSessionService (AGENT_ENGINE_ID 設定時)
+└── FirestoreSessionService (フォールバック / 音声用)
 ```
 
 ### 1.3 現在の制約
@@ -336,8 +348,11 @@ backend/app/services/adk/
 │   └── emotion_analyzer.py   # ✅ Phase 2d: update_emotion_tool
 ├── runner/
 │   ├── agent.py              # create_socratic_agent()（音声用、レガシー）
-│   └── runner_service.py     # AgentRunnerService（Router Agent使用）
+│   ├── runner_service.py     # AgentRunnerService（Router Agent使用）
+│   └── agent_engine_client.py # ✅ Phase 3: Agent Engine クライアントラッパー
 ├── sessions/
+│   ├── firestore_session_service.py
+│   └── session_factory.py    # ✅ Phase 3: Firestore/VertexAi セッション切り替え
 └── memory/
     ├── __init__.py
     ├── converters.py
@@ -772,42 +787,90 @@ update_emotion_tool = FunctionTool(func=update_emotion)
 
 ---
 
-## 7. Phase 3: Vertex AI Agent Engine デプロイ
+## 7. Phase 3: Vertex AI Agent Engine デプロイ ✅ 実装完了
 
 ### 7.1 概要
 
-現在Cloud Runに直接デプロイしているADKエージェントを、Vertex AI Agent Engineに移行する。これにより、マネージドインフラ、組み込みのセッション管理、モニタリング、A/Bテストなどの機能を活用する。
+Cloud Runに直接デプロイしているADKエージェントのテキスト対話部分を、Vertex AI Agent Engine経由に切り替え可能にした。環境変数による切り替えとローカルRunnerへのフォールバックを実装し、段階的な移行を可能にしている。
+
+> **Status**: セッションファクトリ + AgentEngineClient + dialogue_runner Agent Engine経由切り替え + デプロイ/テストスクリプト。22テスト追加。
 
 ### 7.2 Agent Engine のメリット
 
-| 機能 | Cloud Run（現在） | Agent Engine |
+| 機能 | Cloud Run（フォールバック） | Agent Engine（推奨） |
 |------|-------------------|-------------|
 | インフラ管理 | 自前（Terraform） | マネージド |
-| セッション管理 | 自前（FirestoreSessionService） | 組み込み |
+| セッション管理 | 自前（FirestoreSessionService） | 組み込み（VertexAiSessionService） |
 | スケーリング | Cloud Run Auto-scaling | 自動最適化 |
 | モニタリング | Cloud Logging/Monitoring | 専用ダッシュボード |
 | A/Bテスト | 自前実装必要 | 組み込み |
 | エージェント評価 | 手動 | 自動評価ツール |
 
-### 7.3 移行手順
+### 7.3 実装済みコンポーネント
+
+| コンポーネント | ファイル | 説明 |
+|--------------|---------|------|
+| `session_factory` | `sessions/session_factory.py` | AGENT_ENGINE_IDベースでFirestore/VertexAiSessionService切り替え |
+| `AgentEngineClient` | `runner/agent_engine_client.py` | Agent Engine remote_appラッパー（create_session, stream_query, extract_text） |
+| `dialogue_runner` | `api/v1/dialogue_runner.py` | AGENT_ENGINE_RESOURCE_NAME設定時にAgent Engine経由SSEストリーミング |
+| `deploy_agent_engine.py` | `scripts/deploy_agent_engine.py` | Router AgentのAgent Engineデプロイスクリプト |
+| `test_agent_engine.py` | `scripts/test_agent_engine.py` | デプロイ後テストスクリプト |
+
+### 7.4 アーキテクチャ
 
 ```
-Step 1: Agent Engine にエージェントをデプロイ
-        └── agent.py をそのまま使用可能
+Cloud Run (FastAPI)
+├── POST /dialogue/run (SSE)
+│   ├── [AGENT_ENGINE_RESOURCE_NAME 設定時]
+│   │   └── AgentEngineClient
+│   │       └── remote_app.async_stream_query()
+│   │           └── Agent Engine (managed)
+│   │               └── Router Agent + 4 Sub-agents + 6 Tools
+│   │
+│   └── [AGENT_ENGINE_RESOURCE_NAME 未設定時 - フォールバック]
+│       └── AgentRunnerService
+│           └── Runner.run_async()
+│               └── Router Agent (in-process)
+│
+└── WebSocket /ws/{user_id}/{session_id}
+    └── VoiceStreamingService (変更なし)
+        └── Runner.run_live()
+            └── Socratic Agent (in-process, 音声専用)
 
-Step 2: セッション管理を Agent Engine に移行
-        └── FirestoreSessionService → Agent Engine 組み込み
-
-Step 3: APIエンドポイントの更新
-        └── Cloud Run → Agent Engine エンドポイント
-
-Step 4: フロントエンドの接続先更新
-        └── WebSocket URL の変更
-
-Step 5: Cloud Run のエージェント関連サービスを削除
+Session:
+├── VertexAiSessionService (AGENT_ENGINE_ID 設定時)
+└── FirestoreSessionService (フォールバック / 音声用)
 ```
 
-### 7.4 A/Bテスト活用例（将来検討）
+### 7.5 環境変数
+
+| 変数名 | 必須 | 説明 |
+|--------|------|------|
+| `AGENT_ENGINE_RESOURCE_NAME` | 任意 | デプロイ済みエージェントのリソース名（設定時 Agent Engine 経由） |
+| `AGENT_ENGINE_ID` | 任意 | Agent Engine ID（セッション/メモリサービス切り替え） |
+| `GCP_PROJECT_ID` | 任意 | GCP プロジェクト ID |
+| `GCP_LOCATION` | 任意 | GCP ロケーション（デフォルト: us-central1） |
+| `GCS_STAGING_BUCKET` | 任意 | デプロイ用 GCS バケット（デプロイ時のみ必須） |
+
+### 7.6 デプロイ手順
+
+```bash
+# 1. Agent Engine にデプロイ
+uv run python scripts/deploy_agent_engine.py \
+  --project <project-id> \
+  --location us-central1 \
+  --bucket <staging-bucket>
+
+# 2. デプロイ後テスト
+uv run python scripts/test_agent_engine.py \
+  --resource-name <resource-name>
+
+# 3. 環境変数を設定して切り替え
+export AGENT_ENGINE_RESOURCE_NAME=<resource-name>
+export AGENT_ENGINE_ID=<engine-id>
+```
+
+### 7.7 A/Bテスト活用例（将来検討）
 
 > **注記**: A/Bテスト環境構築は現時点ではスコープ外とし、ユーザーベースが確立された後に再検討する（GitHub Issue #55 クローズ済み）。Agent Engine の組み込みA/Bテスト機能を活用予定。
 
@@ -818,22 +881,11 @@ Step 5: Cloud Run のエージェント関連サービスを削除
 | エージェント構成 | 単一 | マルチ | 教科別正答率 |
 | 励まし頻度 | 毎回 | 適応的 | セッション時間 |
 
-### 7.5 デプロイ構成
+### 7.8 今後の拡張（Phase 3+）
 
-```python
-from google.adk.agents import Agent
-from vertexai.agents.engines import AgentEngine
-
-# Agent Engine にデプロイ
-engine = AgentEngine.create(
-    agent=router_agent,  # マルチエージェント構成
-    display_name="homework-coach-agent",
-    description="小学校低学年向けソクラテス式対話コーチ",
-)
-
-# エンドポイント取得
-endpoint = engine.resource_name
-```
+- 音声ストリーミング（WebSocket）のAgent Engine移行（Agent Engine のリアルタイムストリーミング対応待ち）
+- Cloud Run エージェント関連サービスの段階的削除
+- A/Bテスト環境構築
 
 ---
 
@@ -865,9 +917,11 @@ Phase 2d: 感情適応 (✅ 完了)
 └── Step 3: サブエージェントプロンプト感情コンテキスト参照
     ※ 音声トーン分析の高度化（AutoML）は将来検討（#52 クローズ）
 
-Phase 3: Agent Engine
-├── Step 1: Agent Engine へのデプロイ
-└── Step 2: セッション管理の移行
+Phase 3: Agent Engine デプロイ基盤 (✅ 完了)
+├── Step 1: セッションファクトリ（Firestore/VertexAi切り替え）
+├── Step 2: Agent Engine クライアントラッパー
+├── Step 3: テキスト対話エンドポイントの Agent Engine 経由切り替え
+└── Step 4: デプロイスクリプト + テストスクリプト
     ※ A/Bテスト環境構築は将来検討（#55 クローズ）
 ```
 
@@ -889,7 +943,7 @@ Phase 2d（感情）───────────┘
 - **Phase 2c は実装完了** ✅（Memory Bank ファクトリ + Agent Engine + load_memory）
 - **Phase 2d は実装完了** ✅（update_emotion_tool + 感情ベースルーティング + サブエージェントプロンプト更新）
 - **フロントエンド Phase 2 型定義・状態管理基盤** ✅（Phase 2a-2d 全サブフェーズの型定義25型 + Jotai atoms 12個。PR #60）
-- **Phase 3 は Phase 2c の Agent Engine 基盤を活用**
+- **Phase 3 は実装完了** ✅（セッションファクトリ + AgentEngineClient + dialogue_runner Agent Engine 経由切り替え + デプロイスクリプト）
 
 ### 8.3 優先度と推奨実装順序
 
@@ -899,7 +953,7 @@ Phase 2d（感情）───────────┘
 | 2 | Phase 2b: マルチエージェント | ✅ 完了 | 教科最適化で学習効果が大幅向上。PR #69 で実装完了 |
 | 3 | Phase 2c: Memory Bank | ✅ 完了 | VertexAiMemoryBankService + Agent Engine。PR #73 で実装完了 |
 | 4 | Phase 2d: 感情適応 | ✅ 完了 | update_emotion_tool + 感情ベースルーティング。PR #75 で実装完了 |
-| 5 | Phase 3: Agent Engine | 中 | 運用改善。Phase 2が安定してから移行 |
+| 5 | Phase 3: Agent Engine デプロイ基盤 | ✅ 完了 | セッションファクトリ + AgentEngineClient + dialogue_runner切り替え + デプロイスクリプト |
 
 ---
 

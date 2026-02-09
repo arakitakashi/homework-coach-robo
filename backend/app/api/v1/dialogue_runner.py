@@ -1,9 +1,12 @@
 """対話ランナーAPIエンドポイント
 
 ADK RunnerベースのストリーミングAPIエンドポイント。
+AGENT_ENGINE_RESOURCE_NAME が設定されている場合は Agent Engine を使用し、
+未設定の場合はローカル Runner にフォールバックする。
 """
 
 import logging
+import os
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends
@@ -17,7 +20,7 @@ from app.schemas.dialogue_runner import (
     TextEvent,
 )
 from app.services.adk.memory.memory_factory import create_memory_service
-from app.services.adk.runner import AgentRunnerService
+from app.services.adk.runner import AgentEngineClient, AgentRunnerService
 from app.services.adk.sessions import FirestoreSessionService
 
 logger = logging.getLogger(__name__)
@@ -47,6 +50,14 @@ def get_agent_runner_service(
         session_service=session_service,
         memory_service=memory_service,
     )
+
+
+def get_agent_engine_client() -> AgentEngineClient | None:
+    """Agent Engine クライアントを取得する（未設定時は None）"""
+    resource_name = os.environ.get("AGENT_ENGINE_RESOURCE_NAME", "").strip()
+    if not resource_name:
+        return None
+    return AgentEngineClient(resource_name=resource_name)
 
 
 async def ensure_session_exists(
@@ -82,7 +93,7 @@ async def event_generator(
     session_id: str,
     message: str,
 ) -> AsyncIterator[str]:
-    """SSEイベントを生成する
+    """SSEイベントを生成する（ローカル Runner）
 
     Args:
         runner: AgentRunnerService
@@ -113,6 +124,43 @@ async def event_generator(
         yield f"event: error\ndata: {error_event.model_dump_json()}\n\n"
 
 
+async def agent_engine_event_generator(
+    engine_client: AgentEngineClient,
+    user_id: str,
+    session_id: str,
+    message: str,
+) -> AsyncIterator[str]:
+    """SSEイベントを生成する（Agent Engine）
+
+    Args:
+        engine_client: Agent Engine クライアント
+        user_id: ユーザーID
+        session_id: セッションID
+        message: ユーザーメッセージ
+
+    Yields:
+        SSE形式のイベント文字列
+    """
+    try:
+        async for event in engine_client.stream_query(
+            user_id=user_id,
+            session_id=session_id,
+            message=message,
+        ):
+            text = engine_client.extract_text(event)
+            if text:
+                text_event = TextEvent(text=text)
+                yield f"event: text\ndata: {text_event.model_dump_json()}\n\n"
+
+        done_event = DoneEvent(session_id=session_id)
+        yield f"event: done\ndata: {done_event.model_dump_json()}\n\n"
+
+    except Exception as e:
+        logger.exception("Error during Agent Engine dialogue run")
+        error_event = ErrorEvent(error=str(e), code="AGENT_ENGINE_ERROR")
+        yield f"event: error\ndata: {error_event.model_dump_json()}\n\n"
+
+
 @router.post(
     "/run",
     summary="対話を実行する（ストリーミング）",
@@ -122,16 +170,31 @@ async def run_dialogue(
     request: RunDialogueRequest,
     runner: AgentRunnerService = Depends(get_agent_runner_service),
     session_service: FirestoreSessionService = Depends(get_session_service),
+    engine_client: AgentEngineClient | None = Depends(get_agent_engine_client),
 ) -> StreamingResponse:
     """対話を実行する（ストリーミング）
 
     SSE (Server-Sent Events) 形式でレスポンスをストリームします。
+    AGENT_ENGINE_RESOURCE_NAME が設定されている場合は Agent Engine を使用し、
+    未設定の場合はローカル Runner にフォールバックする。
 
     イベントタイプ:
     - `text`: テキストチャンク（{"text": "..."}）
     - `error`: エラー（{"error": "...", "code": "..."}）
     - `done`: 完了（{"session_id": "..."}）
     """
+    if engine_client is not None:
+        logger.info("Using Agent Engine for dialogue")
+        return StreamingResponse(
+            agent_engine_event_generator(
+                engine_client=engine_client,
+                user_id=request.user_id,
+                session_id=request.session_id,
+                message=request.message,
+            ),
+            media_type="text/event-stream",
+        )
+
     return StreamingResponse(
         event_generator(
             runner=runner,
