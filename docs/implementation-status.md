@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了
 
 ---
 
@@ -34,7 +34,8 @@
 - **Memory Bank 統合 (Phase 2c+3)**: VertexAiMemoryBankService ファクトリパターン + Agent Engine 作成スクリプト + Review Agent に load_memory ツール追加
 - **感情適応 (Phase 2d)**: update_emotion_tool + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト参照
 - **フロントエンド Phase 2a ツール実行状態UI**: ToolExecutionDisplayコンポーネント + WebSocket/フック拡張 + SessionContent統合
-- **フロントエンド Phase 2 WebSocketハンドラ統合**: AgentTransition（Phase 2b）・EmotionUpdate（Phase 2d）イベントハンドラ + Jotai atoms接続（291テスト）
+- **フロントエンド Phase 2 WebSocketハンドラ統合**: AgentTransition（Phase 2b）・EmotionUpdate（Phase 2d）イベントハンドラ + Jotai atoms接続
+- **フロントエンド Phase 2b エージェント切り替えUI**: AgentIndicator・AgentIconコンポーネント + Framer Motionアニメーション + SessionContent統合（309テスト）
 
 ---
 
@@ -507,9 +508,50 @@ VoiceWebSocketClient (ADKEvent) → useVoiceStream (callback) → SessionContent
 
 詳細は `.steering/20260209-phase2-websocket-handlers/` を参照。
 
+### Phase 2b エージェント切り替えUIコンポーネント（PR #81）
+
+Phase 2b マルチエージェント構成に対応したUIコンポーネントを実装。現在のアクティブエージェントを視覚的に表示し、エージェント切り替え時にスムーズなアニメーションを提供。
+
+**実装コンポーネント:**
+
+| コンポーネント | 説明 | 技術 |
+|--------------|------|------|
+| `AgentIndicator` | 現在のアクティブエージェント表示 | Jotai `activeAgentAtom` 購読 + Framer Motion |
+| `AgentIcon` | エージェントタイプ別アイコン表示 | Lucide React（Calculator, BookOpen, Heart, ClipboardList, Router） |
+
+**変更ファイル:**
+- `frontend/components/features/AgentIndicator/AgentIndicator.tsx` - メインコンポーネント（Framer Motion アニメーション）
+- `frontend/components/features/AgentIndicator/AgentIcon.tsx` - アイコンコンポーネント
+- `frontend/components/features/AgentIndicator/AgentIndicator.test.tsx` - Indicatorテスト（10テスト）
+- `frontend/components/features/AgentIndicator/AgentIcon.test.tsx` - Iconテスト（8テスト）
+- `frontend/components/features/index.ts` - AgentIndicator エクスポート追加
+- `frontend/src/app/session/SessionContent.tsx` - ヘッダー部分に AgentIndicator 統合
+- `frontend/package.json` - `framer-motion@12.34.0`, `lucide-react@0.563.0` 追加
+
+**UI配置:**
+```
+SessionContent ヘッダー
+├── HintIndicator (ヒントレベル表示)
+├── AgentIndicator (エージェント表示) ← 新規
+└── "おわる"ボタン
+```
+
+**アニメーション仕様:**
+- エージェント切り替え時: フェードイン/フェードアウト（300ms）
+- GPU加速プロパティ使用（opacity, transform）
+- `AnimatePresence` mode="wait" でスムーズな遷移
+
+**アクセシビリティ:**
+- `aria-label`: "現在のエージェント: {エージェント名}"
+- アイコン: `aria-hidden="true"`
+
+**テスト:** AgentIcon(8) + AgentIndicator(10) = 18新規テスト
+
+詳細は `.steering/20260210-frontend-phase2b-agent-indicator/` を参照。
+
 ### テストカバレッジ
 
-- **ユニットテスト**: 26テストファイル、291テスト（Vitest + Testing Library）
+- **ユニットテスト**: 28テストファイル、309テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
