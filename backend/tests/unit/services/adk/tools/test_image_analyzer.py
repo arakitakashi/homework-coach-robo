@@ -131,7 +131,7 @@ class TestAnalyzeImageTool:
 
     def test_is_function_tool_instance(self) -> None:
         """FunctionTool インスタンスである"""
-        from google.adk.tools import FunctionTool
+        from google.adk.tools import FunctionTool  # type: ignore[attr-defined]
 
         from app.services.adk.tools.image_analyzer import analyze_image_tool
 

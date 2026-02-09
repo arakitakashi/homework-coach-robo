@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from app.services.adk.dialogue.manager import SocraticDialogueManager
 from app.services.adk.dialogue.models import (
     DialogueContext,
     DialogueTone,
@@ -16,17 +17,13 @@ from app.services.adk.dialogue.models import (
 class TestSystemPrompt:
     """SYSTEM_PROMPT 定数のテスト"""
 
-    def test_system_prompt_exists(self):
+    def test_system_prompt_exists(self) -> None:
         """SYSTEM_PROMPTが定義されている"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         assert hasattr(SocraticDialogueManager, "SYSTEM_PROMPT")
         assert isinstance(SocraticDialogueManager.SYSTEM_PROMPT, str)
 
-    def test_system_prompt_contains_core_principles(self):
+    def test_system_prompt_contains_core_principles(self) -> None:
         """SYSTEM_PROMPTにコア原則が含まれている"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         prompt = SocraticDialogueManager.SYSTEM_PROMPT
 
         # ソクラテス式対話の原則
@@ -36,10 +33,8 @@ class TestSystemPrompt:
         # 対象年齢への配慮
         assert "小学" in prompt or "低学年" in prompt
 
-    def test_system_prompt_contains_safety_guidelines(self):
+    def test_system_prompt_contains_safety_guidelines(self) -> None:
         """SYSTEM_PROMPTに安全ガイドラインが含まれている"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         prompt = SocraticDialogueManager.SYSTEM_PROMPT
 
         # 子供に対する配慮
@@ -50,14 +45,12 @@ class TestBuildQuestionPrompt:
     """build_question_prompt() メソッドのテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -67,7 +60,9 @@ class TestBuildQuestionPrompt:
             turns=[],
         )
 
-    def test_build_question_prompt_understanding_check(self, manager, basic_context):
+    def test_build_question_prompt_understanding_check(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """理解確認タイプのプロンプトを構築できる"""
         prompt = manager.build_question_prompt(
             context=basic_context,
@@ -85,7 +80,9 @@ class TestBuildQuestionPrompt:
         # 理解確認のキーワード
         assert "理解" in prompt or "問題" in prompt or "聞いて" in prompt
 
-    def test_build_question_prompt_understanding_check_empathetic(self, manager, basic_context):
+    def test_build_question_prompt_understanding_check_empathetic(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """共感トーンでの理解確認プロンプト"""
         prompt = manager.build_question_prompt(
             context=basic_context,
@@ -96,7 +93,9 @@ class TestBuildQuestionPrompt:
         # 共感的なトーンの指示が含まれている
         assert "共感" in prompt or "寄り添" in prompt or "優しく" in prompt
 
-    def test_build_question_prompt_thinking_guide(self, manager, basic_context):
+    def test_build_question_prompt_thinking_guide(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """思考誘導タイプのプロンプトを構築できる"""
         prompt = manager.build_question_prompt(
             context=basic_context,
@@ -114,7 +113,9 @@ class TestBuildQuestionPrompt:
         # 思考誘導のキーワード
         assert "思考" in prompt or "導" in prompt or "もし" in prompt
 
-    def test_build_question_prompt_hint(self, manager, basic_context):
+    def test_build_question_prompt_hint(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """ヒントタイプのプロンプトを構築できる"""
         prompt = manager.build_question_prompt(
             context=basic_context,
@@ -130,14 +131,12 @@ class TestBuildAnalysisPrompt:
     """build_analysis_prompt() メソッドのテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -147,7 +146,9 @@ class TestBuildAnalysisPrompt:
             turns=[],
         )
 
-    def test_build_analysis_prompt_contains_child_response(self, manager, basic_context):
+    def test_build_analysis_prompt_contains_child_response(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """子供の回答がプロンプトに含まれる"""
         child_response = "えっと、8かな？"
 
@@ -159,7 +160,9 @@ class TestBuildAnalysisPrompt:
         assert isinstance(prompt, str)
         assert child_response in prompt
 
-    def test_build_analysis_prompt_contains_problem(self, manager, basic_context):
+    def test_build_analysis_prompt_contains_problem(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """問題文がプロンプトに含まれる"""
         prompt = manager.build_analysis_prompt(
             child_response="わからない",
@@ -168,7 +171,9 @@ class TestBuildAnalysisPrompt:
 
         assert basic_context.problem in prompt
 
-    def test_build_analysis_prompt_requests_json_format(self, manager, basic_context):
+    def test_build_analysis_prompt_requests_json_format(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """JSON形式での回答を要求する"""
         prompt = manager.build_analysis_prompt(
             child_response="3たす5は8だよ",
@@ -178,7 +183,9 @@ class TestBuildAnalysisPrompt:
         # JSONフォーマットに関する指示
         assert "JSON" in prompt or "json" in prompt
 
-    def test_build_analysis_prompt_requests_analysis_fields(self, manager, basic_context):
+    def test_build_analysis_prompt_requests_analysis_fields(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """分析に必要なフィールドを要求する"""
         prompt = manager.build_analysis_prompt(
             child_response="うーん、難しい",
@@ -194,7 +201,7 @@ class TestAnalyzeResponse:
     """analyze_response() メソッドのテスト"""
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -205,15 +212,15 @@ class TestAnalyzeResponse:
         )
 
     @pytest.fixture
-    def mock_llm_client(self):
+    def mock_llm_client(self) -> AsyncMock:
         """モック化されたLLMクライアント"""
         return AsyncMock()
 
     @pytest.mark.asyncio
-    async def test_analyze_response_correct_understanding(self, basic_context, mock_llm_client):
+    async def test_analyze_response_correct_understanding(
+        self, basic_context: DialogueContext, mock_llm_client: AsyncMock
+    ) -> None:
         """正しい理解の場合のResponseAnalysisを返す"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         # LLMの応答をモック
         mock_llm_client.generate.return_value = """{
             "understanding_level": 8,
@@ -235,10 +242,10 @@ class TestAnalyzeResponse:
         assert "足し算の概念を理解している" in result.key_insights
 
     @pytest.mark.asyncio
-    async def test_analyze_response_misconception(self, basic_context, mock_llm_client):
+    async def test_analyze_response_misconception(
+        self, basic_context: DialogueContext, mock_llm_client: AsyncMock
+    ) -> None:
         """誤解がある場合のResponseAnalysisを返す"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         # LLMの応答をモック（誤解のケース）
         mock_llm_client.generate.return_value = """{
             "understanding_level": 3,
@@ -259,10 +266,10 @@ class TestAnalyzeResponse:
         assert result.needs_clarification is True
 
     @pytest.mark.asyncio
-    async def test_analyze_response_calls_llm_with_prompt(self, basic_context, mock_llm_client):
+    async def test_analyze_response_calls_llm_with_prompt(
+        self, basic_context: DialogueContext, mock_llm_client: AsyncMock
+    ) -> None:
         """LLMクライアントに正しいプロンプトを渡す"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         mock_llm_client.generate.return_value = """{
             "understanding_level": 5,
             "is_correct_direction": true,
@@ -290,14 +297,12 @@ class TestDetermineQuestionType:
     """determine_question_type() メソッドのテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -307,7 +312,9 @@ class TestDetermineQuestionType:
             turns=[],
         )
 
-    def test_determine_question_type_low_understanding(self, manager, basic_context):
+    def test_determine_question_type_low_understanding(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """理解度が低い場合は理解確認を返す"""
         analysis = ResponseAnalysis(
             understanding_level=2,
@@ -320,7 +327,9 @@ class TestDetermineQuestionType:
 
         assert result == QuestionType.UNDERSTANDING_CHECK
 
-    def test_determine_question_type_medium_understanding(self, manager, basic_context):
+    def test_determine_question_type_medium_understanding(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """理解度が中程度で正しい方向なら思考誘導を返す"""
         analysis = ResponseAnalysis(
             understanding_level=5,
@@ -333,7 +342,7 @@ class TestDetermineQuestionType:
 
         assert result == QuestionType.THINKING_GUIDE
 
-    def test_determine_question_type_needs_hint(self, manager):
+    def test_determine_question_type_needs_hint(self, manager: SocraticDialogueManager) -> None:
         """高ヒントレベルでclarification必要ならヒントを返す"""
         context = DialogueContext(
             session_id="test-session-123",
@@ -358,14 +367,12 @@ class TestDetermineTone:
     """determine_tone() メソッドのテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -375,7 +382,9 @@ class TestDetermineTone:
             turns=[],
         )
 
-    def test_determine_tone_encouraging_for_correct_direction(self, manager, basic_context):
+    def test_determine_tone_encouraging_for_correct_direction(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """正しい方向に進んでいる場合は励ましトーン"""
         analysis = ResponseAnalysis(
             understanding_level=6,
@@ -388,7 +397,9 @@ class TestDetermineTone:
 
         assert result == DialogueTone.ENCOURAGING
 
-    def test_determine_tone_empathetic_for_struggling(self, manager, basic_context):
+    def test_determine_tone_empathetic_for_struggling(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """理解に苦しんでいる場合は共感トーン"""
         analysis = ResponseAnalysis(
             understanding_level=2,
@@ -401,7 +412,9 @@ class TestDetermineTone:
 
         assert result == DialogueTone.EMPATHETIC
 
-    def test_determine_tone_neutral_for_medium_understanding(self, manager, basic_context):
+    def test_determine_tone_neutral_for_medium_understanding(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """中程度の理解度では中立トーン"""
         analysis = ResponseAnalysis(
             understanding_level=5,
@@ -419,7 +432,7 @@ class TestGenerateQuestion:
     """generate_question() メソッドのテスト"""
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -430,15 +443,15 @@ class TestGenerateQuestion:
         )
 
     @pytest.fixture
-    def mock_llm_client(self):
+    def mock_llm_client(self) -> AsyncMock:
         """モック化されたLLMクライアント"""
         return AsyncMock()
 
     @pytest.mark.asyncio
-    async def test_generate_question_returns_llm_response(self, basic_context, mock_llm_client):
+    async def test_generate_question_returns_llm_response(
+        self, basic_context: DialogueContext, mock_llm_client: AsyncMock
+    ) -> None:
         """LLMの応答を返す"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         mock_llm_client.generate.return_value = "この問題は何を聞いていると思う？"
 
         manager = SocraticDialogueManager(llm_client=mock_llm_client)
@@ -452,11 +465,9 @@ class TestGenerateQuestion:
 
     @pytest.mark.asyncio
     async def test_generate_question_calls_build_question_prompt(
-        self, basic_context, mock_llm_client
-    ):
+        self, basic_context: DialogueContext, mock_llm_client: AsyncMock
+    ) -> None:
         """build_question_promptで生成したプロンプトをLLMに渡す"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         mock_llm_client.generate.return_value = "質問です"
 
         manager = SocraticDialogueManager(llm_client=mock_llm_client)
@@ -475,10 +486,10 @@ class TestGenerateQuestion:
         assert basic_context.problem in prompt
 
     @pytest.mark.asyncio
-    async def test_generate_question_tracks_question_history(self, basic_context, mock_llm_client):
+    async def test_generate_question_tracks_question_history(
+        self, basic_context: DialogueContext, mock_llm_client: AsyncMock
+    ) -> None:
         """生成した質問を履歴に追加する"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         mock_llm_client.generate.return_value = "最初の質問"
 
         manager = SocraticDialogueManager(llm_client=mock_llm_client)
@@ -496,14 +507,12 @@ class TestShouldMoveToNextPhase:
     """should_move_to_next_phase() メソッドのテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -513,7 +522,9 @@ class TestShouldMoveToNextPhase:
             turns=[],
         )
 
-    def test_should_not_move_when_understanding_is_improving(self, manager, basic_context):
+    def test_should_not_move_when_understanding_is_improving(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """理解度が改善している場合は次のフェーズに進まない"""
         analysis = ResponseAnalysis(
             understanding_level=6,
@@ -526,7 +537,9 @@ class TestShouldMoveToNextPhase:
 
         assert result is False
 
-    def test_should_move_when_struggling_at_current_level(self, manager):
+    def test_should_move_when_struggling_at_current_level(
+        self, manager: SocraticDialogueManager
+    ) -> None:
         """現在のレベルで苦戦している場合は次のフェーズに進む"""
         from app.services.adk.dialogue.models import DialogueTurn
 
@@ -570,7 +583,7 @@ class TestShouldMoveToNextPhase:
 
         assert result is True
 
-    def test_should_not_move_beyond_max_hint_level(self, manager):
+    def test_should_not_move_beyond_max_hint_level(self, manager: SocraticDialogueManager) -> None:
         """最大ヒントレベルに達している場合は進まない"""
         from app.services.adk.dialogue.models import DialogueTurn
 
@@ -608,13 +621,11 @@ class TestDetectAnswerRequestKeywords:
     """_detect_answer_request_keywords() メソッドのテスト（キーワードベースの検出）"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
-    def test_detect_explicit_answer_request(self, manager):
+    def test_detect_explicit_answer_request(self, manager: SocraticDialogueManager) -> None:
         """明示的な答えリクエストを検出できる"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
@@ -633,7 +644,7 @@ class TestDetectAnswerRequestKeywords:
             assert result.confidence >= 0.8
             assert len(result.detected_phrases) > 0
 
-    def test_detect_implicit_answer_request(self, manager):
+    def test_detect_implicit_answer_request(self, manager: SocraticDialogueManager) -> None:
         """暗示的な答えリクエストを検出できる"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
@@ -652,7 +663,7 @@ class TestDetectAnswerRequestKeywords:
             assert result.confidence >= 0.6
             assert len(result.detected_phrases) > 0
 
-    def test_no_answer_request(self, manager):
+    def test_no_answer_request(self, manager: SocraticDialogueManager) -> None:
         """通常の回答はリクエストなしと判定される"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
@@ -674,22 +685,20 @@ class TestDetectAnswerRequest:
     """detect_answer_request() メソッドのテスト（LLM補助検出）"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
     @pytest.fixture
-    def manager_with_llm(self):
+    def manager_with_llm(self) -> SocraticDialogueManager:
         """LLMクライアント付きSocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         mock_llm = AsyncMock()
         return SocraticDialogueManager(llm_client=mock_llm)
 
     @pytest.mark.asyncio
-    async def test_detect_answer_request_uses_keywords_first(self, manager_with_llm):
+    async def test_detect_answer_request_uses_keywords_first(
+        self, manager_with_llm: SocraticDialogueManager
+    ) -> None:
         """キーワードマッチで検出できる場合はLLMを呼ばない"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
@@ -697,28 +706,33 @@ class TestDetectAnswerRequest:
 
         assert result.request_type == AnswerRequestType.EXPLICIT
         # LLMは呼ばれない
-        manager_with_llm._llm_client.generate.assert_not_called()
+        manager_with_llm._llm_client.generate.assert_not_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
-    async def test_detect_answer_request_falls_back_to_llm(self, manager_with_llm):
+    async def test_detect_answer_request_falls_back_to_llm(
+        self, manager_with_llm: SocraticDialogueManager
+    ) -> None:
         """キーワードマッチで検出できない場合はLLMを使用"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
         # LLMの応答をモック
-        manager_with_llm._llm_client.generate.return_value = """{
+        _mock_response = """{
             "request_type": "implicit",
             "confidence": 0.75,
             "detected_phrases": ["もういいや"]
         }"""
+        manager_with_llm._llm_client.generate.return_value = _mock_response  # type: ignore[union-attr]
 
         result = await manager_with_llm.detect_answer_request("もういいや、これ")
 
         assert result.request_type == AnswerRequestType.IMPLICIT
         assert result.confidence == 0.75
-        manager_with_llm._llm_client.generate.assert_called_once()
+        manager_with_llm._llm_client.generate.assert_called_once()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
-    async def test_detect_answer_request_without_llm_keywords_only(self, manager):
+    async def test_detect_answer_request_without_llm_keywords_only(
+        self, manager: SocraticDialogueManager
+    ) -> None:
         """LLMなしでもキーワード検出は動作する"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
@@ -727,7 +741,9 @@ class TestDetectAnswerRequest:
         assert result.request_type == AnswerRequestType.EXPLICIT
 
     @pytest.mark.asyncio
-    async def test_detect_answer_request_without_llm_returns_none(self, manager):
+    async def test_detect_answer_request_without_llm_returns_none(
+        self, manager: SocraticDialogueManager
+    ) -> None:
         """LLMなしでキーワードに一致しない場合はNONEを返す"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
@@ -741,14 +757,12 @@ class TestBuildHintPrompt:
     """build_hint_prompt() メソッドのテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -758,7 +772,9 @@ class TestBuildHintPrompt:
             turns=[],
         )
 
-    def test_build_hint_prompt_level_1(self, manager, basic_context):
+    def test_build_hint_prompt_level_1(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """レベル1: 問題理解の確認プロンプトを構築できる"""
         from app.services.adk.dialogue.models import HintLevel
 
@@ -778,7 +794,9 @@ class TestBuildHintPrompt:
         # レベル1のキーワード（問題理解）
         assert "問題" in prompt or "理解" in prompt or "聞いて" in prompt
 
-    def test_build_hint_prompt_level_2(self, manager, basic_context):
+    def test_build_hint_prompt_level_2(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """レベル2: 既習事項の想起プロンプトを構築できる"""
         from app.services.adk.dialogue.models import HintLevel
 
@@ -793,7 +811,9 @@ class TestBuildHintPrompt:
         # レベル2のキーワード（既習事項）
         assert "前" in prompt or "似た" in prompt or "やった" in prompt or "思い出" in prompt
 
-    def test_build_hint_prompt_level_3(self, manager, basic_context):
+    def test_build_hint_prompt_level_3(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """レベル3: 部分的支援プロンプトを構築できる"""
         from app.services.adk.dialogue.models import HintLevel
 
@@ -811,7 +831,9 @@ class TestBuildHintPrompt:
         # 答えを教えない指示
         assert "答え" in prompt and ("教え" in prompt or "言わ" in prompt)
 
-    def test_build_hint_prompt_with_answer_request(self, manager, basic_context):
+    def test_build_hint_prompt_with_answer_request(
+        self, manager: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """答えリクエストがある場合は励ましを追加"""
         from app.services.adk.dialogue.models import HintLevel
 
@@ -830,15 +852,13 @@ class TestGenerateHintResponse:
     """generate_hint_response() メソッドのテスト"""
 
     @pytest.fixture
-    def manager_with_llm(self):
+    def manager_with_llm(self) -> SocraticDialogueManager:
         """LLMクライアント付きSocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         mock_llm = AsyncMock()
         return SocraticDialogueManager(llm_client=mock_llm)
 
     @pytest.fixture
-    def basic_context(self):
+    def basic_context(self) -> DialogueContext:
         """基本的なDialogueContext"""
         return DialogueContext(
             session_id="test-session-123",
@@ -849,9 +869,11 @@ class TestGenerateHintResponse:
         )
 
     @pytest.mark.asyncio
-    async def test_generate_hint_response_level_1(self, manager_with_llm, basic_context):
+    async def test_generate_hint_response_level_1(
+        self, manager_with_llm: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """レベル1のヒントレスポンスを生成できる"""
-        manager_with_llm._llm_client.generate.return_value = "この問題は何を聞いていると思う？"
+        manager_with_llm._llm_client.generate.return_value = "この問題は何を聞いていると思う？"  # type: ignore[union-attr]
 
         response = await manager_with_llm.generate_hint_response(
             context=basic_context,
@@ -859,13 +881,15 @@ class TestGenerateHintResponse:
         )
 
         assert response == "この問題は何を聞いていると思う？"
-        manager_with_llm._llm_client.generate.assert_called_once()
+        manager_with_llm._llm_client.generate.assert_called_once()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
-    async def test_generate_hint_response_level_2(self, manager_with_llm, basic_context):
+    async def test_generate_hint_response_level_2(
+        self, manager_with_llm: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """レベル2のヒントレスポンスを生成できる"""
         basic_context.current_hint_level = 2
-        manager_with_llm._llm_client.generate.return_value = "前に似た問題をやったよね？"
+        manager_with_llm._llm_client.generate.return_value = "前に似た問題をやったよね？"  # type: ignore[union-attr]
 
         response = await manager_with_llm.generate_hint_response(
             context=basic_context,
@@ -875,10 +899,12 @@ class TestGenerateHintResponse:
         assert response == "前に似た問題をやったよね？"
 
     @pytest.mark.asyncio
-    async def test_generate_hint_response_level_3(self, manager_with_llm, basic_context):
+    async def test_generate_hint_response_level_3(
+        self, manager_with_llm: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """レベル3のヒントレスポンスを生成できる"""
         basic_context.current_hint_level = 3
-        manager_with_llm._llm_client.generate.return_value = (
+        manager_with_llm._llm_client.generate.return_value = (  # type: ignore[union-attr]
             "最初のステップだけ一緒にやろう。3という数字があるよね。"
         )
 
@@ -891,10 +917,10 @@ class TestGenerateHintResponse:
 
     @pytest.mark.asyncio
     async def test_generate_hint_response_with_answer_request(
-        self, manager_with_llm, basic_context
-    ):
+        self, manager_with_llm: SocraticDialogueManager, basic_context: DialogueContext
+    ) -> None:
         """答えリクエスト時は励ましを含むレスポンスを生成する"""
-        manager_with_llm._llm_client.generate.return_value = (
+        manager_with_llm._llm_client.generate.return_value = (  # type: ignore[union-attr]
             "大丈夫だよ、一緒に考えよう！この問題は何を聞いていると思う？"
         )
 
@@ -904,15 +930,15 @@ class TestGenerateHintResponse:
         )
 
         # プロンプトに励ましの指示が含まれていることを確認
-        call_args = manager_with_llm._llm_client.generate.call_args
+        call_args = manager_with_llm._llm_client.generate.call_args  # type: ignore[union-attr]
         prompt = call_args[0][0]
         assert "大丈夫" in prompt or "一緒" in prompt or "励まし" in prompt
 
     @pytest.mark.asyncio
-    async def test_generate_hint_response_without_llm_raises_error(self, basic_context):
+    async def test_generate_hint_response_without_llm_raises_error(
+        self, basic_context: DialogueContext
+    ) -> None:
         """LLMクライアントがない場合はエラー"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         manager = SocraticDialogueManager()
 
         with pytest.raises(ValueError, match="LLM client"):
@@ -923,13 +949,13 @@ class TestAdvanceHintLevel:
     """advance_hint_level() メソッドのテスト"""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
-        from app.services.adk.dialogue.manager import SocraticDialogueManager
-
         return SocraticDialogueManager()
 
-    def test_advance_hint_level_stays_at_1_when_improving(self, manager):
+    def test_advance_hint_level_stays_at_1_when_improving(
+        self, manager: SocraticDialogueManager
+    ) -> None:
         """理解度が改善している場合はレベル1のまま"""
         from app.services.adk.dialogue.models import DialogueTurn
 
@@ -962,7 +988,7 @@ class TestAdvanceHintLevel:
 
         assert new_level == 1  # レベル維持
 
-    def test_advance_hint_level_from_1_to_2(self, manager):
+    def test_advance_hint_level_from_1_to_2(self, manager: SocraticDialogueManager) -> None:
         """レベル1で苦戦している場合はレベル2へ"""
         from app.services.adk.dialogue.models import DialogueTurn
 
@@ -1005,7 +1031,7 @@ class TestAdvanceHintLevel:
 
         assert new_level == 2
 
-    def test_advance_hint_level_from_2_to_3(self, manager):
+    def test_advance_hint_level_from_2_to_3(self, manager: SocraticDialogueManager) -> None:
         """レベル2で苦戦している場合はレベル3へ"""
         from app.services.adk.dialogue.models import DialogueTurn
 
@@ -1048,7 +1074,7 @@ class TestAdvanceHintLevel:
 
         assert new_level == 3
 
-    def test_advance_hint_level_caps_at_3(self, manager):
+    def test_advance_hint_level_caps_at_3(self, manager: SocraticDialogueManager) -> None:
         """最大レベル3を超えない"""
         from app.services.adk.dialogue.models import DialogueTurn
 
@@ -1091,7 +1117,9 @@ class TestAdvanceHintLevel:
 
         assert new_level == 3  # 最大レベル維持
 
-    def test_advance_hint_level_requires_minimum_turns(self, manager):
+    def test_advance_hint_level_requires_minimum_turns(
+        self, manager: SocraticDialogueManager
+    ) -> None:
         """最低ターン数に満たない場合は進行しない"""
         from app.services.adk.dialogue.models import DialogueTurn
 

@@ -6,25 +6,25 @@ import pytest
 class TestQuestionType:
     """QuestionType Enumのテスト"""
 
-    def test_question_type_has_understanding_check(self):
+    def test_question_type_has_understanding_check(self) -> None:
         """理解確認タイプが存在する"""
         from app.services.adk.dialogue.models import QuestionType
 
         assert QuestionType.UNDERSTANDING_CHECK.value == "understanding_check"
 
-    def test_question_type_has_thinking_guide(self):
+    def test_question_type_has_thinking_guide(self) -> None:
         """思考誘導タイプが存在する"""
         from app.services.adk.dialogue.models import QuestionType
 
         assert QuestionType.THINKING_GUIDE.value == "thinking_guide"
 
-    def test_question_type_has_hint(self):
+    def test_question_type_has_hint(self) -> None:
         """ヒントタイプが存在する"""
         from app.services.adk.dialogue.models import QuestionType
 
         assert QuestionType.HINT.value == "hint"
 
-    def test_question_type_is_string_enum(self):
+    def test_question_type_is_string_enum(self) -> None:
         """QuestionTypeはstr Enumである"""
         from app.services.adk.dialogue.models import QuestionType
 
@@ -35,25 +35,25 @@ class TestQuestionType:
 class TestDialogueTone:
     """DialogueTone Enumのテスト"""
 
-    def test_dialogue_tone_has_encouraging(self):
+    def test_dialogue_tone_has_encouraging(self) -> None:
         """励ましトーンが存在する"""
         from app.services.adk.dialogue.models import DialogueTone
 
         assert DialogueTone.ENCOURAGING.value == "encouraging"
 
-    def test_dialogue_tone_has_neutral(self):
+    def test_dialogue_tone_has_neutral(self) -> None:
         """中立トーンが存在する"""
         from app.services.adk.dialogue.models import DialogueTone
 
         assert DialogueTone.NEUTRAL.value == "neutral"
 
-    def test_dialogue_tone_has_empathetic(self):
+    def test_dialogue_tone_has_empathetic(self) -> None:
         """共感トーンが存在する"""
         from app.services.adk.dialogue.models import DialogueTone
 
         assert DialogueTone.EMPATHETIC.value == "empathetic"
 
-    def test_dialogue_tone_is_string_enum(self):
+    def test_dialogue_tone_is_string_enum(self) -> None:
         """DialogueToneはstr Enumである"""
         from app.services.adk.dialogue.models import DialogueTone
 
@@ -64,7 +64,7 @@ class TestDialogueTone:
 class TestResponseAnalysis:
     """ResponseAnalysis Pydanticモデルのテスト"""
 
-    def test_response_analysis_creation(self):
+    def test_response_analysis_creation(self) -> None:
         """ResponseAnalysisを作成できる"""
         from app.services.adk.dialogue.models import ResponseAnalysis
 
@@ -80,7 +80,7 @@ class TestResponseAnalysis:
         assert analysis.needs_clarification is False
         assert analysis.key_insights == ["足し算の概念を理解している"]
 
-    def test_response_analysis_understanding_level_range(self):
+    def test_response_analysis_understanding_level_range(self) -> None:
         """understanding_levelは0-10の範囲"""
         from pydantic import ValidationError
 
@@ -124,7 +124,7 @@ class TestResponseAnalysis:
 class TestDialogueTurn:
     """DialogueTurn Pydanticモデルのテスト"""
 
-    def test_dialogue_turn_child_message(self):
+    def test_dialogue_turn_child_message(self) -> None:
         """子供のメッセージを作成できる"""
         from datetime import datetime
 
@@ -142,7 +142,7 @@ class TestDialogueTurn:
         assert turn.question_type is None
         assert turn.response_analysis is None
 
-    def test_dialogue_turn_assistant_message_with_question_type(self):
+    def test_dialogue_turn_assistant_message_with_question_type(self) -> None:
         """アシスタントのメッセージに質問タイプを設定できる"""
         from datetime import datetime
 
@@ -159,7 +159,7 @@ class TestDialogueTurn:
         assert turn.content == "この問題は何を聞いていると思う？"
         assert turn.question_type == QuestionType.UNDERSTANDING_CHECK
 
-    def test_dialogue_turn_with_response_analysis(self):
+    def test_dialogue_turn_with_response_analysis(self) -> None:
         """子供のメッセージに回答分析を付与できる"""
         from datetime import datetime
 
@@ -182,7 +182,7 @@ class TestDialogueTurn:
         assert turn.response_analysis is not None
         assert turn.response_analysis.understanding_level == 6
 
-    def test_dialogue_turn_role_validation(self):
+    def test_dialogue_turn_role_validation(self) -> None:
         """roleはchildまたはassistantのみ許可"""
         from datetime import datetime
 
@@ -208,7 +208,7 @@ class TestDialogueTurn:
         # 無効なrole
         with pytest.raises(ValidationError):
             DialogueTurn(
-                role="teacher",
+                role="teacher",  # type: ignore[arg-type]
                 content="テスト",
                 timestamp=datetime(2026, 2, 2, 10, 0, 0),
             )
@@ -217,7 +217,7 @@ class TestDialogueTurn:
 class TestDialogueContext:
     """DialogueContext Pydanticモデルのテスト"""
 
-    def test_dialogue_context_creation(self):
+    def test_dialogue_context_creation(self) -> None:
         """DialogueContextを作成できる"""
         from app.services.adk.dialogue.models import DialogueContext, DialogueTone
 
@@ -235,7 +235,7 @@ class TestDialogueContext:
         assert context.tone == DialogueTone.ENCOURAGING
         assert context.turns == []
 
-    def test_dialogue_context_with_turns(self):
+    def test_dialogue_context_with_turns(self) -> None:
         """DialogueContextにターンを追加できる"""
         from datetime import datetime
 
@@ -272,7 +272,7 @@ class TestDialogueContext:
         assert context.turns[0].role == "assistant"
         assert context.turns[1].role == "child"
 
-    def test_dialogue_context_hint_level_range(self):
+    def test_dialogue_context_hint_level_range(self) -> None:
         """current_hint_levelは1-3の範囲"""
         from pydantic import ValidationError
 
@@ -308,7 +308,7 @@ class TestDialogueContext:
                 turns=[],
             )
 
-    def test_dialogue_context_default_values(self):
+    def test_dialogue_context_default_values(self) -> None:
         """DialogueContextのデフォルト値"""
         from app.services.adk.dialogue.models import DialogueContext, DialogueTone
 
@@ -325,7 +325,7 @@ class TestDialogueContext:
 class TestFromAdkSession:
     """from_adk_session()ファクトリメソッドのテスト"""
 
-    def test_from_adk_session_basic(self):
+    def test_from_adk_session_basic(self) -> None:
         """基本的なADKセッションからDialogueContextを作成"""
         from unittest.mock import MagicMock
 
@@ -348,7 +348,7 @@ class TestFromAdkSession:
         assert context.tone == DialogueTone.NEUTRAL
         assert context.turns == []
 
-    def test_from_adk_session_with_empty_state(self):
+    def test_from_adk_session_with_empty_state(self) -> None:
         """空のstateを持つADKセッションからDialogueContextを作成"""
         from unittest.mock import MagicMock
 
@@ -366,7 +366,7 @@ class TestFromAdkSession:
         assert context.tone == DialogueTone.ENCOURAGING
         assert context.turns == []
 
-    def test_from_adk_session_with_none_state(self):
+    def test_from_adk_session_with_none_state(self) -> None:
         """stateがNoneのADKセッションからDialogueContextを作成"""
         from unittest.mock import MagicMock
 
@@ -387,25 +387,25 @@ class TestFromAdkSession:
 class TestHintLevel:
     """HintLevel Enumのテスト"""
 
-    def test_hint_level_has_problem_understanding(self):
+    def test_hint_level_has_problem_understanding(self) -> None:
         """問題理解の確認レベルが存在する"""
         from app.services.adk.dialogue.models import HintLevel
 
-        assert HintLevel.PROBLEM_UNDERSTANDING == 1
+        assert HintLevel.PROBLEM_UNDERSTANDING.value == 1
 
-    def test_hint_level_has_prior_knowledge(self):
+    def test_hint_level_has_prior_knowledge(self) -> None:
         """既習事項の想起レベルが存在する"""
         from app.services.adk.dialogue.models import HintLevel
 
-        assert HintLevel.PRIOR_KNOWLEDGE == 2
+        assert HintLevel.PRIOR_KNOWLEDGE.value == 2
 
-    def test_hint_level_has_partial_support(self):
+    def test_hint_level_has_partial_support(self) -> None:
         """部分的支援レベルが存在する"""
         from app.services.adk.dialogue.models import HintLevel
 
-        assert HintLevel.PARTIAL_SUPPORT == 3
+        assert HintLevel.PARTIAL_SUPPORT.value == 3
 
-    def test_hint_level_is_int_enum(self):
+    def test_hint_level_is_int_enum(self) -> None:
         """HintLevelはint Enumである"""
         from app.services.adk.dialogue.models import HintLevel
 
@@ -416,25 +416,25 @@ class TestHintLevel:
 class TestAnswerRequestType:
     """AnswerRequestType Enumのテスト"""
 
-    def test_answer_request_type_has_none(self):
+    def test_answer_request_type_has_none(self) -> None:
         """リクエストなしタイプが存在する"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
         assert AnswerRequestType.NONE.value == "none"
 
-    def test_answer_request_type_has_explicit(self):
+    def test_answer_request_type_has_explicit(self) -> None:
         """明示的リクエストタイプが存在する"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
         assert AnswerRequestType.EXPLICIT.value == "explicit"
 
-    def test_answer_request_type_has_implicit(self):
+    def test_answer_request_type_has_implicit(self) -> None:
         """暗示的リクエストタイプが存在する"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
         assert AnswerRequestType.IMPLICIT.value == "implicit"
 
-    def test_answer_request_type_is_string_enum(self):
+    def test_answer_request_type_is_string_enum(self) -> None:
         """AnswerRequestTypeはstr Enumである"""
         from app.services.adk.dialogue.models import AnswerRequestType
 
@@ -445,7 +445,7 @@ class TestAnswerRequestType:
 class TestAnswerRequestAnalysis:
     """AnswerRequestAnalysis Pydanticモデルのテスト"""
 
-    def test_answer_request_analysis_creation(self):
+    def test_answer_request_analysis_creation(self) -> None:
         """AnswerRequestAnalysisを作成できる"""
         from app.services.adk.dialogue.models import (
             AnswerRequestAnalysis,
@@ -462,7 +462,7 @@ class TestAnswerRequestAnalysis:
         assert analysis.confidence == 0.95
         assert analysis.detected_phrases == ["答え教えて"]
 
-    def test_answer_request_analysis_confidence_range(self):
+    def test_answer_request_analysis_confidence_range(self) -> None:
         """confidenceは0.0-1.0の範囲"""
         from pydantic import ValidationError
 
@@ -501,7 +501,7 @@ class TestAnswerRequestAnalysis:
                 detected_phrases=[],
             )
 
-    def test_answer_request_analysis_default_phrases(self):
+    def test_answer_request_analysis_default_phrases(self) -> None:
         """detected_phrasesはデフォルトで空リスト"""
         from app.services.adk.dialogue.models import (
             AnswerRequestAnalysis,

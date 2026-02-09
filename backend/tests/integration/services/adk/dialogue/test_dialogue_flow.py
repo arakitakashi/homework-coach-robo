@@ -18,17 +18,17 @@ class TestBasicDialogueFlow:
     """基本対話フローのテスト"""
 
     @pytest.fixture
-    def mock_llm_client(self):
+    def mock_llm_client(self) -> AsyncMock:
         """モック化されたLLMクライアント"""
         return AsyncMock()
 
     @pytest.fixture
-    def manager(self, mock_llm_client):
+    def manager(self, mock_llm_client: AsyncMock) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
         return SocraticDialogueManager(llm_client=mock_llm_client)
 
     @pytest.fixture
-    def initial_context(self):
+    def initial_context(self) -> DialogueContext:
         """初期対話コンテキスト"""
         return DialogueContext(
             session_id="test-session-001",
@@ -39,7 +39,9 @@ class TestBasicDialogueFlow:
         )
 
     @pytest.mark.asyncio
-    async def test_full_dialogue_flow_success(self, manager, mock_llm_client):
+    async def test_full_dialogue_flow_success(
+        self, manager: SocraticDialogueManager, mock_llm_client: AsyncMock
+    ) -> None:
         """子供が正しく答えに至る対話フロー"""
         # 初期コンテキスト
         context = DialogueContext(
@@ -107,7 +109,9 @@ class TestBasicDialogueFlow:
         assert analysis2.is_correct_direction is True
 
     @pytest.mark.asyncio
-    async def test_dialogue_flow_with_hint_escalation(self, manager, mock_llm_client):
+    async def test_dialogue_flow_with_hint_escalation(
+        self, manager: SocraticDialogueManager, mock_llm_client: AsyncMock
+    ) -> None:
         """ヒントレベルが上がる対話フロー"""
         # 複数ターン後に理解度が低い状態
         context = DialogueContext(
@@ -164,17 +168,19 @@ class TestEdgeCases:
     """エッジケーステスト"""
 
     @pytest.fixture
-    def mock_llm_client(self):
+    def mock_llm_client(self) -> AsyncMock:
         """モック化されたLLMクライアント"""
         return AsyncMock()
 
     @pytest.fixture
-    def manager(self, mock_llm_client):
+    def manager(self, mock_llm_client: AsyncMock) -> SocraticDialogueManager:
         """SocraticDialogueManagerインスタンス"""
         return SocraticDialogueManager(llm_client=mock_llm_client)
 
     @pytest.mark.asyncio
-    async def test_long_dialogue_maintains_history(self, manager, mock_llm_client):
+    async def test_long_dialogue_maintains_history(
+        self, manager: SocraticDialogueManager, mock_llm_client: AsyncMock
+    ) -> None:
         """長い対話でも質問履歴が維持される"""
         context = DialogueContext(
             session_id="test-session-003",
@@ -198,7 +204,7 @@ class TestEdgeCases:
         assert "質問1" in manager.question_history
         assert "質問10" in manager.question_history
 
-    def test_max_hint_level_prevents_escalation(self, manager):
+    def test_max_hint_level_prevents_escalation(self, manager: SocraticDialogueManager) -> None:
         """最大ヒントレベルでは次のフェーズに進まない"""
         context = DialogueContext(
             session_id="test-session-004",
@@ -246,7 +252,7 @@ class TestEdgeCases:
 class TestErrorHandling:
     """エラーハンドリングテスト"""
 
-    def test_generate_question_without_llm_client_raises(self):
+    def test_generate_question_without_llm_client_raises(self) -> None:
         """LLMクライアントなしで質問生成するとエラー"""
         manager = SocraticDialogueManager(llm_client=None)
         context = DialogueContext(
@@ -268,7 +274,7 @@ class TestErrorHandling:
                 )
             )
 
-    def test_analyze_response_without_llm_client_raises(self):
+    def test_analyze_response_without_llm_client_raises(self) -> None:
         """LLMクライアントなしで回答分析するとエラー"""
         manager = SocraticDialogueManager(llm_client=None)
         context = DialogueContext(
@@ -290,7 +296,7 @@ class TestErrorHandling:
             )
 
     @pytest.mark.asyncio
-    async def test_analyze_response_with_invalid_json_raises(self):
+    async def test_analyze_response_with_invalid_json_raises(self) -> None:
         """LLMが無効なJSONを返した場合のエラー"""
         import json
 
