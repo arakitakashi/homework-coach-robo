@@ -285,7 +285,10 @@ cd backend && uv run ruff check . && uv run mypy . && uv run pytest
 | カテゴリ | スキル |
 |----------|--------|
 | 開発プロセス | `/tdd`, `/git-workflow`, `/security-review` |
+| サブエージェント委譲 | `/quality-check`, `/update-docs`, `/create-pr` |
 | フロントエンド | `/frontend`, `/frontend-design`, `/vercel-react-best-practices` |
 | バックエンド | `/fastapi`, `/google-adk-basics`, `/google-adk-live` |
 
 **注意**: `/google-adk-live` は `/google-adk-basics` の知識が前提です。
+
+**サブエージェント委譲スキル**: `/quality-check`、`/update-docs`、`/create-pr` は Task ツールでサブエージェントを起動し、メインエージェントのコンテキスト消費を最小化します。実装完了後の品質チェック・ドキュメント更新・PR作成時に使用してください。

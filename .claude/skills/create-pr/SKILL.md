@@ -1,12 +1,12 @@
 ---
 name: create-pr
-description: Creates GitHub pull requests with properly formatted titles that pass the check-pr-title CI validation. Use when creating PRs, submitting changes for review, or when the user says /pr or asks to create a pull request.
-allowed-tools: Bash(git:*), Bash(gh:*), Read, Grep, Glob
+description: Creates GitHub pull requests by delegating diff analysis and PR body generation to a sub-agent. Use when creating PRs, submitting changes for review, or when the user says /pr or asks to create a pull request.
+allowed-tools: Task, Bash(git:*), Bash(gh:*)
 ---
 
 # Create Pull Request
 
-Creates GitHub PRs with titles that pass n8n's `check-pr-title` CI validation.
+GitHub PR を作成します。差分分析と PR body 生成をサブエージェントに委譲し、メインエージェントのコンテキスト消費を最小化します。
 
 ## PR Title Format
 
@@ -14,141 +14,76 @@ Creates GitHub PRs with titles that pass n8n's `check-pr-title` CI validation.
 <type>(<scope>): <summary>
 ```
 
-### Types (required)
+### Types
 
-| Type       | Description                                      | Changelog |
-|------------|--------------------------------------------------|-----------|
-| `feat`     | New feature                                      | Yes       |
-| `fix`      | Bug fix                                          | Yes       |
-| `perf`     | Performance improvement                          | Yes       |
-| `test`     | Adding/correcting tests                          | No        |
-| `docs`     | Documentation only                               | No        |
-| `refactor` | Code change (no bug fix or feature)              | No        |
-| `build`    | Build system or dependencies                     | No        |
-| `ci`       | CI configuration                                 | No        |
-| `chore`    | Routine tasks, maintenance                       | No        |
-
-### Scopes (optional but recommended)
-
-- `API` - Public API changes
-- `benchmark` - Benchmark CLI changes
-- `core` - Core/backend/private API
-- `editor` - Editor UI changes
-- `* Node` - Specific node (e.g., `Slack Node`, `GitHub Node`)
+| Type       | Description                    |
+|------------|--------------------------------|
+| `feat`     | 新機能                          |
+| `fix`      | バグ修正                        |
+| `perf`     | パフォーマンス改善                |
+| `test`     | テスト追加/修正                  |
+| `docs`     | ドキュメントのみ                  |
+| `refactor` | リファクタリング                  |
+| `build`    | ビルドシステム/依存関係            |
+| `ci`       | CI設定                          |
+| `chore`    | メンテナンス                     |
 
 ### Summary Rules
 
-- Use imperative present tense: "Add" not "Added"
-- Capitalize first letter
-- No period at the end
-- No ticket IDs (e.g., N8N-1234)
-- Add `(no-changelog)` suffix to exclude from changelog
+- 命令形で記述: "Add" not "Added"
+- 英語の場合、最初の文字を大文字
+- 末尾にピリオドを付けない
+- 70文字以内
 
-## Steps
+## Instructions
 
-1. **Check current state**:
-   ```bash
-   git status
-   git diff --stat
-   git log origin/master..HEAD --oneline
-   ```
+### Step 1: プッシュ確認
 
-2. **Analyze changes** to determine:
-   - Type: What kind of change is this?
-   - Scope: Which package/area is affected?
-   - Summary: What does the change do?
-
-3. **Push branch if needed**:
-   ```bash
-   git push -u origin HEAD
-   ```
-
-4. **Create PR** using gh CLI with the template from `.github/pull_request_template.md`:
-   ```bash
-   gh pr create --draft --title "<type>(<scope>): <summary>" --body "$(cat <<'EOF'
-   ## Summary
-
-   <Describe what the PR does and how to test. Photos and videos are recommended.>
-
-   ## Related Linear tickets, Github issues, and Community forum posts
-
-   <!-- Link to Linear ticket: https://linear.app/n8n/issue/[TICKET-ID] -->
-   <!-- Use "closes #<issue-number>", "fixes #<issue-number>", or "resolves #<issue-number>" to automatically close issues -->
-
-   ## Review / Merge checklist
-
-   - [ ] PR title and summary are descriptive. ([conventions](../blob/master/.github/pull_request_title_conventions.md))
-   - [ ] [Docs updated](https://github.com/n8n-io/n8n-docs) or follow-up ticket created.
-   - [ ] Tests included.
-   - [ ] PR Labeled with `release/backport` (if the PR is an urgent fix that needs to be backported)
-   EOF
-   )"
-   ```
-
-## PR Body Guidelines
-
-Based on `.github/pull_request_template.md`:
-
-### Summary Section
-- Describe what the PR does
-- Explain how to test the changes
-- Include screenshots/videos for UI changes
-
-### Related Links Section
-- Link to Linear ticket: `https://linear.app/n8n/issue/[TICKET-ID]`
-- Link to GitHub issues using keywords to auto-close:
-  - `closes #123` / `fixes #123` / `resolves #123`
-- Link to Community forum posts if applicable
-
-### Checklist
-All items should be addressed before merging:
-- PR title follows conventions
-- Docs updated or follow-up ticket created
-- Tests included (bugs need regression tests, features need coverage)
-- `release/backport` label added if urgent fix needs backporting
-
-## Examples
-
-### Feature in editor
-```
-feat(editor): Add workflow performance metrics display
+リモートにプッシュされていなければプッシュする:
+```bash
+git push -u origin HEAD
 ```
 
-### Bug fix in core
+### Step 2: サブエージェントで差分分析 + PR作成
+
+Task ツールで `general-purpose` サブエージェントを起動し、以下のプロンプトを使用してください。
+
 ```
-fix(core): Resolve memory leak in execution engine
+GitHub PRを作成してください。
+
+## 手順
+
+### 1. 現在の状態を確認
+以下のコマンドを実行:
+- `git status`（未コミットの変更がないか確認）
+- `git log origin/main..HEAD --oneline`（コミット一覧）
+- `git diff origin/main...HEAD --stat`（変更ファイル一覧）
+
+### 2. 変更内容を分析
+コミットログと変更ファイルから:
+- PRのtype（feat/fix/docs/refactor/test/chore等）を判定
+- 変更の要約を作成（1〜3文）
+- テストプランを箇条書きで作成
+
+### 3. PRを作成
+gh CLIで作成:
+
+gh pr create --title "<type>: <Summary>" --body "## Summary
+<変更内容の箇条書き>
+
+## Test plan
+<テストプランの箇条書き>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+
+PRのURLを返してください。
 ```
 
-### Node-specific change
-```
-fix(Slack Node): Handle rate limiting in message send
-```
+### Step 3: 結果確認
 
-### Breaking change (add exclamation mark before colon)
-```
-feat(API)!: Remove deprecated v1 endpoints
-```
+サブエージェントが返すPR URLを確認し、ユーザーに伝えてください。
 
-### No changelog entry
-```
-refactor(core): Simplify error handling (no-changelog)
-```
+## Notes
 
-### No scope (affects multiple areas)
-```
-chore: Update dependencies to latest versions
-```
-
-## Validation
-
-The PR title must match this pattern:
-```
-^(feat|fix|perf|test|docs|refactor|build|ci|chore|revert)(\([a-zA-Z0-9 ]+( Node)?\))?!?: [A-Z].+[^.]$
-```
-
-Key validation rules:
-- Type must be one of the allowed types
-- Scope is optional but must be in parentheses if present
-- Exclamation mark for breaking changes goes before the colon
-- Summary must start with capital letter
-- Summary must not end with a period
+- `git diff` や `git log` の出力（数百〜数千行になりうる）がメインエージェントのコンテキストに載ることを避けられます
+- サブエージェントが `gh pr create` を実行するため、`dangerouslyDisableSandbox: true` が必要になる場合があります
