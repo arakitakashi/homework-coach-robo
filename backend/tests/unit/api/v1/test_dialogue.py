@@ -7,7 +7,7 @@ from app.main import app
 
 
 @pytest.fixture
-def client():
+def client() -> TestClient:
     """FastAPIテストクライアント"""
     return TestClient(app)
 
@@ -15,7 +15,7 @@ def client():
 class TestCreateSession:
     """POST /api/v1/dialogue/sessions のテスト"""
 
-    def test_create_session_success(self, client):
+    def test_create_session_success(self, client: TestClient) -> None:
         """セッションを作成できる"""
         response = client.post(
             "/api/v1/dialogue/sessions",
@@ -33,7 +33,7 @@ class TestCreateSession:
         assert data["tone"] == "encouraging"
         assert data["turns_count"] == 0
 
-    def test_create_session_with_character_type(self, client):
+    def test_create_session_with_character_type(self, client: TestClient) -> None:
         """キャラクタータイプ付きでセッションを作成できる"""
         response = client.post(
             "/api/v1/dialogue/sessions",
@@ -46,7 +46,7 @@ class TestCreateSession:
 
         assert response.status_code == 201
 
-    def test_create_session_validation_error(self, client):
+    def test_create_session_validation_error(self, client: TestClient) -> None:
         """バリデーションエラーで400を返す"""
         # problemが空
         response = client.post(
@@ -72,7 +72,7 @@ class TestCreateSession:
 class TestGetSession:
     """GET /api/v1/dialogue/sessions/{session_id} のテスト"""
 
-    def test_get_existing_session(self, client):
+    def test_get_existing_session(self, client: TestClient) -> None:
         """存在するセッションを取得できる"""
         # セッションを作成
         create_response = client.post(
@@ -89,7 +89,7 @@ class TestGetSession:
         assert data["session_id"] == session_id
         assert data["problem"] == "test"
 
-    def test_get_nonexistent_session(self, client):
+    def test_get_nonexistent_session(self, client: TestClient) -> None:
         """存在しないセッションで404を返す"""
         response = client.get("/api/v1/dialogue/sessions/nonexistent-id")
 
@@ -99,7 +99,7 @@ class TestGetSession:
 class TestDeleteSession:
     """DELETE /api/v1/dialogue/sessions/{session_id} のテスト"""
 
-    def test_delete_existing_session(self, client):
+    def test_delete_existing_session(self, client: TestClient) -> None:
         """存在するセッションを削除できる"""
         # セッションを作成
         create_response = client.post(
@@ -117,7 +117,7 @@ class TestDeleteSession:
         get_response = client.get(f"/api/v1/dialogue/sessions/{session_id}")
         assert get_response.status_code == 404
 
-    def test_delete_nonexistent_session(self, client):
+    def test_delete_nonexistent_session(self, client: TestClient) -> None:
         """存在しないセッションの削除で404を返す"""
         response = client.delete("/api/v1/dialogue/sessions/nonexistent-id")
 
@@ -127,7 +127,7 @@ class TestDeleteSession:
 class TestAnalyzeResponse:
     """POST /api/v1/dialogue/sessions/{session_id}/analyze のテスト"""
 
-    def test_analyze_response_success(self, client):
+    def test_analyze_response_success(self, client: TestClient) -> None:
         """回答を分析できる"""
         # セッションを作成
         create_response = client.post(
@@ -149,7 +149,7 @@ class TestAnalyzeResponse:
         assert "recommended_question_type" in data
         assert "recommended_tone" in data
 
-    def test_analyze_response_nonexistent_session(self, client):
+    def test_analyze_response_nonexistent_session(self, client: TestClient) -> None:
         """存在しないセッションで404を返す"""
         response = client.post(
             "/api/v1/dialogue/sessions/nonexistent-id/analyze",
@@ -158,7 +158,7 @@ class TestAnalyzeResponse:
 
         assert response.status_code == 404
 
-    def test_analyze_response_validation_error(self, client):
+    def test_analyze_response_validation_error(self, client: TestClient) -> None:
         """バリデーションエラーで422を返す"""
         # セッションを作成
         create_response = client.post(
@@ -179,7 +179,7 @@ class TestAnalyzeResponse:
 class TestGenerateQuestion:
     """POST /api/v1/dialogue/sessions/{session_id}/question のテスト"""
 
-    def test_generate_question_success(self, client):
+    def test_generate_question_success(self, client: TestClient) -> None:
         """質問を生成できる"""
         # セッションを作成
         create_response = client.post(
@@ -200,7 +200,7 @@ class TestGenerateQuestion:
         assert "question_type" in data
         assert "tone" in data
 
-    def test_generate_question_with_params(self, client):
+    def test_generate_question_with_params(self, client: TestClient) -> None:
         """パラメータ指定で質問を生成できる"""
         # セッションを作成
         create_response = client.post(
@@ -220,7 +220,7 @@ class TestGenerateQuestion:
         assert data["question_type"] == "hint"
         assert data["tone"] == "empathetic"
 
-    def test_generate_question_nonexistent_session(self, client):
+    def test_generate_question_nonexistent_session(self, client: TestClient) -> None:
         """存在しないセッションで404を返す"""
         response = client.post(
             "/api/v1/dialogue/sessions/nonexistent-id/question",
@@ -233,7 +233,7 @@ class TestGenerateQuestion:
 class TestGenerateHint:
     """POST /api/v1/dialogue/sessions/{session_id}/hint のテスト"""
 
-    def test_generate_hint_success(self, client):
+    def test_generate_hint_success(self, client: TestClient) -> None:
         """ヒントを生成できる"""
         # セッションを作成
         create_response = client.post(
@@ -255,7 +255,7 @@ class TestGenerateHint:
         assert "hint_level_name" in data
         assert "is_answer_request_response" in data
 
-    def test_generate_hint_with_force_level(self, client):
+    def test_generate_hint_with_force_level(self, client: TestClient) -> None:
         """レベル指定でヒントを生成できる"""
         # セッションを作成
         create_response = client.post(
@@ -274,7 +274,7 @@ class TestGenerateHint:
         data = response.json()
         assert data["hint_level"] == 2
 
-    def test_generate_hint_nonexistent_session(self, client):
+    def test_generate_hint_nonexistent_session(self, client: TestClient) -> None:
         """存在しないセッションで404を返す"""
         response = client.post(
             "/api/v1/dialogue/sessions/nonexistent-id/hint",
@@ -287,7 +287,7 @@ class TestGenerateHint:
 class TestAnalyzeAnswerRequest:
     """POST /api/v1/dialogue/analyze-answer-request のテスト"""
 
-    def test_analyze_explicit_answer_request(self, client):
+    def test_analyze_explicit_answer_request(self, client: TestClient) -> None:
         """明示的な答えリクエストを検出できる"""
         response = client.post(
             "/api/v1/dialogue/analyze-answer-request",
@@ -300,7 +300,7 @@ class TestAnalyzeAnswerRequest:
         assert data["confidence"] >= 0.8
         assert len(data["detected_phrases"]) > 0
 
-    def test_analyze_implicit_answer_request(self, client):
+    def test_analyze_implicit_answer_request(self, client: TestClient) -> None:
         """暗示的な答えリクエストを検出できる"""
         response = client.post(
             "/api/v1/dialogue/analyze-answer-request",
@@ -311,7 +311,7 @@ class TestAnalyzeAnswerRequest:
         data = response.json()
         assert data["request_type"] == "implicit"
 
-    def test_analyze_no_answer_request(self, client):
+    def test_analyze_no_answer_request(self, client: TestClient) -> None:
         """通常の発言は答えリクエストではない"""
         response = client.post(
             "/api/v1/dialogue/analyze-answer-request",
@@ -322,7 +322,7 @@ class TestAnalyzeAnswerRequest:
         data = response.json()
         assert data["request_type"] == "none"
 
-    def test_analyze_validation_error(self, client):
+    def test_analyze_validation_error(self, client: TestClient) -> None:
         """バリデーションエラーで422を返す"""
         response = client.post(
             "/api/v1/dialogue/analyze-answer-request",

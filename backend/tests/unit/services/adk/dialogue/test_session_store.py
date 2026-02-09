@@ -7,7 +7,7 @@ from app.services.adk.dialogue.session_store import SessionStore
 class TestSessionStoreCreate:
     """セッション作成のテスト"""
 
-    def test_create_session(self):
+    def test_create_session(self) -> None:
         """セッションを作成できる"""
         store = SessionStore()
         session_id = store.create_session(
@@ -18,7 +18,7 @@ class TestSessionStoreCreate:
         assert session_id is not None
         assert len(session_id) > 0
 
-    def test_create_session_with_character_type(self):
+    def test_create_session_with_character_type(self) -> None:
         """キャラクタータイプ付きでセッションを作成できる"""
         store = SessionStore()
         session_id = store.create_session(
@@ -30,7 +30,7 @@ class TestSessionStoreCreate:
         context = store.get_session(session_id)
         assert context is not None
 
-    def test_create_session_generates_unique_ids(self):
+    def test_create_session_generates_unique_ids(self) -> None:
         """作成されるセッションIDはユニーク"""
         store = SessionStore()
         ids = set()
@@ -45,7 +45,7 @@ class TestSessionStoreCreate:
 class TestSessionStoreGet:
     """セッション取得のテスト"""
 
-    def test_get_existing_session(self):
+    def test_get_existing_session(self) -> None:
         """存在するセッションを取得できる"""
         store = SessionStore()
         session_id = store.create_session(problem="3 + 5 = ?", child_grade=2)
@@ -60,7 +60,7 @@ class TestSessionStoreGet:
         assert context.tone == DialogueTone.ENCOURAGING
         assert len(context.turns) == 0
 
-    def test_get_nonexistent_session(self):
+    def test_get_nonexistent_session(self) -> None:
         """存在しないセッションはNoneを返す"""
         store = SessionStore()
         context = store.get_session("nonexistent-id")
@@ -71,7 +71,7 @@ class TestSessionStoreGet:
 class TestSessionStoreDelete:
     """セッション削除のテスト"""
 
-    def test_delete_existing_session(self):
+    def test_delete_existing_session(self) -> None:
         """存在するセッションを削除できる"""
         store = SessionStore()
         session_id = store.create_session(problem="test", child_grade=1)
@@ -81,7 +81,7 @@ class TestSessionStoreDelete:
         assert result is True
         assert store.get_session(session_id) is None
 
-    def test_delete_nonexistent_session(self):
+    def test_delete_nonexistent_session(self) -> None:
         """存在しないセッションの削除はFalseを返す"""
         store = SessionStore()
         result = store.delete_session("nonexistent-id")
@@ -92,13 +92,14 @@ class TestSessionStoreDelete:
 class TestSessionStoreUpdate:
     """セッション更新のテスト"""
 
-    def test_update_existing_session(self):
+    def test_update_existing_session(self) -> None:
         """存在するセッションを更新できる"""
         store = SessionStore()
         session_id = store.create_session(problem="test", child_grade=1)
 
         # コンテキストを取得して変更
         context = store.get_session(session_id)
+        assert context is not None
         context.current_hint_level = 2
         context.tone = DialogueTone.EMPATHETIC
 
@@ -109,10 +110,11 @@ class TestSessionStoreUpdate:
 
         # 更新されていることを確認
         updated_context = store.get_session(session_id)
+        assert updated_context is not None
         assert updated_context.current_hint_level == 2
         assert updated_context.tone == DialogueTone.EMPATHETIC
 
-    def test_update_nonexistent_session(self):
+    def test_update_nonexistent_session(self) -> None:
         """存在しないセッションの更新はFalseを返す"""
         store = SessionStore()
         context = DialogueContext(

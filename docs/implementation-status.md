@@ -89,6 +89,7 @@ cd backend && uv run uvicorn app.main:app --reload
 ```
 
 **テストカバレッジ**: 90%（526テスト）
+**mypy 型チェック**: `uv run mypy .` でプロジェクト全体（`app/` + `tests/`）が 0 errors
 
 ### Firestore Session Persistence
 
@@ -739,3 +740,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260209-phase2c-vertex-ai-rag/` | Phase 2c Memory Bank 統合 + Agent Engine |
 | `.steering/20260209-phase2d-emotion-adaptation/` | Phase 2d 感情適応（update_emotion_tool + 感情ベースルーティング） |
 | `.steering/20260209-phase2-websocket-handlers/` | Phase 2 WebSocket メッセージハンドラ統合 |
+| `.steering/20260209-fix-mypy-test-errors/` | テストファイル mypy 型チェック全解消（264→0 errors） |

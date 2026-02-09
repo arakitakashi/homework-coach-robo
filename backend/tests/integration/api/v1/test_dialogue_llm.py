@@ -1,5 +1,6 @@
 """対話API LLM統合テスト"""
 
+from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -25,7 +26,7 @@ def mock_llm_client() -> MagicMock:
 
 
 @pytest.fixture
-def override_llm_client(mock_llm_client: MagicMock) -> None:
+def override_llm_client(mock_llm_client: MagicMock) -> Generator[None, None, None]:
     """LLMクライアントの依存性をオーバーライド"""
     app.dependency_overrides[get_llm_client] = lambda: mock_llm_client
     yield
