@@ -12,7 +12,7 @@ from google.adk.sessions.base_session_service import (
     ListSessionsResponse,
 )
 from google.adk.sessions.session import Session
-from google.cloud import firestore  # type: ignore[attr-defined]
+from google.cloud import firestore
 from typing_extensions import override
 
 from app.services.adk.sessions.converters import (
@@ -356,3 +356,23 @@ class FirestoreSessionService(BaseSessionService):
                 session.state[f"{USER_PREFIX}{key}"] = value
 
         return session
+
+    async def list_all_session_ids(self) -> list[str]:
+        """全セッションIDのリストを取得する
+
+        データ移行などで使用するヘルパーメソッド。
+        全セッションのIDを取得して返す。
+
+        Returns:
+            セッションIDのリスト
+
+        Note:
+            大量のセッションがある場合はメモリを消費する可能性があります。
+        """
+        session_ids: list[str] = []
+        sessions_ref = self._db.collection("sessions")
+
+        async for doc in sessions_ref.stream():
+            session_ids.append(doc.id)
+
+        return session_ids
