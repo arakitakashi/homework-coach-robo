@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了
 
 ---
 
@@ -35,7 +35,8 @@
 - **感情適応 (Phase 2d)**: update_emotion_tool + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト参照
 - **フロントエンド Phase 2a ツール実行状態UI**: ToolExecutionDisplayコンポーネント + WebSocket/フック拡張 + SessionContent統合
 - **フロントエンド Phase 2 WebSocketハンドラ統合**: AgentTransition（Phase 2b）・EmotionUpdate（Phase 2d）イベントハンドラ + Jotai atoms接続
-- **フロントエンド Phase 2b エージェント切り替えUI**: AgentIndicator・AgentIconコンポーネント + Framer Motionアニメーション + SessionContent統合（309テスト）
+- **フロントエンド Phase 2b エージェント切り替えUI**: AgentIndicator・AgentIconコンポーネント + Framer Motionアニメーション + SessionContent統合
+- **フロントエンド Phase 2d 感情適応UI**: EmotionIndicator・EmotionLevelBarコンポーネント + CharacterDisplay感情連動 + Framer Motionアニメーション + SessionContent統合（332テスト、カバレッジ89.56%）
 
 ---
 
@@ -550,9 +551,61 @@ SessionContent ヘッダー
 
 詳細は `.steering/20260210-frontend-phase2b-agent-indicator/` を参照。
 
+### Phase 2d 感情適応UIコンポーネント（PR #84）
+
+Phase 2d 感情適応に対応したUIコンポーネントを実装。バックエンドの `update_emotion_tool` で分析された感情状態をリアルタイムに視覚化し、子供の感情に応じたサポートを提供。
+
+**実装コンポーネント:**
+
+| コンポーネント | 説明 | 技術 |
+|--------------|------|------|
+| `EmotionIndicator` | 現在の感情状態の視覚的表示 | Jotai `emotionAnalysisAtom` 購読 + Framer Motion |
+| `EmotionLevelBar` | 感情スコア（frustration, confidence 等）のレベルバー | プログレスバー + 色分け |
+| `CharacterDisplay` 拡張 | 感情に応じたキャラクター表情変化 | `emotionAnalysisAtom` 統合 |
+
+**変更ファイル:**
+- `frontend/components/features/EmotionIndicator/EmotionIndicator.tsx` - メインコンポーネント（Framer Motion アニメーション）
+- `frontend/components/features/EmotionIndicator/EmotionLevelBar.tsx` - レベルバーコンポーネント
+- `frontend/components/features/EmotionIndicator/EmotionIndicator.test.tsx` - Indicatorテスト（10テスト）
+- `frontend/components/features/EmotionIndicator/EmotionLevelBar.test.tsx` - LevelBarテスト（7テスト）
+- `frontend/components/features/CharacterDisplay/CharacterDisplay.tsx` - 感情連動ロジック追加
+- `frontend/components/features/CharacterDisplay/CharacterDisplay.test.tsx` - 感情連動テスト追加（+6テスト）
+- `frontend/components/features/index.ts` - EmotionIndicator エクスポート追加
+- `frontend/src/app/session/SessionContent.tsx` - EmotionIndicator 統合
+
+**UI配置:**
+```
+SessionContent ヘッダー
+├── HintIndicator (ヒントレベル表示)
+├── AgentIndicator (エージェント表示)
+├── EmotionIndicator (感情状態表示) ← 新規
+└── "おわる"ボタン
+```
+
+**感情→表情マッピング（CharacterDisplay）:**
+- `frustrated` (イライラ) → 困った表情
+- `confident` (自信満々) → 笑顔
+- `confused` (混乱) → 考え込む表情
+- `happy` (楽しい) → 明るい笑顔
+- `tired` (疲れ) → 眠そうな表情
+- `neutral` / データなし → 通常表情（状態ベース）
+
+**アニメーション仕様:**
+- 感情変化時: フェードイン/フェードアウト（300ms）
+- GPU加速プロパティ使用（opacity, transform）
+- `AnimatePresence` mode="wait" でスムーズな遷移
+
+**アクセシビリティ:**
+- `EmotionIndicator`: `role="status"`, `aria-label="現在の感情状態: {感情名}"`
+- `EmotionLevelBar`: `role="progressbar"`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, `aria-label`
+
+**テスト:** EmotionLevelBar(7) + EmotionIndicator(10) + CharacterDisplay(+6) = 23新規テスト
+
+詳細は `.steering/20260210-frontend-phase2d-emotion-ui/` を参照。
+
 ### テストカバレッジ
 
-- **ユニットテスト**: 28テストファイル、309テスト（Vitest + Testing Library）
+- **ユニットテスト**: 30テストファイル、332テスト（Vitest + Testing Library）、カバレッジ89.56%
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -741,3 +794,5 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260209-phase2d-emotion-adaptation/` | Phase 2d 感情適応（update_emotion_tool + 感情ベースルーティング） |
 | `.steering/20260209-phase2-websocket-handlers/` | Phase 2 WebSocket メッセージハンドラ統合 |
 | `.steering/20260209-fix-mypy-test-errors/` | テストファイル mypy 型チェック全解消（264→0 errors） |
+| `.steering/20260210-frontend-phase2b-agent-indicator/` | Phase 2b エージェント切り替えUI（AgentIndicator + Framer Motion） |
+| `.steering/20260210-frontend-phase2d-emotion-ui/` | Phase 2d 感情適応UI（EmotionIndicator + CharacterDisplay感情連動） |
