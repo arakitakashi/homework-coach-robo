@@ -186,6 +186,12 @@ module "cloud_run" {
     var.enable_phase2_emotion ? {
       ENABLE_EMOTION_ANALYSIS = "true"
     } : {},
+    # Phase 3: Agent Engine configuration
+    var.agent_engine_resource_name != "" ? {
+      AGENT_ENGINE_RESOURCE_NAME = var.agent_engine_resource_name
+      AGENT_ENGINE_ID            = var.agent_engine_id
+      GCP_LOCATION               = var.gcp_location
+    } : {},
   )
 
   # Allow unauthenticated access in dev
