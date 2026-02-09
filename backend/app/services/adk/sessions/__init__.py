@@ -1,6 +1,7 @@
 """ADK sessions package.
 
 Firestore-backed session service for ADK integration.
+Session factory for environment-based service selection.
 """
 
 from app.services.adk.sessions.converters import (
@@ -13,9 +14,11 @@ from app.services.adk.sessions.converters import (
 from app.services.adk.sessions.firestore_session_service import (
     FirestoreSessionService,
 )
+from app.services.adk.sessions.session_factory import create_session_service
 
 __all__ = [
     "FirestoreSessionService",
+    "create_session_service",
     "session_to_dict",
     "dict_to_session",
     "event_to_dict",

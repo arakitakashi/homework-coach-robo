@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -165,7 +165,7 @@ homework-coach-robo/
 
 ### ADK エージェントアーキテクチャ（Phase 2 計画）
 
-Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成）、Phase 2c（Memory Bank統合）、Phase 2d（感情適応）を導入済み。Phase 3 で Agent Engine マネージドデプロイを計画。
+Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成）、Phase 2c（Memory Bank統合）、Phase 2d（感情適応）、Phase 3（Agent Engine デプロイ基盤）を導入済み。
 
 | Phase | 内容 | 主要変更 |
 |-------|------|---------|
@@ -173,7 +173,7 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 | **2b** ✅ | マルチエージェント | Router Agent → Math Coach / Japanese Coach / Encouragement / Review Agent |
 | **2c** ✅ | Memory Bank 統合 | `VertexAiMemoryBankService` ファクトリ + Agent Engine + `load_memory` ツール |
 | **2d** ✅ | 感情適応 | `update_emotion_tool` + Router Agent 感情ベースルーティング + サブエージェント感情コンテキスト ※AutoMLは将来検討（#52） |
-| **3** | Agent Engine | Phase 2c で Agent Engine 基盤構築済み。マネージドデプロイは Phase 2 完了後 ※A/Bテストは将来検討（#55） |
+| **3** ✅ | Agent Engine デプロイ基盤 | `session_factory` + `AgentEngineClient` + `dialogue_runner` Agent Engine 経由切り替え（フォールバック付き）+ デプロイ/テストスクリプト ※A/Bテストは将来検討（#55） |
 
 **フロントエンド Phase 2 対応状況:**
 - ✅ 型定義（`frontend/types/phase2.ts`）: Phase 2a-2d 全サブフェーズの25型定義（PR #60）
@@ -210,7 +210,11 @@ backend/app/services/adk/
 │   ├── image_analyzer.py     # 画像分析
 │   └── emotion_analyzer.py   # 感情分析（Phase 2d）
 ├── runner/                   # 既存（Router Agent統合済み）
+│   ├── runner_service.py     # AgentRunnerService（ローカル Runner）
+│   └── agent_engine_client.py # ✅ Phase 3: Agent Engine クライアントラッパー
 ├── sessions/                 # 既存
+│   ├── firestore_session_service.py
+│   └── session_factory.py    # ✅ Phase 3: Firestore/VertexAi セッション切り替え
 └── memory/                   # ✅ Phase 2c: ファクトリパターンで Memory Bank 切り替え
     ├── memory_factory.py     # create_memory_service() ファクトリ
     ├── firestore_memory_service.py  # フォールバック
