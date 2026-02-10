@@ -3,7 +3,6 @@
 Phase 2 Router Agent + VertexAiSessionService統合のテスト。
 """
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -119,7 +118,7 @@ class TestVoiceStreamingServiceInitialization:
         mock_runner_class.return_value = mock_runner
 
         # Act
-        service = VoiceStreamingService(use_agent_engine=False)
+        _service = VoiceStreamingService(use_agent_engine=False)
 
         # Assert
         # Router Agentが作成されている
@@ -154,7 +153,7 @@ class TestVoiceStreamingServiceInitialization:
             },
         ):
             # Act
-            service = VoiceStreamingService(use_agent_engine=True)
+            _service = VoiceStreamingService(use_agent_engine=True)
 
             # Assert
             # 環境変数から値が取得されている
@@ -173,9 +172,9 @@ class TestVoiceStreamingServiceAudioSending:
     @patch("app.services.voice.streaming_service.Runner")
     def test_send_audio(
         self,
-        mock_runner_class,
-        mock_vertex_ai_session_service_class,
-        mock_create_router_agent,
+        mock_runner_class,  # noqa: ARG002
+        mock_vertex_ai_session_service_class,  # noqa: ARG002
+        mock_create_router_agent,  # noqa: ARG002
     ):
         """音声データ送信のテスト"""
         # Arrange
@@ -235,8 +234,8 @@ class TestVoiceStreamingServiceRunLiveCompatibility:
     async def test_receive_events_with_vertex_ai_session_service(
         self,
         mock_runner_class,
-        mock_vertex_ai_session_service_class,
-        mock_create_router_agent,
+        mock_vertex_ai_session_service_class,  # noqa: ARG002
+        mock_create_router_agent,  # noqa: ARG002
     ):
         """VertexAiSessionServiceでのreceive_events()テスト"""
         # Arrange
@@ -251,7 +250,7 @@ class TestVoiceStreamingServiceRunLiveCompatibility:
         mock_event.output_transcription = None
         mock_event.content = None
 
-        async def mock_run_live(*args, **kwargs):
+        async def mock_run_live(*_args, **_kwargs):
             """モックrun_live"""
             yield mock_event
 
