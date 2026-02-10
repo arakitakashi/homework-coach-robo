@@ -295,6 +295,50 @@ mkdir -p .steering/20250115-add-tag-feature
 
 #### 6. 品質チェック
 
+## インフラストラクチャ
+
+### Agent Engine デプロイ（Phase 3）
+
+本プロジェクトは、Vertex AI Agent Engine を使用したスケーラブルなデプロイメントをサポートしています。
+
+#### Terraform によるインフラ管理
+
+Agent Engine のデプロイは Terraform で管理されています。
+
+**モジュール構成**:
+- `infrastructure/terraform/modules/agent_engine/` - Agent Engine リソース定義
+- `infrastructure/terraform/environments/dev/` - 開発環境設定
+
+**デプロイ手順**:
+
+```bash
+# 1. アーティファクト準備
+cd backend
+uv run python scripts/serialize_agent.py
+tar -czf dependencies.tar.gz app/
+gcloud storage cp pickle.pkl gs://homework-coach-assets-{suffix}/agent-engine/
+gcloud storage cp agent_engine_requirements.txt gs://homework-coach-assets-{suffix}/agent-engine/requirements.txt
+gcloud storage cp dependencies.tar.gz gs://homework-coach-assets-{suffix}/agent-engine/
+
+# 2. Terraform デプロイ
+cd ../infrastructure/terraform/environments/dev
+terraform init -upgrade
+terraform apply
+```
+
+詳細は以下を参照:
+- **モジュール README**: `infrastructure/terraform/modules/agent_engine/README.md`
+- **実装ドキュメント**: `docs/agent-architecture.md`
+- **Issue #98**: Agent Engine を利用した内部完結型実装
+
+### CI/CD
+
+GitHub Actions による自動デプロイが設定されています。
+
+- **CI パイプライン**: `.github/workflows/ci-*.yml`
+- **CD パイプライン**: `.github/workflows/cd.yml`
+- **認証**: Workload Identity Federation（Terraform管理）
+
 ## 利用可能なスキル
 
 本プロジェクトでは、実装時に活用できるClaudeスキルが用意されています。
