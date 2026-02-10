@@ -14,11 +14,15 @@ from app.services.adk.sessions.converters import (
 from app.services.adk.sessions.firestore_session_service import (
     FirestoreSessionService,
 )
-from app.services.adk.sessions.session_factory import create_session_service
+from app.services.adk.sessions.session_factory import (
+    create_session_service,
+    should_use_managed_session,
+)
 
 __all__ = [
     "FirestoreSessionService",
     "create_session_service",
+    "should_use_managed_session",
     "session_to_dict",
     "dict_to_session",
     "event_to_dict",
