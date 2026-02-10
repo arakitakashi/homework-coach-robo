@@ -94,16 +94,10 @@ variable "backend_memory" {
 # Phase 3: Agent Engine Configuration
 # =============================================================================
 
-variable "agent_engine_resource_name" {
-  description = "Agent Engine resource name (empty for local runner)"
-  type        = string
-  default     = ""
-}
-
-variable "agent_engine_id" {
-  description = "Agent Engine ID (empty for local runner)"
-  type        = string
-  default     = ""
+variable "enable_agent_engine" {
+  description = "Enable Agent Engine deployment via Terraform"
+  type        = bool
+  default     = false
 }
 
 variable "gcp_location" {

@@ -12,3 +12,7 @@ frontend_min_instances = 0     # Scale to zero when idle
 enable_cdn             = false # No CDN for dev
 
 # NOTE: Redis removed - session management handled by Vertex AI / ADK
+
+# Phase 3: Agent Engine (Terraform-managed deployment)
+enable_agent_engine = true
+gcp_location        = "us-central1" # Agent Engine location
