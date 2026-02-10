@@ -38,6 +38,46 @@
 - **フロントエンド Phase 2b エージェント切り替えUI**: AgentIndicator・AgentIconコンポーネント + Framer Motionアニメーション + SessionContent統合（309テスト）
 - **Agent Engine デプロイ基盤 (Phase 3)**: セッションファクトリ（Firestore/VertexAi切り替え）、Agent Engineクライアントラッパー（create_session, stream_query, extract_text）、テキスト対話エンドポイントのAgent Engine経由SSEストリーミング（AGENT_ENGINE_RESOURCE_NAME設定時、ローカルRunnerフォールバック付き）、デプロイスクリプト・テストスクリプト（548テスト、カバレッジ90%）
 - **フロントエンド Phase 2d 感情適応UI**: EmotionIndicator・EmotionLevelBarコンポーネント + CharacterDisplay感情連動 + Framer Motionアニメーション + SessionContent統合（332テスト、カバレッジ89.56%）
+- **Backend/Frontend/Infrastructure 整合性チェック**: API仕様、環境変数、WebSocketプロトコル、Phase 2イベント型定義の整合性確認完了（2025-02-11）
+
+---
+
+## 既知の問題
+
+以下は、整合性チェック（2025-02-11実施）で発見された既知の問題です。各問題には対応するGitHub Issueが作成されています。
+
+### 🔴 優先度: 高 (P0)
+
+**Phase 2 WebSocketイベント送信未実装** ([#94](https://github.com/arakitakashi/homework-coach-robo/issues/94))
+- **問題**: `backend/app/schemas/voice_stream.py` の `ADKEventMessage` に Phase 2 イベントフィールドが欠落
+- **影響**: Frontend は Phase 2 イベント（`toolExecution`, `agentTransition`, `emotionUpdate`）の受信ハンドラを実装済みだが、Backend が送信していないため動作しない
+- **対応内容**:
+  - `ADKToolExecutionEvent`, `ADKAgentTransitionEvent`, `ADKEmotionUpdateEvent` クラス追加
+  - `streaming_service.py` の `_convert_event_to_message()` にイベント変換ロジック追加
+  - Phase 2 イベント変換のユニットテスト追加
+- **影響範囲**: `backend/app/schemas/voice_stream.py`, `backend/app/services/voice/streaming_service.py`, テスト
+
+### 🟡 優先度: 中 (P1)
+
+**環境変数ドキュメント不足** ([#95](https://github.com/arakitakashi/homework-coach-robo/issues/95))
+- **問題**: Backend/Frontend の環境変数が体系的にドキュメント化されていない
+- **影響**: 開発者オンボーディング時の設定ミス、デプロイ時の環境変数不足のリスク
+- **対応内容**:
+  - リポジトリルートに `.env.example` 作成（Backend/Frontend 統合）
+  - 本ドキュメントに「環境変数」セクション追加（各変数の必須/任意、デフォルト値、説明を記載）
+  - ローカル開発セットアップ手順の明確化
+- **影響範囲**: `.env.example`（新規）, `docs/implementation-status.md`（本ファイル）
+
+### 🟢 優先度: 低 (P2)
+
+**Frontend Health Check エンドポイント未確認** ([#96](https://github.com/arakitakashi/homework-coach-robo/issues/96))
+- **問題**: Terraform で `/api/health` を設定しているが、実装の存在が未確認
+- **影響**: Cloud Run の startup_probe / liveness_probe が正常動作しない可能性
+- **対応内容**:
+  - `frontend/src/app/api/health/route.ts` の存在確認
+  - 未実装の場合は Next.js Route Handler として実装
+  - E2Eテストで health check を確認（オプション）
+- **影響範囲**: `frontend/src/app/api/health/route.ts`（確認/新規作成）
 
 ---
 
