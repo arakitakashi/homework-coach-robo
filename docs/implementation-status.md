@@ -37,6 +37,7 @@
 - **フロントエンド Phase 2 WebSocketハンドラ統合**: AgentTransition（Phase 2b）・EmotionUpdate（Phase 2d）イベントハンドラ + Jotai atoms接続
 - **フロントエンド Phase 2b エージェント切り替えUI**: AgentIndicator・AgentIconコンポーネント + Framer Motionアニメーション + SessionContent統合（309テスト）
 - **Agent Engine デプロイ基盤 (Phase 3)**: セッションファクトリ（Firestore/VertexAi切り替え）、Agent Engineクライアントラッパー（create_session, stream_query, extract_text）、テキスト対話エンドポイントのAgent Engine経由SSEストリーミング（AGENT_ENGINE_RESOURCE_NAME設定時、ローカルRunnerフォールバック付き）、デプロイスクリプト・テストスクリプト（548テスト、カバレッジ90%）
+- **Agent Engine Terraform モジュール (Phase 3 インフラ)**: google_vertex_ai_reasoning_engine リソース、pickle/requirements/dependencies GCS管理、環境変数自動設定（AGENT_ENGINE_RESOURCE_NAME/ID/GCP_LOCATION）、Terraform Provider >= 7.13.0対応、デプロイ・更新手順ドキュメント完備
 - **フロントエンド Phase 2d 感情適応UI**: EmotionIndicator・EmotionLevelBarコンポーネント + CharacterDisplay感情連動 + Framer Motionアニメーション + SessionContent統合（332テスト、カバレッジ89.56%）
 - **Backend/Frontend/Infrastructure 整合性チェック**: API仕様、環境変数、WebSocketプロトコル、Phase 2イベント型定義の整合性確認完了（2025-02-11）
 
@@ -885,3 +886,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260210-frontend-phase2b-agent-indicator/` | Phase 2b エージェント切り替えUI（AgentIndicator + Framer Motion） |
 | `.steering/20260210-phase3-agent-engine-deploy/` | Phase 3 Agent Engine デプロイ基盤 |
 | `.steering/20260210-frontend-phase2d-emotion-ui/` | Phase 2d 感情適応UI（EmotionIndicator + CharacterDisplay感情連動） |
+| `.steering/20260211-agent-engine-terraform/` | Phase 3 Agent Engine Terraform インフラ整備 |

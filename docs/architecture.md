@@ -400,10 +400,47 @@ contents:
   - /animations/*.riv       # 宝箱などの演出
   - /audio/common/*.mp3     # よく使う音声（事前生成）
   - /images/icons/*.png     # UIアイコン
+  - /agent-engine/          # Agent Engine デプロイアーティファクト（Phase 3）
+    - pickle.pkl            # シリアライズされた Router Agent
+    - requirements.txt      # Python 依存関係
+    - dependencies.tar.gz   # アプリケーションコード（app/）
 cdn:
   enabled: true
   cache_ttl: 86400  # 24時間
 ```
+
+#### Vertex AI Agent Engine（Phase 3）
+
+```yaml
+service: homework-coach-agent-engine
+region: us-central1
+agent_framework: google-adk
+python_version: "3.10"
+package_spec:
+  pickle_object_gcs_uri: gs://homework-coach-assets-{suffix}/agent-engine/pickle.pkl
+  requirements_gcs_uri: gs://homework-coach-assets-{suffix}/agent-engine/requirements.txt
+  dependency_files_gcs_uri: gs://homework-coach-assets-{suffix}/agent-engine/dependencies.tar.gz
+deployment:
+  method: Terraform
+  module: infrastructure/terraform/modules/agent_engine/
+integration:
+  - Cloud Run 環境変数に AGENT_ENGINE_RESOURCE_NAME 設定
+  - Cloud Run 環境変数に AGENT_ENGINE_ID 設定
+  - テキスト対話（/api/v1/dialogue/run）が Agent Engine 経由に切り替え可能
+  - フォールバック: ローカル Runner（Cloud Run内実行）
+```
+
+**Terraform によるインフラ管理:**
+
+Agent Engine は Terraform モジュールで管理され、`enable_agent_engine` フラグで有効化/無効化可能。
+
+```hcl
+# infrastructure/terraform/environments/dev/terraform.tfvars
+enable_agent_engine = true
+gcp_location        = "us-central1"
+```
+
+詳細は `infrastructure/terraform/modules/agent_engine/README.md` および `.steering/20260211-agent-engine-terraform/` を参照。
 
 ---
 

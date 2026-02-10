@@ -7,12 +7,12 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = ">= 7.13.0"
     }
 
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.0"
+      version = ">= 7.13.0"
     }
 
     random = {
@@ -187,9 +187,9 @@ module "cloud_run" {
       ENABLE_EMOTION_ANALYSIS = "true"
     } : {},
     # Phase 3: Agent Engine configuration
-    var.agent_engine_resource_name != "" ? {
-      AGENT_ENGINE_RESOURCE_NAME = var.agent_engine_resource_name
-      AGENT_ENGINE_ID            = var.agent_engine_id
+    var.enable_agent_engine ? {
+      AGENT_ENGINE_RESOURCE_NAME = module.agent_engine[0].resource_name
+      AGENT_ENGINE_ID            = module.agent_engine[0].engine_id
       GCP_LOCATION               = var.gcp_location
     } : {},
   )
@@ -209,4 +209,18 @@ module "github_wif" {
   github_repo  = var.github_repo
 
   depends_on = [google_project_service.required_apis]
+}
+
+# Agent Engine Module (Phase 3)
+module "agent_engine" {
+  source = "../../modules/agent_engine"
+  count  = var.enable_agent_engine ? 1 : 0
+
+  project_id           = var.project_id
+  region               = var.gcp_location
+  pickle_gcs_uri       = "gs://homework-coach-assets-4592ba87/agent-engine/pickle.pkl"
+  requirements_gcs_uri = "gs://homework-coach-assets-4592ba87/agent-engine/requirements.txt"
+  dependencies_gcs_uri = "gs://homework-coach-assets-4592ba87/agent-engine/dependencies.tar.gz"
+
+  depends_on = [google_project_service.required_apis, module.cloud_storage]
 }

@@ -73,3 +73,8 @@ firebase-adminsdk-*.json
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+
+# Agent Engine build artifacts
+backend/agent_engine_requirements.txt
+backend/dependencies.tar.gz
+backend/pickle.pkl
