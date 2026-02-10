@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ実装完了
 
 ---
 
@@ -41,6 +41,7 @@
 - **フロントエンド Phase 2d 感情適応UI**: EmotionIndicator・EmotionLevelBarコンポーネント + CharacterDisplay感情連動 + Framer Motionアニメーション + SessionContent統合（332テスト、カバレッジ89.56%）
 - **Backend/Frontend/Infrastructure 整合性チェック**: API仕様、環境変数、WebSocketプロトコル、Phase 2イベント型定義の整合性確認完了（2025-02-11）
 - **Phase 2 Backend WebSocketイベント送信**: `voice_stream.py` に Phase 2 イベント型（ToolExecution, AgentTransition, EmotionUpdate）追加、`streaming_service.py` にイベント変換ロジック実装、統合テスト（13テスト、345テスト総数）
+- **CI/CD Agent Engineアーティファクト自動デプロイ**: cd.yml に `deploy-agent-engine` ジョブ追加、バックエンド変更検知（git diff）、エージェントシリアライズ（serialize_agent.py）、依存関係パッケージ化、GCSアップロード（pickle.pkl, requirements.txt, dependencies.tar.gz）、条件付き実行（バックエンド変更時のみ）、エラーハンドリング実装完了
 
 ---
 
@@ -879,4 +880,5 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260210-frontend-phase2b-agent-indicator/` | Phase 2b エージェント切り替えUI（AgentIndicator + Framer Motion） |
 | `.steering/20260210-phase3-agent-engine-deploy/` | Phase 3 Agent Engine デプロイ基盤 |
 | `.steering/20260210-frontend-phase2d-emotion-ui/` | Phase 2d 感情適応UI（EmotionIndicator + CharacterDisplay感情連動） |
+| `.steering/20260211-ci-cd-agent-engine-deploy/` | CI/CD Agent Engineアーティファクト自動デプロイ |
 | `.steering/20260211-agent-engine-terraform/` | Phase 3 Agent Engine Terraform インフラ整備 |

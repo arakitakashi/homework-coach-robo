@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -239,6 +239,9 @@ infrastructure/terraform/
 - `.github/workflows/ci-frontend.yml` - フロントエンドCI（lint, type check, test）
 - `.github/workflows/ci-e2e.yml` - E2Eテスト（Docker Compose + Playwright）
 - `.github/workflows/cd.yml` - 自動デプロイ（push to main）
+  - `deploy-backend` - Cloud Runバックエンドデプロイ
+  - `deploy-agent-engine` - Agent Engineアーティファクト自動デプロイ（バックエンド変更時のみ）
+  - `deploy-frontend` - Cloud Runフロントエンドデプロイ
 - `.github/workflows/deploy.yml` - マニュアルデプロイ（workflow_dispatch）
 
 詳細は [`docs/implementation-status.md`](docs/implementation-status.md) を参照。
