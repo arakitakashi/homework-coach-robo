@@ -854,6 +854,42 @@ Session:
 
 ### 7.6 デプロイ手順
 
+#### 方法1: Terraform による管理（推奨）
+
+Terraform モジュールを使用して Agent Engine を IaC 原則に従って管理する。
+
+```bash
+# 1. アーティファクトの準備
+cd backend
+uv run python scripts/serialize_agent.py  # pickle.pkl 生成
+tar -czf dependencies.tar.gz app/         # アプリケーションコード
+
+# 2. GCS にアップロード
+gsutil cp pickle.pkl gs://homework-coach-assets-{suffix}/agent-engine/
+gsutil cp requirements.txt gs://homework-coach-assets-{suffix}/agent-engine/
+gsutil cp dependencies.tar.gz gs://homework-coach-assets-{suffix}/agent-engine/
+
+# 3. Terraform でデプロイ
+cd infrastructure/terraform/environments/dev
+terraform init -upgrade  # Provider >= 7.13.0 に更新
+terraform plan           # 変更内容を確認
+terraform apply          # デプロイ実行
+```
+
+**環境変数の設定:**
+
+Cloud Run サービスには以下の環境変数が自動的に設定される（`terraform.tfvars` で `enable_agent_engine = true` の場合）：
+
+- `AGENT_ENGINE_RESOURCE_NAME`: Agent Engine のリソース名
+- `AGENT_ENGINE_ID`: Agent Engine の ID
+- `GCP_LOCATION`: us-central1
+
+詳細は `infrastructure/terraform/modules/agent_engine/README.md` および `.steering/20260211-agent-engine-terraform/` を参照。
+
+#### 方法2: Python スクリプトによる手動デプロイ（開発用）
+
+開発・検証用途で Python スクリプトから直接デプロイする。
+
 ```bash
 # 1. Agent Engine にデプロイ
 uv run python scripts/deploy_agent_engine.py \
@@ -870,7 +906,38 @@ export AGENT_ENGINE_RESOURCE_NAME=<resource-name>
 export AGENT_ENGINE_ID=<engine-id>
 ```
 
-### 7.7 A/Bテスト活用例（将来検討）
+**注意:** Python スクリプトによるデプロイは状態管理が困難なため、本番環境では Terraform 方式を推奨。
+
+### 7.7 更新手順
+
+#### Terraform による更新
+
+エージェントのコードやツールを変更した場合の更新フロー。
+
+```bash
+# 1. アーティファクトを再生成
+cd backend
+uv run python scripts/serialize_agent.py  # 最新の pickle.pkl を生成
+tar -czf dependencies.tar.gz app/         # 最新のコードをパッケージ
+
+# 2. GCS にアップロード（既存ファイルを上書き）
+gsutil cp pickle.pkl gs://homework-coach-assets-{suffix}/agent-engine/
+gsutil cp requirements.txt gs://homework-coach-assets-{suffix}/agent-engine/
+gsutil cp dependencies.tar.gz gs://homework-coach-assets-{suffix}/agent-engine/
+
+# 3. Terraform で再デプロイ
+cd infrastructure/terraform/environments/dev
+terraform apply  # 変更を検出して Agent Engine を更新
+```
+
+**注意:**
+- Terraform は GCS の変更を自動検出しないため、`terraform apply` で強制更新が必要
+- Agent Engine の更新中は一時的にサービスが停止する可能性がある
+- 本番環境では Blue-Green デプロイメント等の戦略を検討
+
+詳細は `infrastructure/terraform/modules/agent_engine/README.md` の「更新手順」セクションを参照。
+
+### 7.8 A/Bテスト活用例（将来検討）
 
 > **注記**: A/Bテスト環境構築は現時点ではスコープ外とし、ユーザーベースが確立された後に再検討する（GitHub Issue #55 クローズ済み）。Agent Engine の組み込みA/Bテスト機能を活用予定。
 
@@ -881,11 +948,13 @@ export AGENT_ENGINE_ID=<engine-id>
 | エージェント構成 | 単一 | マルチ | 教科別正答率 |
 | 励まし頻度 | 毎回 | 適応的 | セッション時間 |
 
-### 7.8 今後の拡張（Phase 3+）
+### 7.9 今後の拡張（Phase 3+）
 
 - 音声ストリーミング（WebSocket）のAgent Engine移行（Agent Engine のリアルタイムストリーミング対応待ち）
 - Cloud Run エージェント関連サービスの段階的削除
 - A/Bテスト環境構築
+- 本番環境への展開（prod環境用Terraformモジュール）
+- マルチリージョン対応とフェイルオーバー構成
 
 ---
 
