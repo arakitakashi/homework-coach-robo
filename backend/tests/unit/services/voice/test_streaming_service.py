@@ -67,7 +67,7 @@ class TestVoiceStreamingServiceInit:
     """VoiceStreamingService初期化のテスト"""
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_creates_runner_with_correct_config(
         self,
         mock_create_agent: MagicMock,
@@ -94,7 +94,7 @@ class TestVoiceStreamingServiceInit:
         assert service is not None
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_custom_app_name(
         self,
         _mock_create_agent: MagicMock,
@@ -117,7 +117,7 @@ class TestSendAudio:
 
     @patch("app.services.voice.streaming_service.LiveRequestQueue")
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_sends_blob_to_queue(
         self,
         _mock_create_agent: MagicMock,
@@ -148,7 +148,7 @@ class TestSendText:
 
     @patch("app.services.voice.streaming_service.LiveRequestQueue")
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_sends_content_to_queue(
         self,
         _mock_create_agent: MagicMock,
@@ -178,7 +178,7 @@ class TestClose:
 
     @patch("app.services.voice.streaming_service.LiveRequestQueue")
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_closes_queue(
         self,
         _mock_create_agent: MagicMock,
@@ -203,7 +203,7 @@ class TestConvertEventToMessage:
     """_convert_event_to_messageメソッドのテスト"""
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_converts_turn_complete(
         self,
         _mock_create_agent: MagicMock,
@@ -223,7 +223,7 @@ class TestConvertEventToMessage:
         assert result.author == "agent"
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_converts_interrupted(
         self,
         _mock_create_agent: MagicMock,
@@ -242,7 +242,7 @@ class TestConvertEventToMessage:
         assert result.interrupted is True
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_converts_input_transcription(
         self,
         _mock_create_agent: MagicMock,
@@ -264,7 +264,7 @@ class TestConvertEventToMessage:
         assert result.inputTranscription.finished is True
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_converts_output_transcription(
         self,
         _mock_create_agent: MagicMock,
@@ -286,7 +286,7 @@ class TestConvertEventToMessage:
         assert result.outputTranscription.finished is False
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_converts_audio_content(
         self,
         _mock_create_agent: MagicMock,
@@ -314,7 +314,7 @@ class TestConvertEventToMessage:
         assert part.inlineData.data == expected_b64
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_skips_usage_metadata_events(
         self,
         _mock_create_agent: MagicMock,
@@ -339,7 +339,7 @@ class TestConvertEventToMessage:
         assert result is None
 
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     def test_skips_partial_events_without_content(
         self,
         _mock_create_agent: MagicMock,
@@ -369,7 +369,7 @@ class TestReceiveEvents:
 
     @pytest.mark.asyncio
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     async def test_yields_converted_events(
         self,
         _mock_create_agent: MagicMock,
@@ -398,7 +398,7 @@ class TestReceiveEvents:
 
     @pytest.mark.asyncio
     @patch("app.services.voice.streaming_service.Runner")
-    @patch("app.services.voice.streaming_service.create_socratic_agent")
+    @patch("app.services.voice.streaming_service.create_router_agent")
     async def test_skips_non_convertible_events(
         self,
         _mock_create_agent: MagicMock,
