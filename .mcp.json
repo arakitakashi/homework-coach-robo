@@ -1,0 +1,18 @@
+{
+	"mcpServers": {
+		"context7": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@upthink/mcp-context7@latest"
+			]
+		},
+		"playwright": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@upthink/mcp-playwright@latest"
+			]
+		}
+	}
+}
