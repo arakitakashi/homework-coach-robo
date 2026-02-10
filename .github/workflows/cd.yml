@@ -70,10 +70,117 @@ jobs:
             --allow-unauthenticated \
             --quiet
 
+  deploy-agent-engine:
+    name: Deploy Agent Engine Artifacts
+    runs-on: ubuntu-latest
+    needs: ci-backend
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 全履歴取得（git diffに必要）
+
+      - name: Check backend changes
+        id: backend_changes
+        run: |
+          if [ -z "${{ github.event.before }}" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "⚠ No previous commit (initial push), assuming backend changed"
+          elif git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^backend/'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "✓ Backend changes detected"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "✓ No backend changes, skipping Agent Engine deployment"
+          fi
+
+      - name: Set up Python
+        if: steps.backend_changes.outputs.changed == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        if: steps.backend_changes.outputs.changed == 'true'
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install backend dependencies
+        if: steps.backend_changes.outputs.changed == 'true'
+        working-directory: backend
+        run: |
+          uv sync
+
+      - name: Serialize Agent
+        if: steps.backend_changes.outputs.changed == 'true'
+        working-directory: backend
+        run: |
+          echo "Serializing Router Agent..."
+          uv run python scripts/serialize_agent.py
+          if [ ! -f pickle.pkl ]; then
+            echo "✗ Error: pickle.pkl not generated"
+            exit 1
+          fi
+          echo "✓ Serialized successfully ($(stat -c%s pickle.pkl) bytes)"
+
+      - name: Package dependencies
+        if: steps.backend_changes.outputs.changed == 'true'
+        working-directory: backend
+        run: |
+          echo "Packaging dependencies..."
+          tar -czf dependencies.tar.gz app/
+          if [ ! -f dependencies.tar.gz ]; then
+            echo "✗ Error: dependencies.tar.gz not generated"
+            exit 1
+          fi
+          echo "✓ Packaged successfully ($(stat -c%s dependencies.tar.gz) bytes)"
+
+      - name: Authenticate to Google Cloud
+        if: steps.backend_changes.outputs.changed == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        if: steps.backend_changes.outputs.changed == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload artifacts to GCS
+        if: steps.backend_changes.outputs.changed == 'true'
+        working-directory: backend
+        run: |
+          echo "Finding GCS bucket..."
+          BUCKET_NAME=$(gcloud storage buckets list \
+            --format="value(name)" \
+            --filter="name:homework-coach-assets")
+
+          if [ -z "$BUCKET_NAME" ]; then
+            echo "✗ Error: No GCS bucket found matching 'homework-coach-assets'"
+            exit 1
+          fi
+
+          echo "Found bucket: $BUCKET_NAME"
+          echo "Uploading artifacts..."
+
+          gcloud storage cp pickle.pkl "gs://${BUCKET_NAME}/agent-engine/" || exit 1
+          gcloud storage cp agent_engine_requirements.txt "gs://${BUCKET_NAME}/agent-engine/requirements.txt" || exit 1
+          gcloud storage cp dependencies.tar.gz "gs://${BUCKET_NAME}/agent-engine/" || exit 1
+
+          echo "✓ All artifacts uploaded successfully"
+          echo "  - gs://${BUCKET_NAME}/agent-engine/pickle.pkl"
+          echo "  - gs://${BUCKET_NAME}/agent-engine/requirements.txt"
+          echo "  - gs://${BUCKET_NAME}/agent-engine/dependencies.tar.gz"
+
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
-    needs: [ci-frontend, deploy-backend]
+    needs: [ci-frontend, deploy-backend, deploy-agent-engine]
     permissions:
       contents: read
       id-token: write
