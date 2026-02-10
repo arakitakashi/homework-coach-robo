@@ -12,7 +12,7 @@ from google.adk.sessions.base_session_service import (
     ListSessionsResponse,
 )
 from google.adk.sessions.session import Session
-from google.cloud import firestore  # type: ignore[attr-defined]
+from google.cloud import firestore
 from typing_extensions import override
 
 from app.services.adk.sessions.converters import (
