@@ -6,6 +6,7 @@ ADK Runner.run_live() + LiveRequestQueueを使用した
 
 import base64
 import logging
+import os
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
@@ -13,7 +14,7 @@ from google.adk import Runner
 from google.adk.agents import LiveRequestQueue
 from google.adk.memory import BaseMemoryService
 from google.adk.runners import RunConfig  # type: ignore[attr-defined]
-from google.adk.sessions import BaseSessionService
+from google.adk.sessions import BaseSessionService, VertexAiSessionService
 from google.genai import types
 
 from app.schemas.voice_stream import (
@@ -22,7 +23,8 @@ from app.schemas.voice_stream import (
     ADKInlineData,
     ADKTranscription,
 )
-from app.services.adk.runner.agent import create_socratic_agent
+from app.services.adk.agents.router import create_router_agent
+from app.services.adk.sessions.firestore_session_service import FirestoreSessionService
 
 if TYPE_CHECKING:
     from google.adk.events import Event
@@ -43,21 +45,57 @@ class VoiceStreamingService:
 
     ADK Runner.run_live() + LiveRequestQueueを使用して
     Gemini Live APIと双方向音声ストリーミングを行う。
+
+    Phase 2 Router Agent + Agent Engine統合版。
     """
 
     def __init__(
         self,
-        session_service: BaseSessionService,
-        memory_service: BaseMemoryService,
+        session_service: BaseSessionService | None = None,
+        memory_service: BaseMemoryService | None = None,
         app_name: str = DEFAULT_APP_NAME,
+        use_agent_engine: bool = False,
+        project_id: str | None = None,
+        location: str | None = None,
+        agent_engine_id: str | None = None,
     ) -> None:
-        self._session_service = session_service
+        """初期化
+
+        Args:
+            session_service: セッションサービス（後方互換用）
+            memory_service: メモリサービス
+            app_name: アプリケーション名
+            use_agent_engine: Agent Engineモードを使用するか
+            project_id: Google Cloud プロジェクトID（Agent Engine用）
+            location: リージョン（Agent Engine用）
+            agent_engine_id: Agent Engine ID
+        """
+        # Phase 2 Router Agent統合
+        self._agent = create_router_agent(model=LIVE_MODEL)
+
+        # セッションサービスの初期化
+        if session_service is not None:
+            # 後方互換: 引数で直接渡された場合
+            self._session_service = session_service
+        elif use_agent_engine:
+            # Agent Engine統合（新規）
+            self._session_service = VertexAiSessionService(
+                project_id=project_id or os.getenv("PROJECT_ID", ""),
+                location=location or os.getenv("LOCATION", "us-central1"),
+                agent_engine_id=agent_engine_id or os.getenv("AGENT_ENGINE_ID", ""),
+            )
+        else:
+            # 既存のFirestoreベース（後方互換）
+            self._session_service = FirestoreSessionService()
+
+        # メモリサービス（後でMemory Bank統合）
         self._memory_service = memory_service
-        self._agent = create_socratic_agent(model=LIVE_MODEL)
+
+        # Runner初期化
         self._runner = Runner(
             app_name=app_name,
             agent=self._agent,
-            session_service=session_service,
+            session_service=self._session_service,
             memory_service=memory_service,
         )
         self._queue = LiveRequestQueue()  # type: ignore[no-untyped-call]
