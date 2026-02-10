@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -248,13 +248,6 @@ infrastructure/terraform/
 **整合性チェック実施日**: 2025-02-11
 
 Backend、Frontend、Infrastructureの整合性チェックを実施し、以下の課題を特定しました。
-
-#### 🔴 優先度: 高 (P0)
-
-**Phase 2 WebSocketイベント送信未実装** ([#94](https://github.com/arakitakashi/homework-coach-robo/issues/94))
-- **問題**: Backend が Phase 2 イベント（`toolExecution`, `agentTransition`, `emotionUpdate`）を送信していない
-- **影響**: Frontend は受信ハンドラ実装済みだが、Backend から送信されないため Phase 2 機能が動作しない
-- **対応**: `backend/app/schemas/voice_stream.py` にイベント型追加、`streaming_service.py` に変換ロジック実装
 
 #### 🟡 優先度: 中 (P1)
 

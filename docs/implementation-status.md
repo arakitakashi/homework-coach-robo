@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了
 
 ---
 
@@ -40,23 +40,13 @@
 - **Agent Engine Terraform モジュール (Phase 3 インフラ)**: google_vertex_ai_reasoning_engine リソース、pickle/requirements/dependencies GCS管理、環境変数自動設定（AGENT_ENGINE_RESOURCE_NAME/ID/GCP_LOCATION）、Terraform Provider >= 7.13.0対応、デプロイ・更新手順ドキュメント完備
 - **フロントエンド Phase 2d 感情適応UI**: EmotionIndicator・EmotionLevelBarコンポーネント + CharacterDisplay感情連動 + Framer Motionアニメーション + SessionContent統合（332テスト、カバレッジ89.56%）
 - **Backend/Frontend/Infrastructure 整合性チェック**: API仕様、環境変数、WebSocketプロトコル、Phase 2イベント型定義の整合性確認完了（2025-02-11）
+- **Phase 2 Backend WebSocketイベント送信**: `voice_stream.py` に Phase 2 イベント型（ToolExecution, AgentTransition, EmotionUpdate）追加、`streaming_service.py` にイベント変換ロジック実装、統合テスト（13テスト、345テスト総数）
 
 ---
 
 ## 既知の問題
 
 以下は、整合性チェック（2025-02-11実施）で発見された既知の問題です。各問題には対応するGitHub Issueが作成されています。
-
-### 🔴 優先度: 高 (P0)
-
-**Phase 2 WebSocketイベント送信未実装** ([#94](https://github.com/arakitakashi/homework-coach-robo/issues/94))
-- **問題**: `backend/app/schemas/voice_stream.py` の `ADKEventMessage` に Phase 2 イベントフィールドが欠落
-- **影響**: Frontend は Phase 2 イベント（`toolExecution`, `agentTransition`, `emotionUpdate`）の受信ハンドラを実装済みだが、Backend が送信していないため動作しない
-- **対応内容**:
-  - `ADKToolExecutionEvent`, `ADKAgentTransitionEvent`, `ADKEmotionUpdateEvent` クラス追加
-  - `streaming_service.py` の `_convert_event_to_message()` にイベント変換ロジック追加
-  - Phase 2 イベント変換のユニットテスト追加
-- **影響範囲**: `backend/app/schemas/voice_stream.py`, `backend/app/services/voice/streaming_service.py`, テスト
 
 ### 🟡 優先度: 中 (P1)
 
@@ -252,8 +242,8 @@ data: {"error": "...", "code": "INTERNAL_ERROR"}
 
 | コンポーネント | 説明 |
 |--------------|------|
-| `services/voice/streaming_service.py` | VoiceStreamingService（ADK Runner.run_live() + LiveRequestQueue） |
-| `schemas/voice_stream.py` | WebSocketメッセージスキーマ（Audio, Text, Config, Error） |
+| `services/voice/streaming_service.py` | VoiceStreamingService（ADK Runner.run_live() + LiveRequestQueue）、Phase 2 イベント変換ロジック |
+| `schemas/voice_stream.py` | WebSocketメッセージスキーマ（Audio, Text, Config, Error, **Phase 2 イベント: ToolExecution, AgentTransition, EmotionUpdate**） |
 | `api/v1/voice_stream.py` | WebSocketエンドポイント（Full-duplex） |
 
 **WebSocketエンドポイント:**
@@ -270,6 +260,9 @@ Server → Client:
   - JSON: {"type": "transcript", "text": "...", "role": "user|model"}
   - JSON: {"type": "turn_complete"}
   - JSON: {"type": "error", "message": "..."}
+  - JSON (Phase 2): {"type": "toolExecution", "tool_name": "...", "status": "running|completed|failed", ...}
+  - JSON (Phase 2): {"type": "agentTransition", "from_agent": "...", "to_agent": "...", "reason": "..."}
+  - JSON (Phase 2): {"type": "emotionUpdate", "emotion": "...", "intensity": 1-5, "trigger": "..."}
 ```
 
 **使用モデル**: `gemini-live-2.5-flash-native-audio`（Vertex AI）

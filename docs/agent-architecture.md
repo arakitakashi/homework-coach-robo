@@ -833,9 +833,13 @@ Cloud Run (FastAPI)
 │               └── Router Agent (in-process)
 │
 └── WebSocket /ws/{user_id}/{session_id}
-    └── VoiceStreamingService (変更なし)
-        └── Runner.run_live()
-            └── Socratic Agent (in-process, 音声専用)
+    └── VoiceStreamingService (**Phase 2 イベント送信実装完了**)
+        ├── Runner.run_live()
+        │   └── Socratic Agent (in-process, 音声専用)
+        └── Phase 2 Event Converter
+            ├── ToolExecution → ADKToolExecutionEvent
+            ├── AgentTransition → ADKAgentTransitionEvent
+            └── EmotionUpdate → ADKEmotionUpdateEvent
 
 Session:
 ├── VertexAiSessionService (AGENT_ENGINE_ID 設定時)
@@ -990,8 +994,12 @@ Phase 3: Agent Engine デプロイ基盤 (✅ 完了)
 ├── Step 1: セッションファクトリ（Firestore/VertexAi切り替え）
 ├── Step 2: Agent Engine クライアントラッパー
 ├── Step 3: テキスト対話エンドポイントの Agent Engine 経由切り替え
-└── Step 4: デプロイスクリプト + テストスクリプト
-    ※ A/Bテスト環境構築は将来検討（#55 クローズ）
+├── Step 4: デプロイスクリプト + テストスクリプト
+│   ※ A/Bテスト環境構築は将来検討（#55 クローズ）
+└── Step 5: Phase 2 WebSocketイベント送信実装 (✅ 完了)
+    ├── voice_stream.py に Phase 2 イベント型追加
+    ├── streaming_service.py にイベント変換ロジック追加
+    └── テスト追加（+13テスト、総345テスト）
 ```
 
 ### 8.2 依存関係
@@ -1013,6 +1021,7 @@ Phase 2d（感情）───────────┘
 - **Phase 2d は実装完了** ✅（update_emotion_tool + 感情ベースルーティング + サブエージェントプロンプト更新）
 - **フロントエンド Phase 2 型定義・状態管理基盤** ✅（Phase 2a-2d 全サブフェーズの型定義25型 + Jotai atoms 12個。PR #60）
 - **Phase 3 は実装完了** ✅（セッションファクトリ + AgentEngineClient + dialogue_runner Agent Engine 経由切り替え + デプロイスクリプト）
+- **Phase 2 Backend WebSocketイベント送信** ✅（voice_stream.py Phase 2 イベント型 + streaming_service.py 変換ロジック + 統合テスト、Issue #94 解決）
 
 ### 8.3 優先度と推奨実装順序
 

@@ -12,6 +12,7 @@ ref/
 node_modules/
 .venv/
 venv/
+.uv-cache/
 __pycache__/
 *.pyc
 *.pyo
