@@ -295,6 +295,44 @@ mkdir -p .steering/20250115-add-tag-feature
 
 #### 6. 品質チェック
 
+---
+
+## デプロイ
+
+このプロジェクトは、GitHub Actionsによる自動デプロイが設定されています。
+
+### 自動デプロイ（推奨）
+
+`main` ブランチにマージすると、自動的にGCP Cloud Runにデプロイされます。
+
+**CI/CD パイプライン:**
+- **CI**: `.github/workflows/ci-*.yml` - lint, type check, test
+- **CD**: `.github/workflows/cd.yml` - 自動デプロイ
+  - Backend → Cloud Run
+  - Agent Engine artifacts → GCS（バックエンド変更時のみ）
+  - Frontend → Cloud Run
+
+### 初回セットアップ
+
+初めてデプロイする場合は、以下を事前に実行してください：
+
+1. **Terraformでインフラをデプロイ**
+   ```bash
+   cd infrastructure/terraform/bootstrap
+   terraform init -backend=false && terraform apply
+
+   cd ../environments/dev
+   terraform init && terraform apply
+   ```
+
+2. **GitHub Secretsを設定**
+   - `GCP_WORKLOAD_IDENTITY_PROVIDER`
+   - `GCP_SERVICE_ACCOUNT`
+
+詳細は `infrastructure/terraform/` および `.github/workflows/` を参照してください。
+
+---
+
 ## インフラストラクチャ
 
 ### Agent Engine デプロイ（Phase 3）
