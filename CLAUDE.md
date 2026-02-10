@@ -243,6 +243,33 @@ infrastructure/terraform/
 
 詳細は [`docs/implementation-status.md`](docs/implementation-status.md) を参照。
 
+### 既知の問題と対応中の課題
+
+**整合性チェック実施日**: 2025-02-11
+
+Backend、Frontend、Infrastructureの整合性チェックを実施し、以下の課題を特定しました。
+
+#### 🔴 優先度: 高 (P0)
+
+**Phase 2 WebSocketイベント送信未実装** ([#94](https://github.com/arakitakashi/homework-coach-robo/issues/94))
+- **問題**: Backend が Phase 2 イベント（`toolExecution`, `agentTransition`, `emotionUpdate`）を送信していない
+- **影響**: Frontend は受信ハンドラ実装済みだが、Backend から送信されないため Phase 2 機能が動作しない
+- **対応**: `backend/app/schemas/voice_stream.py` にイベント型追加、`streaming_service.py` に変換ロジック実装
+
+#### 🟡 優先度: 中 (P1)
+
+**環境変数ドキュメント不足** ([#95](https://github.com/arakitakashi/homework-coach-robo/issues/95))
+- **問題**: 環境変数の一覧と説明が体系化されていない
+- **影響**: 開発者オンボーディングとデプロイ設定ミスのリスク
+- **対応**: `.env.example` 作成、`docs/implementation-status.md` に環境変数セクション追加
+
+#### 🟢 優先度: 低 (P2)
+
+**Frontend Health Check 未確認** ([#96](https://github.com/arakitakashi/homework-coach-robo/issues/96))
+- **問題**: Terraform で `/api/health` を設定しているが実装未確認
+- **影響**: Cloud Run の startup/liveness probe の正常動作確認が必要
+- **対応**: `frontend/src/app/api/health/route.ts` の存在確認・作成
+
 ### 開発方針
 
 - **テスト駆動開発（TDD）を徹底**: t_wadaが提唱するRed-Green-Refactorサイクルを実践
