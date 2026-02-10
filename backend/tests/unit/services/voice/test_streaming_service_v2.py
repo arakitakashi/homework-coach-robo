@@ -249,6 +249,10 @@ class TestVoiceStreamingServiceRunLiveCompatibility:
         mock_event.input_transcription = None
         mock_event.output_transcription = None
         mock_event.content = None
+        # Phase 2: 属性を明示的に None に設定
+        mock_event.tool_execution = None
+        mock_event.agent_transition = None
+        mock_event.emotion_update = None
 
         async def mock_run_live(*_args, **_kwargs):
             """モックrun_live"""

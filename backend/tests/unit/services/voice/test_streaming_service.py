@@ -37,6 +37,10 @@ def create_mock_event(
     event.content = content
     event.partial = partial
     event.usage_metadata = usage_metadata
+    # Phase 2: 属性を明示的に None に設定
+    event.tool_execution = None
+    event.agent_transition = None
+    event.emotion_update = None
     return event
 
 

@@ -207,6 +207,39 @@ class VoiceStreamingService:
                 kwargs["content"] = {"parts": parts}
                 has_relevant_data = True
 
+        # Phase 2a: ツール実行イベント
+        if hasattr(event, "tool_execution") and event.tool_execution:
+            from app.schemas.voice_stream import ADKToolExecutionEvent
+
+            kwargs["toolExecution"] = ADKToolExecutionEvent(
+                toolName=event.tool_execution.tool_name,
+                status=event.tool_execution.status,
+                result=getattr(event.tool_execution, "result", None),
+            )
+            has_relevant_data = True
+
+        # Phase 2b: エージェント遷移イベント
+        if hasattr(event, "agent_transition") and event.agent_transition:
+            from app.schemas.voice_stream import ADKAgentTransitionEvent
+
+            kwargs["agentTransition"] = ADKAgentTransitionEvent(
+                fromAgent=event.agent_transition.from_agent,
+                toAgent=event.agent_transition.to_agent,
+                reason=event.agent_transition.reason,
+            )
+            has_relevant_data = True
+
+        # Phase 2d: 感情更新イベント
+        if hasattr(event, "emotion_update") and event.emotion_update:
+            from app.schemas.voice_stream import ADKEmotionUpdateEvent
+
+            kwargs["emotionUpdate"] = ADKEmotionUpdateEvent(
+                emotion=event.emotion_update.emotion,
+                frustrationLevel=event.emotion_update.frustration_level,
+                engagementLevel=event.emotion_update.engagement_level,
+            )
+            has_relevant_data = True
+
         if not has_relevant_data:
             return None
 

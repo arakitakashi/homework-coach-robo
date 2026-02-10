@@ -29,6 +29,30 @@ class ADKContentPart(BaseModel):
     inlineData: ADKInlineData | None = None
 
 
+class ADKToolExecutionEvent(BaseModel):
+    """Phase 2a: ツール実行イベント"""
+
+    toolName: str
+    status: str
+    result: dict[str, object] | None = None
+
+
+class ADKAgentTransitionEvent(BaseModel):
+    """Phase 2b: エージェント遷移イベント"""
+
+    fromAgent: str
+    toAgent: str
+    reason: str
+
+
+class ADKEmotionUpdateEvent(BaseModel):
+    """Phase 2d: 感情更新イベント"""
+
+    emotion: str
+    frustrationLevel: float
+    engagementLevel: float
+
+
 class ADKEventMessage(BaseModel):
     """サーバーからクライアントへのADKイベントメッセージ
 
@@ -41,6 +65,10 @@ class ADKEventMessage(BaseModel):
     inputTranscription: ADKTranscription | None = None
     outputTranscription: ADKTranscription | None = None
     content: dict[str, list[ADKContentPart]] | None = None
+    # Phase 2: Additional event fields
+    toolExecution: ADKToolExecutionEvent | None = None
+    agentTransition: ADKAgentTransitionEvent | None = None
+    emotionUpdate: ADKEmotionUpdateEvent | None = None
 
 
 class TextInputMessage(BaseModel):
