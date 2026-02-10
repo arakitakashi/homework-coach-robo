@@ -1,10 +1,62 @@
-# Task List - CI/CD Agent Engine Artifact Deployment
+# Task List - CI/CD Agent Engine Artifact Deployment & Issue #104 Emergency Fix
+
+## Phase 0: 緊急対応（P0 Critical - Issue #104）
+
+### 0.1 本番環境エラーの根本原因確認
+
+- [x] 現在のブランチ確認（feature/ci-cd-agent-engine-deploy）
+- [x] Issue #104 の内容確認
+- [x] `terraform.tfvars` の現在の設定確認
+- [x] `variables.tf` でPhase 2フラグの定義確認
+
+### 0.2 Terraform設定の修正
+
+- [x] `environments/dev/terraform.tfvars` を編集
+  - [x] Phase 2フラグを有効化:
+    ```hcl
+    # Phase 2 Feature Flags (Issue #104 emergency fix)
+    enable_phase2_tools       = true
+    enable_phase2_multi_agent = true
+    enable_phase2_emotion     = true
+    # enable_phase2_rag is not needed yet (Phase 2c not implemented)
+    ```
+  - [x] 一時的に `enable_agent_engine = false` に変更（ローカルRunnerフォールバック）
+  - [x] コメントで理由を明記（Agent Engineアーティファクト未作成のため）
+- [x] 環境変数への影響を確認（main.tf 177-194行）
+  - [x] ENABLE_ADK_TOOLS = "true" が追加される
+  - [x] ENABLE_MULTI_AGENT = "true" が追加される
+  - [x] ENABLE_EMOTION_ANALYSIS = "true" が追加される
+  - [x] AGENT_ENGINE_RESOURCE_NAME が削除される（フォールバック有効化）
+
+### 0.3 Terraform構文チェック
+
+- [x] Terraform初期化を試行（GCP認証情報不足により失敗）
+- [x] Terraform fmt チェック（フォーマットは正しい）
+- [x] modules/cloud_run がbackend_env_varsを正しく処理することを確認
+  - [x] main.tf 68-73行で動的ブロック展開
+  - [x] Phase 2フラグに応じた環境変数が追加される構造
+- [x] 変更の影響範囲を推定:
+  - [x] Cloud Run Backend環境変数の更新（3つ追加）
+  - [x] Agent Engineリソースの削除（enable_agent_engine = false）
+  - [x] Firestore Indexes作成（enable_phase2_* = true）
+  - [x] BigQuery Tables作成（enable_phase2_multi_agent/emotion = true）
+  - [x] Secret Manager（Gemini API Key）作成
+
+### 0.4 本番環境への適用判断
+
+- [ ] Plan結果をユーザーに報告
+- [ ] ユーザー承認を得る（本番環境への適用）
+- [ ] **承認後のみ**: `terraform apply` 実行
+- [ ] 本番環境のCloud Runログ確認
+- [ ] エラーが解消されたことを確認
+
+---
 
 ## Phase 1: 事前確認
 
-- [ ] 現在のブランチ確認（feature/ci-cd-agent-engine-deploy）
-- [ ] ステアリングディレクトリ作成（`.steering/20260211-ci-cd-agent-engine-deploy/`）
-- [ ] requirements.md, design.md 作成完了
+- [x] 現在のブランチ確認（feature/ci-cd-agent-engine-deploy）
+- [x] ステアリングディレクトリ作成（`.steering/20260211-ci-cd-agent-engine-deploy/`）
+- [x] requirements.md, design.md 作成完了
 - [ ] 既存のserialize_agent.pyスクリプト確認
 - [ ] 既存のagent_engine_requirements.txt確認
 
