@@ -148,7 +148,7 @@ class TestVoiceStreamingServiceInitialization:
             "os.environ",
             {
                 "PROJECT_ID": "env-project",
-                "LOCATION": "env-location",
+                "GCP_LOCATION": "env-location",
                 "AGENT_ENGINE_ID": "env-engine-id",
             },
         ):
@@ -266,9 +266,7 @@ class TestVoiceStreamingServiceRunLiveCompatibility:
 
         # Act
         events = []
-        async for event in service.receive_events(
-            user_id="test-user", session_id="test-session"
-        ):
+        async for event in service.receive_events(user_id="test-user", session_id="test-session"):
             events.append(event)
 
         # Assert

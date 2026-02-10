@@ -81,7 +81,7 @@ class VoiceStreamingService:
             # Agent Engine統合（新規）
             self._session_service = VertexAiSessionService(
                 project_id=project_id or os.getenv("PROJECT_ID", ""),
-                location=location or os.getenv("LOCATION", "us-central1"),
+                location=location or os.getenv("GCP_LOCATION", "us-central1"),
                 agent_engine_id=agent_engine_id or os.getenv("AGENT_ENGINE_ID", ""),
             )
         else:
