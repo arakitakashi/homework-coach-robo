@@ -129,7 +129,15 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 			}
 
 			// 新しいクライアントを作成
-			const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000"
+			// WebSocket URLの優先順位:
+			// 1. NEXT_PUBLIC_WS_URL（明示的設定）
+			// 2. NEXT_PUBLIC_API_URLから導出（http→ws, https→wss）
+			// 3. ローカル開発用デフォルト
+			const baseUrl =
+				process.env.NEXT_PUBLIC_WS_URL ||
+				(process.env.NEXT_PUBLIC_API_URL
+					? process.env.NEXT_PUBLIC_API_URL.replace(/^http/, "ws")
+					: "ws://localhost:8000")
 			const client = new VoiceWebSocketClient({
 				baseUrl,
 				userId,
