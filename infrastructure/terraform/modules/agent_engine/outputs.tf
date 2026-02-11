@@ -2,7 +2,7 @@
 
 output "resource_name" {
   description = "The full resource name of the Agent Engine"
-  value       = google_vertex_ai_reasoning_engine.homework_coach_agent.name
+  value       = google_vertex_ai_reasoning_engine.homework_coach_agent.id
 }
 
 output "engine_id" {
