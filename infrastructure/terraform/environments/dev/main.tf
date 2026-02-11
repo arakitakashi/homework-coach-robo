@@ -188,10 +188,10 @@ module "cloud_run" {
     } : {},
     # Phase 3: Agent Engine configuration
     var.enable_agent_engine ? {
-      PROJECT_ID                 = var.project_id
-      AGENT_ENGINE_RESOURCE_NAME = module.agent_engine[0].resource_name
+      AGENT_ENGINE_RESOURCE_NAME = "projects/${var.project_id}/locations/${var.gcp_location}/reasoningEngines/${module.agent_engine[0].engine_id}"
       AGENT_ENGINE_ID            = module.agent_engine[0].engine_id
       GCP_LOCATION               = var.gcp_location
+      PROJECT_ID                 = var.project_id
     } : {},
   )
 
