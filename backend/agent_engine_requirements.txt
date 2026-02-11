@@ -1,0 +1,13 @@
+# Agent Engine デプロイ用 Python 依存関係
+# Agent Engine 環境で必要な最小限のパッケージ
+
+# Google ADK & GenAI
+google-adk>=1.23.0
+google-genai>=1.0.0
+google-cloud-aiplatform[adk,agent_engines]>=1.88.0
+
+# Serialization
+cloudpickle>=3.0.0
+
+# Runtime dependencies
+pydantic>=2.0.0

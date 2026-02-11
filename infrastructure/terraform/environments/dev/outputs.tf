@@ -85,6 +85,22 @@ output "phase2_gemini_api_key_secret_id" {
   value       = module.secret_manager.gemini_api_key_secret_id
 }
 
+# Phase 3: Agent Engine outputs
+output "agent_engine_resource_name" {
+  description = "The full resource name of the Agent Engine (if created)"
+  value       = var.enable_agent_engine ? module.agent_engine[0].resource_name : null
+}
+
+output "agent_engine_id" {
+  description = "The ID of the Agent Engine (if created)"
+  value       = var.enable_agent_engine ? module.agent_engine[0].engine_id : null
+}
+
+output "agent_engine_display_name" {
+  description = "The display name of the Agent Engine (if created)"
+  value       = var.enable_agent_engine ? module.agent_engine[0].display_name : null
+}
+
 output "phase2_bigquery_agent_metrics_table" {
   description = "The agent_metrics BigQuery table ID (if created)"
   value       = module.bigquery.agent_metrics_table_id
@@ -118,5 +134,7 @@ output "summary" {
     phase2_multi_agent = var.enable_phase2_multi_agent
     phase2_rag         = var.enable_phase2_rag
     phase2_emotion     = var.enable_phase2_emotion
+    # Phase 3: Agent Engine
+    agent_engine_enabled = var.enable_agent_engine
   }
 }
