@@ -67,8 +67,8 @@
 - [x] **ユーザー実行**: `terraform apply` で適用
   - [x] Agent Engine リソース作成（ID: 5984689068984762368）
   - [x] Cloud Run Backend環境変数更新（AGENT_ENGINE_ID, AGENT_ENGINE_RESOURCE_NAME）
-- [ ] **ユーザー実行**: 本番環境のCloud Runログ確認（Agent Engine 正常動作確認）
-- [ ] 変更をコミット・プッシュ
+- [x] **ユーザー実行**: 本番環境のCloud Runログ確認（Agent Engine 正常動作確認）
+- [x] 変更をコミット・プッシュ
 
 ---
 
