@@ -54,6 +54,22 @@
 - [x] **ユーザー実行**: 本番環境のCloud Runログ確認
 - [x] **ユーザー実行**: エラーが解消されたことを確認
 
+### 0.5 Agent Engine 再有効化（CI/CD パイプライン完成後）
+
+- [x] GCSアーティファクト確認
+  - [x] pickle.pkl 存在確認
+  - [x] requirements.txt 存在確認
+  - [x] dependencies.tar.gz 存在確認
+- [x] terraform.tfvars 編集
+  - [x] enable_agent_engine = true に変更
+  - [x] コメント更新（アーティファクトデプロイ完了を記載）
+- [x] **ユーザー実行**: `terraform plan` で変更内容を確認
+- [x] **ユーザー実行**: `terraform apply` で適用
+  - [x] Agent Engine リソース作成（ID: 5984689068984762368）
+  - [x] Cloud Run Backend環境変数更新（AGENT_ENGINE_ID, AGENT_ENGINE_RESOURCE_NAME）
+- [ ] **ユーザー実行**: 本番環境のCloud Runログ確認（Agent Engine 正常動作確認）
+- [ ] 変更をコミット・プッシュ
+
 ---
 
 ## Phase 1: 事前確認

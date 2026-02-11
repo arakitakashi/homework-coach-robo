@@ -26,8 +26,10 @@ enable_phase2_emotion     = true
 # =============================================================================
 # Phase 3: Agent Engine (Terraform-managed deployment)
 # =============================================================================
-# TEMPORARY: Set to false until Agent Engine artifacts are deployed (Issue #104)
-# Once CI/CD pipeline is ready and artifacts (pickle.pkl, requirements.txt,
-# dependencies.tar.gz) are uploaded to GCS, this can be enabled.
-enable_agent_engine = false
+# Agent Engine artifacts are deployed to GCS:
+#   - gs://homework-coach-assets-4592ba87/agent-engine/pickle.pkl
+#   - gs://homework-coach-assets-4592ba87/agent-engine/requirements.txt
+#   - gs://homework-coach-assets-4592ba87/agent-engine/dependencies.tar.gz
+# CI/CD pipeline (.github/workflows/cd.yml) automatically updates artifacts on backend changes.
+enable_agent_engine = true
 gcp_location        = "us-central1" # Agent Engine location
