@@ -77,7 +77,8 @@ def deploy_agent(
                 "description": "宿題コーチロボット - Router Agent (Phase 3)",
                 "staging_bucket": f"gs://{staging_bucket}",
                 "requirements": [
-                    "google-cloud-aiplatform[adk,agent_engines]>=1.88.0",
+                    "google-cloud-aiplatform[adk,agent_engines]>=1.126.1",
+                    "google-adk>=1.23.0",
                     "google-cloud-firestore>=2.19.0",
                 ],
             },
@@ -119,7 +120,8 @@ def agent_engines_update(
         config={
             "staging_bucket": f"gs://{staging_bucket}",
             "requirements": [
-                "google-cloud-aiplatform[adk,agent_engines]>=1.88.0",
+                "google-cloud-aiplatform[adk,agent_engines]>=1.126.1",
+                "google-adk>=1.23.0",
                 "google-cloud-firestore>=2.19.0",
             ],
         },
