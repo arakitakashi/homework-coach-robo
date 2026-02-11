@@ -34,6 +34,9 @@ def main() -> None:
         from google.adk import Runner
         from google.genai import types
 
+        from app.services.adk.memory.memory_factory import create_memory_service
+        from app.services.adk.sessions.session_factory import create_session_service
+
         # Simple wrapper class that exposes query method for Agent Engine
         # This is serialized directly without AdkApp wrapper
         class HomeworkCoachAgent:
@@ -45,7 +48,20 @@ def main() -> None:
 
             def __init__(self, agent):
                 self._agent = agent
-                self._runner = Runner(app_name="homework-coach-agent-engine", agent=agent)
+                self._runner = None  # Lazy initialization
+
+            def _get_runner(self):
+                """Lazy initialization of Runner (after deserialization)"""
+                if self._runner is None:
+                    session_service = create_session_service()
+                    memory_service = create_memory_service()
+                    self._runner = Runner(
+                        app_name="homework-coach-agent-engine",
+                        agent=self._agent,
+                        session_service=session_service,
+                        memory_service=memory_service,
+                    )
+                return self._runner
 
             def query(self, message: str) -> str:
                 """Query the agent with a message
@@ -66,8 +82,9 @@ def main() -> None:
 
                 # Run agent and collect response
                 async def run_query():
+                    runner = self._get_runner()
                     response_texts = []
-                    async for event in self._runner.run_async(
+                    async for event in runner.run_async(
                         user_id="api-user",
                         session_id="api-session",
                         new_message=content,
