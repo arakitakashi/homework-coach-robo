@@ -4,7 +4,7 @@
 # Google ADK & GenAI
 google-adk>=1.23.0
 google-genai>=1.0.0
-google-cloud-aiplatform[adk,agent_engines]>=1.88.0
+google-cloud-aiplatform[adk,agent_engines]>=1.126.1
 
 # Serialization
 cloudpickle>=3.0.0
