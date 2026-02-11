@@ -44,11 +44,15 @@
 
 ### 0.4 本番環境への適用判断
 
-- [ ] Plan結果をユーザーに報告
-- [ ] ユーザー承認を得る（本番環境への適用）
-- [ ] **承認後のみ**: `terraform apply` 実行
-- [ ] 本番環境のCloud Runログ確認
-- [ ] エラーが解消されたことを確認
+- [x] 変更をコミット・プッシュ（commit 29e7c2f）
+- [x] ユーザーに実行手順を提示
+- [x] **ユーザー実行**: `terraform plan` で変更内容を確認
+  - [x] Cloud Run Backend環境変数の更新を確認
+  - [x] Agent Engineリソースの削除を確認
+  - [x] Firestore/BigQuery/Secret Managerリソースの作成を確認
+- [x] **ユーザー実行**: `terraform apply` で適用
+- [x] **ユーザー実行**: 本番環境のCloud Runログ確認
+- [x] **ユーザー実行**: エラーが解消されたことを確認
 
 ---
 
