@@ -38,6 +38,7 @@ resource "google_project_iam_member" "github_actions_sa_user" {
 }
 
 # Vertex AI Agent Engine (for CD Agent Engine deployment)
+# reasoningEngines の get/update/create/delete 権限を含む
 resource "google_project_iam_member" "github_actions_aiplatform" {
   project = var.project_id
   role    = "roles/aiplatform.user"
