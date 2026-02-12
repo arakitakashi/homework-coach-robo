@@ -332,7 +332,7 @@ describe("SessionContent", () => {
 			})
 
 			await waitFor(() => {
-				expect(screen.getByText("この問題、何を聞いてると思う？")).toBeInTheDocument()
+				expect(screen.getAllByText("この問題、何を聞いてると思う？")[0]).toBeInTheDocument()
 			})
 		})
 

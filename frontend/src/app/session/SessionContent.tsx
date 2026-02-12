@@ -340,9 +340,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 			{/* バッジ通知（フロート表示） */}
 			<BadgeNotification />
 
-			<main className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-purple-50">
+			<main className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-purple-50 md:grid md:grid-cols-[280px_1fr] md:grid-rows-[auto_1fr] lg:grid-cols-[360px_1fr]">
 				{/* ヘッダー */}
-				<header className="flex items-center justify-between p-4">
+				<header className="flex items-center justify-between gap-2 p-4 md:col-span-2">
 					<HintIndicator currentLevel={hintLevel} />
 					<PointDisplay />
 					<AgentIndicator />
@@ -351,52 +351,57 @@ export function SessionContent({ characterType }: SessionContentProps) {
 					</Button>
 				</header>
 
-				{/* メインコンテンツ */}
-				<div className="flex flex-1 flex-col items-center p-4">
+				{/* メインコンテンツ - モバイル: 縦並び、タブレット以上: 左サイドバー */}
+				<div className="flex flex-1 flex-col items-center p-4 md:items-start">
 					{/* キャラクター表示 */}
-					<div className="mb-4">
+					<div className="mb-4 md:flex md:w-full md:justify-center">
 						<CharacterDisplay character={characterType} state={characterState} />
 					</div>
 
 					{/* ツール実行表示 */}
-					<ToolExecutionDisplay executions={activeToolExecutions} isRunning={isToolRunning} />
+					<div className="md:mb-4 md:w-full">
+						<ToolExecutionDisplay executions={activeToolExecutions} isRunning={isToolRunning} />
+					</div>
 
-					{/* 対話履歴 */}
-					<Card padding="medium" className="mb-4 w-full max-w-md flex-1">
-						<DialogueHistory turns={dialogueTurns} />
-					</Card>
-
-					{/* 対話エラー表示 */}
-					{dialogueError && (
-						<div className="mb-4 w-full max-w-md">
-							<ErrorMessage
-								title="そうしんエラー"
-								message={dialogueError}
-								onRetry={clearDialogueError}
-								retryText="とじる"
-							/>
-						</div>
-					)}
-
-					{/* 感情インジケーター */}
+					{/* 感情インジケーター - タブレット以上のみ */}
 					<AnimatePresence mode="wait">
-						<div className="mb-4 w-full max-w-md">
+						<div className="mb-4 hidden w-full max-w-md md:block md:max-w-none">
 							<EmotionIndicator />
 						</div>
 					</AnimatePresence>
 
-					{/* 進捗表示 */}
-					<div className="mb-4 w-full max-w-md">
+					{/* 進捗表示 - タブレット以上のみ */}
+					<div className="mb-4 hidden w-full max-w-md md:block md:max-w-none">
 						<ProgressDisplay {...learningProgress} />
 					</div>
 
-					{/* ストーリー進捗 */}
-					<div className="mb-4 w-full max-w-md">
+					{/* ストーリー進捗 - タブレット以上のみ */}
+					<div className="mb-4 hidden w-full max-w-md md:block md:max-w-none">
 						<StoryProgress characterType={characterType} />
 					</div>
 
-					{/* テキスト入力（MVP） */}
-					<div className="mb-4 w-full max-w-md">
+					{/* モバイルのみの対話履歴 */}
+					<Card padding="medium" className="mb-4 w-full max-w-md flex-1 md:hidden">
+						<DialogueHistory turns={dialogueTurns} />
+					</Card>
+
+					{/* モバイルのみの感情・進捗・ストーリー */}
+					<AnimatePresence mode="wait">
+						<div className="mb-4 w-full max-w-md md:hidden">
+							<EmotionIndicator />
+						</div>
+					</AnimatePresence>
+
+					<div className="mb-4 w-full max-w-md md:hidden">
+						<ProgressDisplay {...learningProgress} />
+					</div>
+
+					<div className="mb-4 w-full max-w-md md:hidden">
+						<StoryProgress characterType={characterType} />
+					</div>
+
+					{/* モバイルのみのテキスト入力 */}
+					<div className="mb-4 w-full max-w-md md:hidden">
 						<TextInput
 							onSubmit={handleSendMessage}
 							disabled={isSending || !isConnected}
@@ -404,9 +409,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 						/>
 					</div>
 
-					{/* 音声インターフェース */}
+					{/* モバイルのみの音声インターフェース */}
 					{isVoiceEnabled ? (
-						<div className="w-full max-w-md">
+						<div className="w-full max-w-md md:hidden">
 							<VoiceInterface
 								isRecording={isRecording}
 								audioLevel={audioLevel}
@@ -416,7 +421,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 							/>
 						</div>
 					) : (
-						<div className="w-full max-w-md opacity-50">
+						<div className="w-full max-w-md opacity-50 md:hidden">
 							<p className="mb-2 text-center text-sm text-gray-500">
 								（おんせいにゅうりょくはじゅんびちゅう）
 							</p>
@@ -430,6 +435,61 @@ export function SessionContent({ characterType }: SessionContentProps) {
 						</div>
 					)}
 				</div>
+
+				{/* 右メインエリア（タブレット以上のみ） */}
+				<section className="hidden flex-col gap-4 p-4 md:flex">
+					{/* 対話履歴 */}
+					<Card padding="medium" className="flex-1 overflow-auto">
+						<DialogueHistory turns={dialogueTurns} />
+					</Card>
+
+					{/* 対話エラー表示 */}
+					{dialogueError && (
+						<div>
+							<ErrorMessage
+								title="そうしんエラー"
+								message={dialogueError}
+								onRetry={clearDialogueError}
+								retryText="とじる"
+							/>
+						</div>
+					)}
+
+					{/* テキスト入力 */}
+					<div>
+						<TextInput
+							onSubmit={handleSendMessage}
+							disabled={isSending || !isConnected}
+							placeholder="ここにかいてね"
+						/>
+					</div>
+
+					{/* 音声インターフェース */}
+					{isVoiceEnabled ? (
+						<div>
+							<VoiceInterface
+								isRecording={isRecording}
+								audioLevel={audioLevel}
+								isConnected={isVoiceConnected}
+								isPlaying={isPlaying}
+								onToggleRecording={handleToggleRecording}
+							/>
+						</div>
+					) : (
+						<div className="opacity-50">
+							<p className="mb-2 text-center text-sm text-gray-500">
+								（おんせいにゅうりょくはじゅんびちゅう）
+							</p>
+							<VoiceInterface
+								isRecording={isRecording}
+								audioLevel={audioLevel}
+								isConnected={isVoiceConnected}
+								isPlaying={isPlaying}
+								onToggleRecording={handleToggleRecording}
+							/>
+						</div>
+					)}
+				</section>
 			</main>
 		</>
 	)

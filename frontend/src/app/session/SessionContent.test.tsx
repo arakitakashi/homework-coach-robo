@@ -184,7 +184,7 @@ describe("SessionContent", () => {
 
 			// セッション作成後、テキスト入力が表示されることを確認
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 		})
 
@@ -194,7 +194,7 @@ describe("SessionContent", () => {
 			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
 
 			await waitFor(() => {
-				expect(screen.getByText("こんにちは！いっしょにがんばろうね！")).toBeInTheDocument()
+				expect(screen.getAllByText("こんにちは！いっしょにがんばろうね！")[0]).toBeInTheDocument()
 			})
 		})
 
@@ -240,7 +240,7 @@ describe("SessionContent", () => {
 			await userEvent.click(retryButton)
 
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 		})
 
@@ -270,18 +270,18 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
-			const input = screen.getByPlaceholderText("ここにかいてね")
+			const input = screen.getAllByPlaceholderText("ここにかいてね")[0]
 			await userEvent.type(input, "テストメッセージ")
 
-			const submitButton = screen.getByRole("button", { name: "送信" })
+			const submitButton = screen.getAllByRole("button", { name: "送信" })[0]
 			await userEvent.click(submitButton)
 
 			// ユーザーメッセージが対話履歴に追加される
 			await waitFor(() => {
-				expect(screen.getByText("テストメッセージ")).toBeInTheDocument()
+				expect(screen.getAllByText("テストメッセージ")[0]).toBeInTheDocument()
 			})
 		})
 
@@ -291,18 +291,18 @@ describe("SessionContent", () => {
 			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
 
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
-			const input = screen.getByPlaceholderText("ここにかいてね")
+			const input = screen.getAllByPlaceholderText("ここにかいてね")[0]
 			await userEvent.type(input, "テスト")
 
-			const submitButton = screen.getByRole("button", { name: "送信" })
+			const submitButton = screen.getAllByRole("button", { name: "送信" })[0]
 			await userEvent.click(submitButton)
 
 			// ロボットの回答が表示される
 			await waitFor(() => {
-				expect(screen.getByText("ロボットからの回答")).toBeInTheDocument()
+				expect(screen.getAllByText("ロボットからの回答")[0]).toBeInTheDocument()
 			})
 		})
 	})
@@ -334,7 +334,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// ツール実行中の状態をatomに設定
@@ -358,7 +358,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// ToolExecutionDisplayが表示されない
@@ -372,7 +372,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// useVoiceStreamに渡されたonToolExecutionコールバックが存在することを確認
@@ -396,7 +396,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// ツール実行開始
@@ -428,7 +428,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// onAgentTransitionコールバックが存在することを確認
@@ -453,7 +453,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// エージェント遷移イベントをシミュレート
@@ -478,7 +478,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// onEmotionUpdateコールバックが存在することを確認
@@ -504,7 +504,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// 感情更新イベントをシミュレート
@@ -527,7 +527,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// 初期状態ではEmotionIndicatorは表示されない（emotionAnalysisがnull）
@@ -540,11 +540,11 @@ describe("SessionContent", () => {
 
 			// EmotionIndicatorが表示される
 			await waitFor(() => {
-				expect(screen.getByRole("status", { name: "感情状態" })).toBeInTheDocument()
+				expect(screen.getAllByRole("status", { name: "感情状態" })[0]).toBeInTheDocument()
 			})
 
 			// "困っている"ラベルが表示される
-			expect(screen.getByText("困っている")).toBeInTheDocument()
+			expect(screen.getAllByText("困っている")[0]).toBeInTheDocument()
 		})
 	})
 
@@ -556,7 +556,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// ゲーミフィケーション状態を設定
@@ -589,14 +589,14 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// StoryProgressの要素が表示される（デフォルトのChapter 1）
 			await waitFor(() => {
-				expect(screen.getByText(/Chapter 1/i)).toBeInTheDocument()
+				expect(screen.getAllByText(/Chapter 1/i)[0]).toBeInTheDocument()
 			})
-			expect(screen.getByText(/冒険の始まり/)).toBeInTheDocument()
+			expect(screen.getAllByText(/冒険の始まり/)[0]).toBeInTheDocument()
 		})
 
 		it("バッジ獲得時にBadgeNotificationが表示される", async () => {
@@ -606,7 +606,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// バッジを獲得（recentBadgeに表示されるよう5秒以内のタイムスタンプ）
@@ -651,7 +651,7 @@ describe("SessionContent", () => {
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByPlaceholderText("ここにかいてね")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
 			// 6秒以上前に獲得したバッジ（表示されない）
@@ -714,16 +714,16 @@ describe("SessionContent", () => {
 
 			// セッション作成を待つ
 			await waitFor(() => {
-				expect(screen.getByText("こんにちは！いっしょにがんばろうね！")).toBeInTheDocument()
+				expect(screen.getAllByText("こんにちは！いっしょにがんばろうね！")[0]).toBeInTheDocument()
 			})
 
 			// テキストメッセージを送信して対話履歴を追加
-			const input = screen.getByPlaceholderText("ここにかいてね")
+			const input = screen.getAllByPlaceholderText("ここにかいてね")[0]
 			await act(async () => {
 				await userEvent.type(input, "テストメッセージ")
 			})
 
-			const sendButton = screen.getByRole("button", { name: "送信" })
+			const sendButton = screen.getAllByRole("button", { name: "送信" })[0]
 			await act(async () => {
 				await userEvent.click(sendButton)
 			})
@@ -735,6 +735,94 @@ describe("SessionContent", () => {
 			const { dialogueTurnsAtom } = await import("@/store/atoms/dialogue")
 			const dialogueTurns = store.get(dialogueTurnsAtom)
 			expect(dialogueTurns).toEqual([])
+		})
+	})
+
+	describe("タブレット横長レイアウト (#tablet-layout)", () => {
+		beforeEach(() => {
+			mockCreateSessionResponse = {
+				session_id: "test-session-id",
+				problem: "2 + 2 = ?",
+				current_hint_level: 1,
+				tone: "default",
+				turns_count: 0,
+				created_at: new Date().toISOString(),
+			}
+		})
+
+		it("ヘッダーが表示される", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			// ヘッダー要素が表示される
+			expect(screen.getByRole("button", { name: "おわる" })).toBeInTheDocument()
+		})
+
+		it("左サイドバーの要素が表示される", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ（複数あるため getAllByPlaceholderText を使用）
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			// 左サイドバーの要素が表示される
+			// キャラクター表示はrole="img"で検索
+			expect(screen.getByRole("img", { name: /ロボット|キャラクター/ })).toBeInTheDocument()
+
+			// ストーリー進捗（Chapter 1）
+			expect(screen.getAllByText(/Chapter 1/i)[0]).toBeInTheDocument()
+		})
+
+		it("右メインエリアの要素が表示される", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			// 右メインエリアの要素が表示される
+			// 対話履歴（ウェルカムメッセージ） - 複数存在する可能性があるため getAllByText を使用
+			expect(screen.getAllByText("こんにちは！いっしょにがんばろうね！")[0]).toBeInTheDocument()
+
+			// テキスト入力
+			expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+
+			// 音声インターフェース（録音ボタン）
+			expect(screen.getAllByRole("button", { name: /録音|マイク/ })[0]).toBeInTheDocument()
+		})
+
+		it("スクロールなしで全体が見えるレイアウト構造", async () => {
+			const { TestWrapper } = createTestWrapper()
+
+			const { container } = render(<SessionContent characterType="robot" />, {
+				wrapper: TestWrapper,
+			})
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			// メインコンテナがmin-h-screenクラスを持つ
+			const main = container.querySelector("main")
+			expect(main).toBeInTheDocument()
+			expect(main?.className).toContain("min-h-screen")
+
+			// タブレット以上ではgridレイアウトを使用（md:grid）
+			// この検証は実際のブレークポイント動作ではなく、クラス名の存在確認のみ
+			expect(main?.className).toMatch(/md:grid/)
 		})
 	})
 })
