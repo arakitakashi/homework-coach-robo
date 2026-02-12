@@ -1,4 +1,6 @@
 import type { LearningProgress } from "@/types"
+import { SubjectDisplay } from "./SubjectDisplay"
+import { ThinkingTendenciesDisplay } from "./ThinkingTendenciesDisplay"
 
 type ProgressDisplayProps = LearningProgress
 
@@ -6,11 +8,17 @@ export function ProgressDisplay({
 	selfDiscoveryCount,
 	hintDiscoveryCount,
 	togetherCount,
+	currentSubject,
+	currentTopic,
+	thinkingTendencies,
 }: ProgressDisplayProps) {
 	const totalPoints = selfDiscoveryCount * 3 + hintDiscoveryCount * 2 + togetherCount * 1
 
 	return (
 		<div className="rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 p-4">
+			{/* Phase 2b: 教科・トピック表示 */}
+			<SubjectDisplay subject={currentSubject} topic={currentTopic} />
+
 			<div className="mb-3 text-center">
 				<span className="text-2xl font-bold text-purple-600">{totalPoints}</span>
 				<span className="ml-1 text-gray-600">ポイント</span>
@@ -39,6 +47,9 @@ export function ProgressDisplay({
 					bgColor="bg-orange-100"
 				/>
 			</div>
+
+			{/* Phase 2c/2d: 思考の傾向表示 */}
+			<ThinkingTendenciesDisplay tendencies={thinkingTendencies} />
 		</div>
 	)
 }
