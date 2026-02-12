@@ -17,26 +17,31 @@
   - L121-124: requirements を更新
 - [x] `serialize_agent.py` の修正
   - `session_service` と `memory_service` を lazy initialization に変更
+  - `google-adk>=1.18.0` → 既存の >=1.23.0 で満たされている
+- [x] `backend/scripts/deploy_agent_engine.py` を更新
+  - L79-82: requirements を更新（PR #109）
+  - L121-125: requirements を更新（PR #109）
+- [x] `backend/scripts/serialize_agent.py` を修正
+  - Runner API変更対応（session_service, memory_service 追加）
+  - 遅延初期化パターン実装（認証エラー回避）
 
 ## Phase 3: 動作確認
 
 - [x] 変更内容の確認（git diff）
-- [ ] コミット・プッシュ（PR 作成中）
+- [x] コミット・プッシュ
+  - PR #109: 依存関係バージョン更新
+  - PR #111: serialize_agent.py 修正
 
 ## Phase 4: 品質チェック
 
 - [x] コードレビュー（セルフレビュー）
-- [ ] ドキュメント更新
-  - [ ] Issue #108 にコメント追加（PR マージ後）
+- [x] ドキュメント更新
+  - [x] `CLAUDE.md` の Development Context 更新
+  - [x] `docs/implementation-status.md` の更新
 
 ## Phase 5: PR作成
 
 - [x] PR #109 作成・マージ（依存関係更新）
-- [ ] PR 作成（serialize_agent.py 修正）
-- [ ] Issue #108 にリンク
-
-## Phase 6: 追加の問題対応
-
-- [x] serialize_agent.py の Runner API 変更対応
-- [x] lazy initialization 実装
-- [x] GCS 権限問題を Issue #110 として切り出し
+- [x] PR #111 作成（serialize_agent.py 修正）
+- [x] Issue #108 にリンク
+- [x] Issue #110 作成（GCS権限問題）
