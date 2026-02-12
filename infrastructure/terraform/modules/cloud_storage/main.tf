@@ -85,6 +85,15 @@ resource "google_storage_bucket_iam_member" "github_actions_access" {
   member = "serviceAccount:${var.github_actions_service_account_email}"
 }
 
+# GitHub Actions: バケットメタデータ読み取り（Agent Engine SDK が storage_client.get_bucket() で必要）
+# roles/storage.objectAdmin には storage.buckets.get が含まれないため別途付与
+resource "google_storage_bucket_iam_member" "github_actions_bucket_reader" {
+  count  = var.github_actions_service_account_email != "" ? 1 : 0
+  bucket = google_storage_bucket.assets.name
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${var.github_actions_service_account_email}"
+}
+
 # Backend origin for CDN
 resource "google_compute_backend_bucket" "assets_cdn" {
   count       = var.enable_cdn ? 1 : 0
