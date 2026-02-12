@@ -11,8 +11,12 @@ Output:
     - pickle.pkl: シリアライズされたエージェント
 """
 
+from __future__ import annotations
+
 import os
 import sys
+from collections.abc import Generator
+from typing import Any
 
 # backend ディレクトリを PYTHONPATH に追加
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +36,7 @@ def main() -> None:
         print("Creating AgentEngine-compatible wrapper...")
 
         from google.adk import Runner
+        from google.adk.agents import Agent
         from google.genai import types
 
         from app.services.adk.memory.memory_factory import create_memory_service
@@ -42,15 +47,16 @@ def main() -> None:
         class HomeworkCoachAgent:
             """Agent wrapper for Agent Engine deployment
 
-            This class exposes a simple query() method that the Agent Engine
-            can call via its REST API.
+            Agent Engine プロキシ (agent_engines.get()) は、デプロイ済みオブジェクトの
+            sync メソッド (create_session, stream_query) から async_create_session,
+            async_stream_query を自動生成する。そのため sync 版のみ定義すればよい。
             """
 
-            def __init__(self, agent):
+            def __init__(self, agent: Agent) -> None:
                 self._agent = agent
-                self._runner = None  # Lazy initialization
+                self._runner: Runner | None = None  # Lazy initialization
 
-            def _get_runner(self):
+            def _get_runner(self) -> Runner:
                 """Lazy initialization of Runner (after deserialization)"""
                 if self._runner is None:
                     session_service = create_session_service()
@@ -62,6 +68,83 @@ def main() -> None:
                         memory_service=memory_service,
                     )
                 return self._runner
+
+            def create_session(self, *, user_id: str) -> dict[str, Any]:
+                """Agent Engine 用のセッションを作成する
+
+                Agent Engine プロキシが async_create_session を自動生成するため、
+                sync 版のみ定義する。
+
+                Args:
+                    user_id: ユーザーID
+
+                Returns:
+                    セッション情報 {"id": session_id}
+                """
+                import asyncio
+
+                runner = self._get_runner()
+
+                session = asyncio.run(
+                    runner.session_service.create_session(
+                        app_name="homework-coach-agent-engine",
+                        user_id=user_id,
+                    )
+                )
+                return {"id": session.id}
+
+            def stream_query(
+                self,
+                *,
+                user_id: str,
+                session_id: str,
+                message: str,
+            ) -> Generator[dict[str, Any], None, None]:
+                """Agent Engine にクエリを送信しストリーミングで応答を返す
+
+                Agent Engine プロキシが async_stream_query を自動生成するため、
+                sync 版のみ定義する。各イベントは AgentEngineClient.extract_text()
+                が期待する {"content": {"parts": [{"text": "..."}]}} 形式で返す。
+
+                Args:
+                    user_id: ユーザーID
+                    session_id: セッションID
+                    message: ユーザーメッセージ
+
+                Yields:
+                    イベント辞書
+                """
+                import asyncio
+
+                runner = self._get_runner()
+
+                # Content を作成
+                content = types.Content(
+                    role="user",
+                    parts=[types.Part(text=message)],
+                )
+
+                # 非同期イベントを同期的に収集し、dict 形式で yield
+                async def collect_events() -> list[dict[str, Any]]:
+                    events: list[dict[str, Any]] = []
+                    async for event in runner.run_async(
+                        user_id=user_id,
+                        session_id=session_id,
+                        new_message=content,
+                    ):
+                        if event.content and event.content.parts:
+                            for part in event.content.parts:
+                                if part.text:
+                                    events.append(
+                                        {
+                                            "content": {
+                                                "parts": [{"text": part.text}],
+                                            },
+                                        }
+                                    )
+                    return events
+
+                yield from asyncio.run(collect_events())
 
             def query(self, message: str) -> str:
                 """Query the agent with a message
@@ -81,9 +164,9 @@ def main() -> None:
                 )
 
                 # Run agent and collect response
-                async def run_query():
+                async def run_query() -> str:
                     runner = self._get_runner()
-                    response_texts = []
+                    response_texts: list[str] = []
                     async for event in runner.run_async(
                         user_id="api-user",
                         session_id="api-session",
