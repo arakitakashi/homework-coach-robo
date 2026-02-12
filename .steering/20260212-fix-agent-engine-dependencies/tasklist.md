@@ -11,6 +11,12 @@
 
 - [x] `backend/agent_engine_requirements.txt` を更新
   - `google-cloud-aiplatform[agent_engines,adk]>=1.126.1`
+  - `google-adk>=1.23.0`
+- [x] `backend/scripts/deploy_agent_engine.py` を更新
+  - L80-82: requirements を更新
+  - L121-124: requirements を更新
+- [x] `serialize_agent.py` の修正
+  - `session_service` と `memory_service` を lazy initialization に変更
   - `google-adk>=1.18.0` → 既存の >=1.23.0 で満たされている
 - [x] `backend/scripts/deploy_agent_engine.py` を更新
   - L79-82: requirements を更新（PR #109）
