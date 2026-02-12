@@ -4,14 +4,14 @@
 			"command": "npx",
 			"args": [
 				"-y",
-				"@upthink/mcp-context7@latest"
+				"@upstash/context7-mcp@latest"
 			]
 		},
 		"playwright": {
 			"command": "npx",
 			"args": [
 				"-y",
-				"@upthink/mcp-playwright@latest"
+				"@playwright/mcp@latest"
 			]
 		}
 	}
