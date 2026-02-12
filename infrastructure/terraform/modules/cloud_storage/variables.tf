@@ -50,6 +50,12 @@ variable "enable_cdn" {
   default     = false
 }
 
+variable "github_actions_service_account_email" {
+  description = "Email of the GitHub Actions service account (for Agent Engine artifact uploads)"
+  type        = string
+  default     = ""
+}
+
 variable "cors_origins" {
   description = "List of allowed CORS origins"
   type        = list(string)
