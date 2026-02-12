@@ -74,6 +74,7 @@ jobs:
     name: Deploy Agent Engine Artifacts
     runs-on: ubuntu-latest
     needs: ci-backend
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write
@@ -174,6 +175,26 @@ jobs:
           echo "  - gs://${BUCKET_NAME}/agent-engine/pickle.pkl"
           echo "  - gs://${BUCKET_NAME}/agent-engine/requirements.txt"
           echo "  - gs://${BUCKET_NAME}/agent-engine/dependencies.tar.gz"
+
+      - name: Update Agent Engine
+        if: steps.backend_changes.outputs.changed == 'true'
+        working-directory: backend
+        env:
+          AGENT_ENGINE_RESOURCE_NAME: ${{ secrets.AGENT_ENGINE_RESOURCE_NAME }}
+        run: |
+          if [ -z "$AGENT_ENGINE_RESOURCE_NAME" ]; then
+            echo "::warning::AGENT_ENGINE_RESOURCE_NAME not set. Skipping Agent Engine update."
+            echo "  First deploy: uv run python scripts/deploy_agent_engine.py --project ... --bucket ..."
+            echo "  Then set AGENT_ENGINE_RESOURCE_NAME GitHub Secret"
+            exit 0
+          fi
+
+          echo "Updating Agent Engine: $AGENT_ENGINE_RESOURCE_NAME"
+          uv run python scripts/deploy_agent_engine.py \
+            --project "${{ env.GCP_PROJECT_ID }}" \
+            --location us-central1 \
+            --bucket "${{ secrets.GCS_ASSETS_BUCKET }}" \
+            --resource-name "$AGENT_ENGINE_RESOURCE_NAME"
 
   deploy-frontend:
     name: Deploy Frontend
