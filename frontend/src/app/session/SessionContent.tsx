@@ -50,11 +50,16 @@ interface SessionContentProps {
 	characterType: CharacterType
 }
 
-const initialDialogue: DialogueTurn = {
-	id: "welcome",
-	speaker: "robot",
-	text: "こんにちは！いっしょにがんばろうね！",
-	timestamp: new Date(),
+/**
+ * ウェルカムメッセージを生成
+ */
+function createInitialDialogue(characterType: CharacterType): DialogueTurn {
+	return {
+		id: "welcome",
+		speaker: characterType,
+		text: "こんにちは！いっしょにがんばろうね！",
+		timestamp: new Date(),
+	}
 }
 
 export function SessionContent({ characterType }: SessionContentProps) {
@@ -235,9 +240,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	// 初期化時にウェルカムメッセージを追加（初回のみ）
 	useEffect(() => {
 		if (dialogueTurns.length === 0) {
-			setDialogueTurns([initialDialogue])
+			setDialogueTurns([createInitialDialogue(characterType)])
 		}
-	}, [dialogueTurns.length, setDialogueTurns])
+	}, [dialogueTurns.length, setDialogueTurns, characterType])
 
 	// セッション作成完了時にWebSocket接続とPCMプレーヤー初期化
 	useEffect(() => {
@@ -246,6 +251,29 @@ export function SessionContent({ characterType }: SessionContentProps) {
 			voiceConnect(session.userId || "anonymous", session.id)
 		}
 	}, [session, initPlayer, voiceConnect])
+
+	// コンポーネントアンマウント時のクリーンアップ処理
+	useEffect(() => {
+		return () => {
+			// 対話履歴をリセット
+			setDialogueTurns([])
+			// その他のセッション関連atomsもリセット
+			setCharacterState("idle")
+			setActiveToolExecutions([])
+			_setActiveAgent(null)
+			_setAgentTransitionHistory([])
+			_setEmotionAnalysis(null)
+			_setEmotionHistory([])
+		}
+	}, [
+		setDialogueTurns,
+		setCharacterState,
+		setActiveToolExecutions,
+		_setActiveAgent,
+		_setAgentTransitionHistory,
+		_setEmotionAnalysis,
+		_setEmotionHistory,
+	])
 
 	const handleEndSession = useCallback(async () => {
 		voiceDisconnect()
@@ -364,7 +392,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 
 					{/* ストーリー進捗 */}
 					<div className="mb-4 w-full max-w-md">
-						<StoryProgress />
+						<StoryProgress characterType={characterType} />
 					</div>
 
 					{/* テキスト入力（MVP） */}
