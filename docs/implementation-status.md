@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了
 
 ---
 
@@ -45,6 +45,7 @@
 - **GCS権限修正 + CDワークフロー改善**: GitHub Actions SA に `roles/storage.objectAdmin` を Terraform（IAM モジュール）で付与、CDワークフロー（cd.yml）で `gcloud storage buckets list` を廃止し `GCS_ASSETS_BUCKET` GitHub Secret で直接バケット名を参照するように変更
 - **Agent Engine ラッパーメソッド追加 (Issue #114)**: `serialize_agent.py` の `HomeworkCoachAgent` に `create_session()` / `stream_query()` メソッドを追加。Agent Engine プロキシが `async_create_session` / `async_stream_query` を自動生成できるように修正。既存コードの型注釈も改善
 - **HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新**: `HomeworkCoachAgent` クラスを `backend/app/services/adk/runner/homework_coach_agent.py` に共有モジュールとして抽出。`serialize_agent.py` と `deploy_agent_engine.py` の両方から参照。CDパイプライン（cd.yml）に「Update Agent Engine」ステップを追加し、GCSアーティファクトアップロード後に `deploy_agent_engine.py` で既存 Agent Engine を自動更新。Terraform に `roles/aiplatform.user` IAM 権限を追加。HomeworkCoachAgent の10ユニットテスト実装
+- **Phase 2 対話履歴拡張表示 (Issue #67)**: DialogueHistoryコンポーネントに7つの新規サブコンポーネント（QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter）追加、Phase 2メタデータ（questionType, emotion, activeAgent, responseAnalysis, toolExecutions）の表示に対応、74の新規テスト追加（全517テスト）
 
 ---
 
@@ -467,7 +468,7 @@ export AGENT_ENGINE_ID=<engine-id>
 | | `src/app/session/page.tsx` | セッションページ（対話インターフェース） |
 | **UI** | `CharacterDisplay` | ロボットキャラクター（状態別アニメーション） |
 | | `VoiceInterface` | 録音ボタン＋音量レベル表示（プレゼンテーションコンポーネント） |
-| | `DialogueHistory` | 対話履歴（吹き出し形式） |
+| | `DialogueHistory` | 対話履歴（吹き出し形式）+ Phase 2メタデータ表示（Issue #67: QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter） |
 | | `ProgressDisplay` | 学習進捗（ポイント表示） |
 | | `HintIndicator` | 宝箱型ヒントレベル表示 |
 | | `Button`, `Card`, `LoadingSpinner`, `ErrorMessage`, `TextInput` | 基本UIコンポーネント |
@@ -692,9 +693,47 @@ SessionContent ヘッダー
 
 詳細は `.steering/20260210-frontend-phase2d-emotion-ui/` を参照。
 
+### Phase 2 対話履歴拡張表示（Issue #67）
+
+DialogueHistoryコンポーネントを拡張し、Phase 2メタデータ（questionType, emotion, activeAgent, responseAnalysis, toolExecutions）の表示に対応。7つの新規サブコンポーネントを実装。
+
+**実装コンポーネント:**
+
+| コンポーネント | 説明 | 表示内容 |
+|-------------|------|---------|
+| `QuestionTypeIcon` | 質問タイプアイコン表示 | understanding（？）, clarification（💬）, connection（🔗）, hint（💡）, encouragement（✨） |
+| `EmotionIcon` | 感情アイコン表示 | frustrated（😓）, confident（😊）, confused（😕）, happy（😄）, tired（😴）, neutral（🙂） |
+| `AgentBadge` | エージェントバッジ表示 | router（🤖）, math（🔢）, japanese（📖）, encouragement（💚）, review（📊） |
+| `UnderstandingIndicator` | 理解度インジケーター表示 | 1-5段階のプログレスバー（色: 赤→黄→緑） |
+| `ToolExecutionBadges` | ツール実行バッジ表示 | ツール名（日本語）+ ステータス（実行中/完了/失敗）|
+| `DialogueMetadataHeader` | メタデータヘッダー（ユーザー） | QuestionTypeIcon + EmotionIcon |
+| `DialogueMetadataFooter` | メタデータフッター（モデル） | EmotionIcon + AgentBadge + UnderstandingIndicator + ToolExecutionBadges |
+
+**変更ファイル:**
+- `frontend/components/features/DialogueHistory/QuestionTypeIcon.tsx` - 質問タイプアイコン（9テスト）
+- `frontend/components/features/DialogueHistory/EmotionIcon.tsx` - 感情アイコン（9テスト）
+- `frontend/components/features/DialogueHistory/AgentBadge.tsx` - エージェントバッジ（9テスト）
+- `frontend/components/features/DialogueHistory/UnderstandingIndicator.tsx` - 理解度インジケーター（10テスト）
+- `frontend/components/features/DialogueHistory/ToolExecutionBadges.tsx` - ツール実行バッジ（12テスト）
+- `frontend/components/features/DialogueHistory/DialogueMetadataHeader.tsx` - ヘッダー（11テスト）
+- `frontend/components/features/DialogueHistory/DialogueMetadataFooter.tsx` - フッター（14テスト）
+- `frontend/components/features/DialogueHistory/DialogueHistory.tsx` - メイン統合
+- `frontend/components/features/index.ts` - エクスポート追加
+
+**アクセシビリティ:**
+- `QuestionTypeIcon`: `aria-label="質問タイプ: {タイプ名}"`
+- `EmotionIcon`: `aria-label="感情: {感情名}"`
+- `AgentBadge`: `aria-label="担当: {エージェント名}"`
+- `UnderstandingIndicator`: `role="progressbar"`, `aria-label="理解度"`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+- `ToolExecutionBadges`: `role="list"`, `aria-label="実行したツール"`
+
+**テスト:** 74新規テスト（QuestionTypeIcon 9 + EmotionIcon 9 + AgentBadge 9 + UnderstandingIndicator 10 + ToolExecutionBadges 12 + Header 11 + Footer 14）
+
+詳細は `.steering/20260213-dialogue-history-phase2-display/` を参照。
+
 ### テストカバレッジ
 
-- **ユニットテスト**: 30テストファイル、332テスト（Vitest + Testing Library）、カバレッジ89.56%
+- **ユニットテスト**: 33テストファイル、517テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -890,3 +929,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260211-agent-engine-terraform/` | Phase 3 Agent Engine Terraform インフラ整備 |
 | `.steering/20260213-fix-gcs-permissions/` | GCS 権限修正 + CD ワークフロー改善 |
 | `.steering/20260213-fix-agent-engine-missing-methods/` | Agent Engine ラッパーメソッド追加（create_session / stream_query）+ HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新 |
+| `.steering/20260213-dialogue-history-phase2-display/` | Phase 2 対話履歴拡張表示（Issue #67）|
