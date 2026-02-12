@@ -18,6 +18,21 @@ describe("CharacterDisplay", () => {
 		expect(screen.getByRole("img", { name: /ロボット/i })).toBeInTheDocument()
 	})
 
+	it("renders wizard character", () => {
+		render(<CharacterDisplay character="wizard" state="idle" />)
+		expect(screen.getByRole("img", { name: /まほうつかい/i })).toBeInTheDocument()
+	})
+
+	it("renders astronaut character", () => {
+		render(<CharacterDisplay character="astronaut" state="idle" />)
+		expect(screen.getByRole("img", { name: /うちゅうひこうし/i })).toBeInTheDocument()
+	})
+
+	it("renders animal character", () => {
+		render(<CharacterDisplay character="animal" state="idle" />)
+		expect(screen.getByRole("img", { name: /どうぶつ/i })).toBeInTheDocument()
+	})
+
 	it("applies idle state styling", () => {
 		render(<CharacterDisplay character="robot" state="idle" />)
 		const character = screen.getByRole("img", { name: /ロボット/i })

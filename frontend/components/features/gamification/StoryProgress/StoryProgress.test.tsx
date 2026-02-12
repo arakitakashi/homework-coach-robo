@@ -53,14 +53,14 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
 			expect(screen.getByText(/冒険の始まり/)).toBeInTheDocument()
 		})
 
-		it("チャプター説明が表示される", () => {
+		it("チャプター説明が表示される（ロボット）", () => {
 			const chapter: StoryChapter = {
 				id: "ch1",
 				title: "冒険の始まり",
@@ -71,11 +71,49 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
 			expect(screen.getByText("ロボと一緒に最初の問題に挑戦しよう！")).toBeInTheDocument()
+		})
+
+		it("チャプター説明がキャラクター名に応じて動的に変わる（まほうつかい）", () => {
+			const chapter: StoryChapter = {
+				id: "ch1",
+				title: "冒険の始まり",
+				description: "ロボと一緒に最初の問題に挑戦しよう！",
+				requiredPoints: 10,
+				completed: false,
+			}
+
+			render(
+				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
+					<StoryProgress characterType="wizard" />
+				</TestWrapperWithChapter>,
+			)
+
+			expect(screen.getByText("まほうつかいと一緒に最初の問題に挑戦しよう！")).toBeInTheDocument()
+		})
+
+		it("チャプター説明がキャラクター名に応じて動的に変わる（うちゅうひこうし）", () => {
+			const chapter: StoryChapter = {
+				id: "ch1",
+				title: "冒険の始まり",
+				description: "ロボと一緒に最初の問題に挑戦しよう！",
+				requiredPoints: 10,
+				completed: false,
+			}
+
+			render(
+				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
+					<StoryProgress characterType="astronaut" />
+				</TestWrapperWithChapter>,
+			)
+
+			expect(
+				screen.getByText("うちゅうひこうしと一緒に最初の問題に挑戦しよう！"),
+			).toBeInTheDocument()
 		})
 
 		it("チャプター番号が表示される", () => {
@@ -89,7 +127,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -109,7 +147,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -130,7 +168,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={9}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -150,7 +188,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={10}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -172,7 +210,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -190,7 +228,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={0}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -210,7 +248,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -228,7 +266,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={15}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -248,7 +286,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -267,7 +305,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={5}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -287,7 +325,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={15}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
@@ -306,7 +344,7 @@ describe("StoryProgress", () => {
 
 			render(
 				<TestWrapperWithChapter chapter={chapter} totalPoints={90}>
-					<StoryProgress />
+					<StoryProgress characterType="robot" />
 				</TestWrapperWithChapter>,
 			)
 
