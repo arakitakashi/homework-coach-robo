@@ -37,6 +37,13 @@ resource "google_project_iam_member" "github_actions_sa_user" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# Vertex AI Agent Engine (for CD Agent Engine deployment)
+resource "google_project_iam_member" "github_actions_aiplatform" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
 # =============================================================================
 # Workload Identity Pool
 # =============================================================================

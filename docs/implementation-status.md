@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了
 
 ---
 
@@ -44,6 +44,7 @@
 - **CI/CD Agent Engineアーティファクト自動デプロイ**: cd.yml に `deploy-agent-engine` ジョブ追加、バックエンド変更検知（git diff）、エージェントシリアライズ（serialize_agent.py）、依存関係パッケージ化、GCSアップロード（pickle.pkl, requirements.txt, dependencies.tar.gz）、条件付き実行（バックエンド変更時のみ）、エラーハンドリング実装完了
 - **GCS権限修正 + CDワークフロー改善**: GitHub Actions SA に `roles/storage.objectAdmin` を Terraform（IAM モジュール）で付与、CDワークフロー（cd.yml）で `gcloud storage buckets list` を廃止し `GCS_ASSETS_BUCKET` GitHub Secret で直接バケット名を参照するように変更
 - **Agent Engine ラッパーメソッド追加 (Issue #114)**: `serialize_agent.py` の `HomeworkCoachAgent` に `create_session()` / `stream_query()` メソッドを追加。Agent Engine プロキシが `async_create_session` / `async_stream_query` を自動生成できるように修正。既存コードの型注釈も改善
+- **HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新**: `HomeworkCoachAgent` クラスを `backend/app/services/adk/runner/homework_coach_agent.py` に共有モジュールとして抽出。`serialize_agent.py` と `deploy_agent_engine.py` の両方から参照。CDパイプライン（cd.yml）に「Update Agent Engine」ステップを追加し、GCSアーティファクトアップロード後に `deploy_agent_engine.py` で既存 Agent Engine を自動更新。Terraform に `roles/aiplatform.user` IAM 権限を追加。HomeworkCoachAgent の10ユニットテスト実装
 
 ---
 
@@ -181,6 +182,7 @@ cd backend && uv run uvicorn app.main:app --reload
 |--------------|------|
 | `agent.py` | SOCRATIC_SYSTEM_PROMPT, create_socratic_agent()（音声ストリーミング用） |
 | `runner_service.py` | AgentRunnerService（Router Agent + SessionService/MemoryService統合） |
+| `homework_coach_agent.py` | HomeworkCoachAgent（Agent Engine デプロイ用共有ラッパー、create_session/stream_query/query） |
 
 **主要機能:**
 - `create_socratic_agent()`: 音声ストリーミング用の単一エージェント（レガシー）
@@ -410,8 +412,10 @@ uv run python scripts/create_agent_engine.py --project <project-id> --location u
 |--------------|---------|------|
 | `session_factory.py` | `sessions/session_factory.py` | 環境変数ベースでFirestore/VertexAiSessionService切り替え |
 | `agent_engine_client.py` | `runner/agent_engine_client.py` | Agent Engine remote_appラッパー（create_session, stream_query, extract_text） |
+| `homework_coach_agent.py` | `runner/homework_coach_agent.py` | Agent Engine デプロイ用共有ラッパー（serialize/deploy 両方から参照） |
 | `dialogue_runner.py` | `api/v1/dialogue_runner.py` | Agent Engine経由SSEストリーミング（AGENT_ENGINE_RESOURCE_NAME設定時）、ローカルRunnerフォールバック |
-| `deploy_agent_engine.py` | `scripts/deploy_agent_engine.py` | Router AgentのAgent Engineデプロイスクリプト |
+| `deploy_agent_engine.py` | `scripts/deploy_agent_engine.py` | Router AgentのAgent Engineデプロイ/更新スクリプト（HomeworkCoachAgent使用） |
+| `serialize_agent.py` | `scripts/serialize_agent.py` | エージェントシリアライズスクリプト（HomeworkCoachAgent使用） |
 | `test_agent_engine.py` | `scripts/test_agent_engine.py` | デプロイ後テストスクリプト |
 
 **セッションファクトリ切り替え:**
@@ -445,7 +449,7 @@ export AGENT_ENGINE_RESOURCE_NAME=<resource-name>
 export AGENT_ENGINE_ID=<engine-id>
 ```
 
-**テスト:** 22テスト（session_factory 8 + agent_engine_client 10 + dialogue_runner 4）、カバレッジ90%
+**テスト:** 32テスト（session_factory 8 + agent_engine_client 10 + homework_coach_agent 10 + dialogue_runner 4）、カバレッジ90%
 
 詳細は `.steering/20260210-phase3-agent-engine-deploy/` を参照。
 
@@ -789,7 +793,7 @@ infrastructure/terraform/
 - `.github/workflows/ci-backend.yml` - バックエンドCI（lint, type check, test）
 - `.github/workflows/ci-frontend.yml` - フロントエンドCI（lint, type check, test）
 - `.github/workflows/ci-e2e.yml` - E2Eテスト（Docker Compose + Playwright）
-- `.github/workflows/cd.yml` - 自動デプロイ（push to main）
+- `.github/workflows/cd.yml` - 自動デプロイ（push to main）、Agent Engine アーティファクトアップロード + 自動更新（`deploy_agent_engine.py`）
 - `.github/workflows/deploy.yml` - マニュアルデプロイ（workflow_dispatch）
 
 **CI/CDの前提条件:** Workload Identity Federation (WIF) の設定が必要。
@@ -885,4 +889,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260211-ci-cd-agent-engine-deploy/` | CI/CD Agent Engineアーティファクト自動デプロイ |
 | `.steering/20260211-agent-engine-terraform/` | Phase 3 Agent Engine Terraform インフラ整備 |
 | `.steering/20260213-fix-gcs-permissions/` | GCS 権限修正 + CD ワークフロー改善 |
-| `.steering/20260213-fix-agent-engine-missing-methods/` | Agent Engine ラッパーメソッド追加（create_session / stream_query） |
+| `.steering/20260213-fix-agent-engine-missing-methods/` | Agent Engine ラッパーメソッド追加（create_session / stream_query）+ HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新 |
