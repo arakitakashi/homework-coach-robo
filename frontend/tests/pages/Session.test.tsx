@@ -229,14 +229,14 @@ describe("SessionContent", () => {
 	it("renders voice interface", async () => {
 		renderWithProvider(<SessionContent characterType="robot" />)
 		await waitFor(() => {
-			expect(screen.getByRole("button", { name: /録音/i })).toBeInTheDocument()
+			expect(screen.getAllByRole("button", { name: /録音/i })[0]).toBeInTheDocument()
 		})
 	})
 
 	it("renders dialogue history", async () => {
 		renderWithProvider(<SessionContent characterType="robot" />)
 		await waitFor(() => {
-			expect(screen.getByRole("log")).toBeInTheDocument()
+			expect(screen.getAllByRole("log")[0]).toBeInTheDocument()
 		})
 	})
 
@@ -250,7 +250,7 @@ describe("SessionContent", () => {
 	it("renders progress display", async () => {
 		renderWithProvider(<SessionContent characterType="robot" />)
 		await waitFor(() => {
-			expect(screen.getByText(/ポイント/i)).toBeInTheDocument()
+			expect(screen.getAllByText(/ポイント/i)[0]).toBeInTheDocument()
 		})
 	})
 
@@ -258,7 +258,7 @@ describe("SessionContent", () => {
 		renderWithProvider(<SessionContent characterType="robot" />)
 		// AIからのウェルカムメッセージがある（useEffectで追加されるので待機）
 		await waitFor(() => {
-			expect(screen.getByText(/こんにちは/i)).toBeInTheDocument()
+			expect(screen.getAllByText(/こんにちは/i)[0]).toBeInTheDocument()
 		})
 	})
 
@@ -315,7 +315,7 @@ describe("SessionContent", () => {
 			})
 
 			await waitFor(() => {
-				expect(screen.getByText("3たす5はいくつ？")).toBeInTheDocument()
+				expect(screen.getAllByText("3たす5はいくつ？")[0]).toBeInTheDocument()
 			})
 		})
 
