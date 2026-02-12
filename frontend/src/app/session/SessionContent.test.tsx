@@ -685,4 +685,56 @@ describe("SessionContent", () => {
 			expect(screen.queryByText("🏆 バッジ獲得！")).not.toBeInTheDocument()
 		})
 	})
+
+	describe("セッション終了時の状態リセット (#115)", () => {
+		it("コンポーネントアンマウント時に対話履歴がリセットされる", async () => {
+			mockCreateSessionResponse = {
+				session_id: "test-session-id",
+				problem: "2 + 2 = ?",
+				current_hint_level: 1,
+				tone: "default",
+				turns_count: 0,
+				created_at: new Date().toISOString(),
+			}
+
+			const _TestWrapper = ({ children }: { children: ReactNode }) => {
+				const store = useMemo(() => createStore(), [])
+				return <Provider store={store}>{children}</Provider>
+			}
+
+			const { unmount, store } = (() => {
+				const testStore = createStore()
+				const result = render(
+					<Provider store={testStore}>
+						<SessionContent characterType="robot" />
+					</Provider>,
+				)
+				return { ...result, store: testStore }
+			})()
+
+			// セッション作成を待つ
+			await waitFor(() => {
+				expect(screen.getByText("こんにちは！いっしょにがんばろうね！")).toBeInTheDocument()
+			})
+
+			// テキストメッセージを送信して対話履歴を追加
+			const input = screen.getByPlaceholderText("ここにかいてね")
+			await act(async () => {
+				await userEvent.type(input, "テストメッセージ")
+			})
+
+			const sendButton = screen.getByRole("button", { name: "送信" })
+			await act(async () => {
+				await userEvent.click(sendButton)
+			})
+
+			// コンポーネントをアンマウント
+			unmount()
+
+			// 対話履歴atomがリセットされることを確認
+			const { dialogueTurnsAtom } = await import("@/store/atoms/dialogue")
+			const dialogueTurns = store.get(dialogueTurnsAtom)
+			expect(dialogueTurns).toEqual([])
+		})
+	})
 })

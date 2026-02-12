@@ -5,7 +5,9 @@
 "use client"
 
 import { useAtomValue } from "jotai"
+import { getCharacterName } from "@/lib/utils/characterNames"
 import { gamificationStateAtom } from "@/store/atoms/gamification"
+import type { CharacterType } from "@/types"
 
 /**
  * チャプターIDから番号を抽出
@@ -16,11 +18,24 @@ function getChapterNumber(chapterId: string): number {
 }
 
 /**
+ * チャプター説明文をキャラクター名で置換
+ */
+function replaceCharacterName(description: string, characterType: CharacterType): string {
+	const characterName = getCharacterName(characterType)
+	// 「ロボと」を指定されたキャラクター名に置換
+	return description.replace(/ロボと/, `${characterName}と`)
+}
+
+interface StoryProgressProps {
+	characterType: CharacterType
+}
+
+/**
  * StoryProgress コンポーネント
  *
  * ストーリーチャプターの進行状況を表示します
  */
-export function StoryProgress() {
+export function StoryProgress({ characterType }: StoryProgressProps) {
 	const { currentChapter, totalPoints } = useAtomValue(gamificationStateAtom)
 
 	const chapterNumber = getChapterNumber(currentChapter.id)
@@ -50,7 +65,9 @@ export function StoryProgress() {
 			</div>
 
 			{/* チャプター説明 */}
-			<p className="text-sm text-gray-600 mb-3">{currentChapter.description}</p>
+			<p className="text-sm text-gray-600 mb-3">
+				{replaceCharacterName(currentChapter.description, characterType)}
+			</p>
 
 			{/* 進捗テキスト */}
 			<div className="flex items-center gap-2 mb-2">

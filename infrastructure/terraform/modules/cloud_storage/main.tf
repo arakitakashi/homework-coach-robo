@@ -77,6 +77,14 @@ resource "google_storage_bucket_iam_member" "cloud_build_access" {
   member = "serviceAccount:${var.cloud_build_service_account_email}"
 }
 
+# GitHub Actions service account access (for Agent Engine artifact uploads)
+resource "google_storage_bucket_iam_member" "github_actions_access" {
+  count  = var.github_actions_service_account_email != "" ? 1 : 0
+  bucket = google_storage_bucket.assets.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${var.github_actions_service_account_email}"
+}
+
 # Backend origin for CDN
 resource "google_compute_backend_bucket" "assets_cdn" {
   count       = var.enable_cdn ? 1 : 0

@@ -9,9 +9,10 @@ import type {
 	ResponseAnalysis,
 	ToolExecution,
 } from "./phase2"
+import type { CharacterType } from "./session"
 
 /** 発話者 */
-export type Speaker = "child" | "robot"
+export type Speaker = "child" | CharacterType
 
 /** 対話ターン */
 export interface DialogueTurn {

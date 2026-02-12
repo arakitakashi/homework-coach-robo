@@ -142,10 +142,11 @@ module "cloud_storage" {
   environment                       = var.environment
   backend_service_account_email     = module.iam.backend_service_account_email
   frontend_service_account_email    = module.iam.frontend_service_account_email
-  cloud_build_service_account_email = module.iam.cloud_build_service_account_email
-  enable_cdn                        = var.enable_cdn
+  cloud_build_service_account_email        = module.iam.cloud_build_service_account_email
+  github_actions_service_account_email     = module.github_wif.service_account_email
+  enable_cdn                               = var.enable_cdn
 
-  depends_on = [module.iam]
+  depends_on = [module.iam, module.github_wif]
 }
 
 # Cloud Run Module
