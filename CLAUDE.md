@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -211,7 +211,8 @@ backend/app/services/adk/
 │   └── emotion_analyzer.py   # 感情分析（Phase 2d）
 ├── runner/                   # 既存（Router Agent統合済み）
 │   ├── runner_service.py     # AgentRunnerService（ローカル Runner）
-│   └── agent_engine_client.py # ✅ Phase 3: Agent Engine クライアントラッパー
+│   ├── agent_engine_client.py # ✅ Phase 3: Agent Engine クライアントラッパー
+│   └── homework_coach_agent.py # ✅ Phase 3: Agent Engine デプロイ用共有ラッパー（create_session, stream_query, query）
 ├── sessions/                 # 既存
 │   ├── firestore_session_service.py
 │   └── session_factory.py    # ✅ Phase 3: Firestore/VertexAi セッション切り替え
@@ -240,7 +241,7 @@ infrastructure/terraform/
 - `.github/workflows/ci-e2e.yml` - E2Eテスト（Docker Compose + Playwright）
 - `.github/workflows/cd.yml` - 自動デプロイ（push to main）
   - `deploy-backend` - Cloud Runバックエンドデプロイ
-  - `deploy-agent-engine` - Agent Engineアーティファクト自動デプロイ（バックエンド変更時のみ）
+  - `deploy-agent-engine` - Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新（バックエンド変更時のみ、GCSアップロード後に `deploy_agent_engine.py` で既存エンジンを更新）
   - `deploy-frontend` - Cloud Runフロントエンドデプロイ
 - `.github/workflows/deploy.yml` - マニュアルデプロイ（workflow_dispatch）
 

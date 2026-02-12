@@ -18,6 +18,10 @@ import argparse
 import os
 import sys
 
+# backend ディレクトリを PYTHONPATH に追加
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, backend_dir)
+
 
 def deploy_agent(
     project: str,
@@ -37,9 +41,9 @@ def deploy_agent(
         Agent Engine リソース名
     """
     import vertexai
-    from vertexai.preview import reasoning_engines
 
     from app.services.adk.agents import create_router_agent
+    from app.services.adk.runner.homework_coach_agent import HomeworkCoachAgent
 
     vertexai.init(project=project, location=location)
 
@@ -51,19 +55,16 @@ def deploy_agent(
     print("\nCreating Router Agent...")
     root_agent = create_router_agent()
 
-    # AdkApp でラップ
-    print("Wrapping with AdkApp...")
-    adk_app = reasoning_engines.AdkApp(
-        agent=root_agent,
-        enable_tracing=True,
-    )
+    # HomeworkCoachAgent でラップ（AdkApp の代わりに使用）
+    print("Wrapping with HomeworkCoachAgent...")
+    agent_wrapper = HomeworkCoachAgent(root_agent)
 
     if resource_name:
         # 既存の Agent Engine を更新
         print(f"\nUpdating existing Agent Engine: {resource_name}")
         remote_app = agent_engines_update(
             resource_name=resource_name,
-            agent=adk_app,
+            agent=agent_wrapper,
             staging_bucket=staging_bucket,
         )
     else:
@@ -71,7 +72,7 @@ def deploy_agent(
         print("\nCreating new Agent Engine...")
         client = vertexai.Client(project=project, location=location)
         remote_app = client.agent_engines.create(
-            agent=adk_app,
+            agent=agent_wrapper,
             config={
                 "display_name": "homework-coach-router-agent",
                 "description": "宿題コーチロボット - Router Agent (Phase 3)",
@@ -106,7 +107,7 @@ def agent_engines_update(
 
     Args:
         resource_name: 既存リソース名
-        agent: AdkApp インスタンス
+        agent: HomeworkCoachAgent インスタンス
         staging_bucket: GCS ステージングバケット名
 
     Returns:
@@ -165,11 +166,14 @@ def main() -> None:
         print("Error: --bucket or GCS_STAGING_BUCKET is required", file=sys.stderr)
         sys.exit(1)
 
+    # 空文字列の resource_name を None として扱う（GitHub Secrets 未設定時対策）
+    resource_name = args.resource_name if args.resource_name else None
+
     deploy_agent(
         project=args.project,
         location=args.location,
         staging_bucket=args.bucket,
-        resource_name=args.resource_name,
+        resource_name=resource_name,
     )
 
 
