@@ -155,17 +155,15 @@ jobs:
         if: steps.backend_changes.outputs.changed == 'true'
         working-directory: backend
         run: |
-          echo "Finding GCS bucket..."
-          BUCKET_NAME=$(gcloud storage buckets list \
-            --format="value(name)" \
-            --filter="name:homework-coach-assets")
+          BUCKET_NAME="${{ secrets.GCS_ASSETS_BUCKET }}"
 
           if [ -z "$BUCKET_NAME" ]; then
-            echo "✗ Error: No GCS bucket found matching 'homework-coach-assets'"
+            echo "✗ Error: GCS_ASSETS_BUCKET secret is not set"
+            echo "  Set it to the Terraform output value of module.cloud_storage.bucket_name"
             exit 1
           fi
 
-          echo "Found bucket: $BUCKET_NAME"
+          echo "Using bucket: $BUCKET_NAME"
           echo "Uploading artifacts..."
 
           gcloud storage cp pickle.pkl "gs://${BUCKET_NAME}/agent-engine/" || exit 1

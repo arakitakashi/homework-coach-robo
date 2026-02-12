@@ -42,6 +42,7 @@
 - **Backend/Frontend/Infrastructure 整合性チェック**: API仕様、環境変数、WebSocketプロトコル、Phase 2イベント型定義の整合性確認完了（2025-02-11）
 - **Phase 2 Backend WebSocketイベント送信**: `voice_stream.py` に Phase 2 イベント型（ToolExecution, AgentTransition, EmotionUpdate）追加、`streaming_service.py` にイベント変換ロジック実装、統合テスト（13テスト、345テスト総数）
 - **CI/CD Agent Engineアーティファクト自動デプロイ**: cd.yml に `deploy-agent-engine` ジョブ追加、バックエンド変更検知（git diff）、エージェントシリアライズ（serialize_agent.py）、依存関係パッケージ化、GCSアップロード（pickle.pkl, requirements.txt, dependencies.tar.gz）、条件付き実行（バックエンド変更時のみ）、エラーハンドリング実装完了
+- **GCS権限修正 + CDワークフロー改善**: GitHub Actions SA に `roles/storage.objectAdmin` を Terraform（IAM モジュール）で付与、CDワークフロー（cd.yml）で `gcloud storage buckets list` を廃止し `GCS_ASSETS_BUCKET` GitHub Secret で直接バケット名を参照するように変更
 
 ---
 
@@ -882,3 +883,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260210-frontend-phase2d-emotion-ui/` | Phase 2d 感情適応UI（EmotionIndicator + CharacterDisplay感情連動） |
 | `.steering/20260211-ci-cd-agent-engine-deploy/` | CI/CD Agent Engineアーティファクト自動デプロイ |
 | `.steering/20260211-agent-engine-terraform/` | Phase 3 Agent Engine Terraform インフラ整備 |
+| `.steering/20260213-fix-gcs-permissions/` | GCS 権限修正 + CD ワークフロー改善 |

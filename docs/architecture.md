@@ -584,6 +584,7 @@ Service Accountに必要なロール:
 - `roles/artifactregistry.writer` — Docker Push
 - `roles/run.admin` — Cloud Runデプロイ
 - `roles/iam.serviceAccountUser` — Service Account実行
+- `roles/storage.objectAdmin` — GCS バケットへのオブジェクト読み書き（Agent Engine アーティファクトアップロード）
 
 **GitHub Secrets:**
 
@@ -591,6 +592,7 @@ Service Accountに必要なロール:
 |-----------|-----|
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/652907685934/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
 | `GCP_SERVICE_ACCOUNT` | `github-actions@homework-coach-robo.iam.gserviceaccount.com` |
+| `GCS_ASSETS_BUCKET` | GCS アセットバケット名（Agent Engine アーティファクトアップロード先） |
 
 セットアップ手順の詳細は `.steering/20260206-github-actions-cicd/gcp-wif-setup.md` を参照。
 
