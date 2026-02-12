@@ -105,6 +105,9 @@ def agent_engines_update(
 ) -> object:
     """既存の Agent Engine を更新する
 
+    client.agent_engines.update() を使用して既存のインスタンスを更新する。
+    vertexai.init() は呼び出し元の deploy_agent() で設定済み。
+
     Args:
         resource_name: 既存リソース名
         agent: HomeworkCoachAgent インスタンス
@@ -113,10 +116,11 @@ def agent_engines_update(
     Returns:
         更新後の remote_app
     """
-    from vertexai import agent_engines
+    import vertexai
 
-    remote_app = agent_engines.get(resource_name)
-    remote_app.update(  # type: ignore[call-arg]
+    client = vertexai.Client()
+    remote_app = client.agent_engines.update(
+        name=resource_name,
         agent=agent,
         config={
             "staging_bucket": f"gs://{staging_bucket}",
