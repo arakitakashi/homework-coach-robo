@@ -1,1 +1,8 @@
+export { AgentBadge } from "./AgentBadge"
 export { DialogueHistory } from "./DialogueHistory"
+export { DialogueMetadataFooter } from "./DialogueMetadataFooter"
+export { DialogueMetadataHeader } from "./DialogueMetadataHeader"
+export { EmotionIcon } from "./EmotionIcon"
+export { QuestionTypeIcon } from "./QuestionTypeIcon"
+export { ToolExecutionBadges } from "./ToolExecutionBadges"
+export { UnderstandingIndicator } from "./UnderstandingIndicator"

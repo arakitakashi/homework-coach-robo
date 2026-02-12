@@ -43,4 +43,150 @@ describe("DialogueHistory", () => {
 		render(<DialogueHistory turns={mockTurns} />)
 		expect(screen.getByRole("log")).toBeInTheDocument()
 	})
+
+	describe("Phase 2 metadata display", () => {
+		it("displays question type when present", () => {
+			const turnsWithMetadata: DialogueTurn[] = [
+				{
+					id: "1",
+					speaker: "robot",
+					text: "この問題は何を聞いていると思う？",
+					timestamp: new Date(),
+					questionType: "understanding_check",
+				},
+			]
+
+			render(<DialogueHistory turns={turnsWithMetadata} />)
+
+			expect(screen.getByLabelText("質問タイプ: 理解確認")).toBeInTheDocument()
+		})
+
+		it("displays emotion when present", () => {
+			const turnsWithMetadata: DialogueTurn[] = [
+				{
+					id: "1",
+					speaker: "child",
+					text: "わからない...",
+					timestamp: new Date(),
+					emotion: "confused",
+				},
+			]
+
+			render(<DialogueHistory turns={turnsWithMetadata} />)
+
+			expect(screen.getByLabelText("感情: わからない")).toBeInTheDocument()
+		})
+
+		it("displays active agent when present", () => {
+			const turnsWithMetadata: DialogueTurn[] = [
+				{
+					id: "1",
+					speaker: "robot",
+					text: "一緒に計算してみよう",
+					timestamp: new Date(),
+					activeAgent: "math_coach",
+				},
+			]
+
+			render(<DialogueHistory turns={turnsWithMetadata} />)
+
+			expect(screen.getByLabelText("エージェント: 算数")).toBeInTheDocument()
+		})
+
+		it("displays response analysis when present", () => {
+			const turnsWithMetadata: DialogueTurn[] = [
+				{
+					id: "1",
+					speaker: "child",
+					text: "8だと思う",
+					timestamp: new Date(),
+					responseAnalysis: {
+						understandingLevel: 0.9,
+						isCorrectDirection: true,
+						needsClarification: false,
+						keyInsights: [],
+					},
+				},
+			]
+
+			render(<DialogueHistory turns={turnsWithMetadata} />)
+
+			expect(screen.getByLabelText("理解度: 90%")).toBeInTheDocument()
+		})
+
+		it("displays tool executions when present", () => {
+			const turnsWithMetadata: DialogueTurn[] = [
+				{
+					id: "1",
+					speaker: "robot",
+					text: "計算を確認したよ",
+					timestamp: new Date(),
+					toolExecutions: [
+						{
+							toolName: "calculate_tool",
+							status: "completed",
+							timestamp: new Date(),
+						},
+					],
+				},
+			]
+
+			render(<DialogueHistory turns={turnsWithMetadata} />)
+
+			expect(screen.getByText("けいさん")).toBeInTheDocument()
+		})
+
+		it("displays all Phase 2 metadata together", () => {
+			const turnsWithMetadata: DialogueTurn[] = [
+				{
+					id: "1",
+					speaker: "robot",
+					text: "ヒントを使って考えてみよう",
+					timestamp: new Date(),
+					questionType: "hint",
+					emotion: "happy",
+					activeAgent: "math_coach",
+					responseAnalysis: {
+						understandingLevel: 0.7,
+						isCorrectDirection: true,
+						needsClarification: false,
+						keyInsights: [],
+					},
+					toolExecutions: [
+						{
+							toolName: "manage_hint_tool",
+							status: "completed",
+							timestamp: new Date(),
+						},
+					],
+				},
+			]
+
+			render(<DialogueHistory turns={turnsWithMetadata} />)
+
+			expect(screen.getByLabelText("質問タイプ: ヒント")).toBeInTheDocument()
+			expect(screen.getByLabelText("感情: 元気いっぱい")).toBeInTheDocument()
+			expect(screen.getByLabelText("エージェント: 算数")).toBeInTheDocument()
+			expect(screen.getByLabelText("理解度: 70%")).toBeInTheDocument()
+			expect(screen.getByText("ヒント")).toBeInTheDocument()
+		})
+
+		it("works without Phase 2 metadata (backward compatibility)", () => {
+			const turnsWithoutMetadata: DialogueTurn[] = [
+				{
+					id: "1",
+					speaker: "robot",
+					text: "こんにちは",
+					timestamp: new Date(),
+				},
+			]
+
+			render(<DialogueHistory turns={turnsWithoutMetadata} />)
+
+			expect(screen.getByText("こんにちは")).toBeInTheDocument()
+			expect(screen.queryByLabelText(/質問タイプ:/)).not.toBeInTheDocument()
+			expect(screen.queryByLabelText(/感情:/)).not.toBeInTheDocument()
+			expect(screen.queryByLabelText(/エージェント:/)).not.toBeInTheDocument()
+		})
+	})
 })
