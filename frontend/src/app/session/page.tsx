@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { isValidCharacter } from "@/lib/validation/characterValidation"
 import { SessionContent } from "./SessionContent"
 
 export const metadata: Metadata = {
@@ -14,7 +16,12 @@ interface SessionPageProps {
 
 export default async function SessionPage({ searchParams }: SessionPageProps) {
 	const params = await searchParams
-	const characterType = (params.character || "robot") as "robot" | "wizard" | "astronaut" | "animal"
+	const character = params.character
 
-	return <SessionContent characterType={characterType} />
+	// 不正なキャラクターの場合、トップページにリダイレクト
+	if (!isValidCharacter(character)) {
+		redirect("/")
+	}
+
+	return <SessionContent characterType={character} />
 }
