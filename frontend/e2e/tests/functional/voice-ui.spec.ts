@@ -11,7 +11,7 @@ test.describe("Voice UI", () => {
 
 	test("displays voice interface elements", async ({ page }) => {
 		// 録音ボタンが表示される
-		const recordButton = page.getByLabel(VOICE.startRecordingLabel).first()
+		const recordButton = page.getByRole("button", { name: VOICE.startRecordingLabel })
 		await expect(recordButton).toBeVisible()
 
 		// 音声レベルインジケーターが表示される
@@ -29,7 +29,7 @@ test.describe("Voice UI", () => {
 	})
 
 	test("record button has correct aria attributes", async ({ page }) => {
-		const recordButton = page.getByLabel(VOICE.startRecordingLabel).first()
+		const recordButton = page.getByRole("button", { name: VOICE.startRecordingLabel })
 		await expect(recordButton).toHaveAttribute("aria-pressed", "false")
 	})
 })

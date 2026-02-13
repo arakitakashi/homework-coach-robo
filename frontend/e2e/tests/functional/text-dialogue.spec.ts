@@ -18,21 +18,21 @@ test.describe("Text Dialogue", () => {
 	})
 
 	test("shows text input with placeholder", async ({ page }) => {
-		const input = page.getByLabel(SESSION.inputAriaLabel).first()
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await expect(input).toBeVisible()
 		await expect(input).toHaveAttribute("placeholder", SESSION.textInputPlaceholder)
 	})
 
 	test("send button is disabled when input is empty", async ({ page }) => {
-		const sendButton = page.getByLabel(SESSION.sendAriaLabel).first()
+		const sendButton = page.getByRole("button", { name: SESSION.sendAriaLabel })
 		await expect(sendButton).toBeDisabled()
 	})
 
 	test("send button is enabled when input has text", async ({ page }) => {
-		const input = page.getByLabel(SESSION.inputAriaLabel).first()
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await input.fill("1+1はなに？")
 
-		const sendButton = page.getByLabel(SESSION.sendAriaLabel).first()
+		const sendButton = page.getByRole("button", { name: SESSION.sendAriaLabel })
 		await expect(sendButton).toBeEnabled()
 	})
 
@@ -43,10 +43,10 @@ test.describe("Text Dialogue", () => {
 		// 対話APIをモック（テキストチャンク付き）
 		await mockAPI.mockDialogueRun({ textChunks: robotChunks })
 
-		const input = page.getByLabel(SESSION.inputAriaLabel).first()
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await input.fill(userMessage)
 
-		const sendButton = page.getByLabel(SESSION.sendAriaLabel).first()
+		const sendButton = page.getByRole("button", { name: SESSION.sendAriaLabel })
 		await sendButton.click()
 
 		// ユーザーメッセージが対話履歴に表示される
@@ -64,7 +64,7 @@ test.describe("Text Dialogue", () => {
 	test("sends message with Enter key", async ({ page, mockAPI }) => {
 		await mockAPI.mockDialogueRun({ textChunks: ["わかった！"] })
 
-		const input = page.getByLabel(SESSION.inputAriaLabel).first()
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await input.fill("たすけて")
 		await input.press("Enter")
 
