@@ -242,6 +242,34 @@ class TestCreateSession:
         assert result == {"id": "loop-session"}
 
 
+def _make_stream_runner_mock(
+    mock_runner_cls: MagicMock,
+    run_async_fn: Any,
+) -> MagicMock:
+    """stream_query テスト用の Runner モックを作成するヘルパー
+
+    InMemorySessionService 環境ではセッションを事前作成するため、
+    session_service.create_session を AsyncMock で設定する。
+
+    Args:
+        mock_runner_cls: Runner クラスのモック
+        run_async_fn: run_async に設定する非同期ジェネレータ関数
+
+    Returns:
+        設定済みの mock_runner_instance
+    """
+    mock_session = MagicMock()
+    mock_session.id = "auto-created-session"
+
+    mock_runner_instance = MagicMock()
+    mock_runner_instance.run_async = run_async_fn
+    mock_runner_instance.session_service.create_session = AsyncMock(
+        return_value=mock_session,
+    )
+    mock_runner_cls.return_value = mock_runner_instance
+    return mock_runner_instance
+
+
 class TestStreamQuery:
     """stream_query のテスト"""
 
@@ -261,9 +289,7 @@ class TestStreamQuery:
             return
             yield  # noqa: B027 - async generator にするため
 
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-        mock_runner_cls.return_value = mock_runner_instance
+        _make_stream_runner_mock(mock_runner_cls, mock_run_async)
 
         wrapper = HomeworkCoachAgent(MagicMock())
         result = wrapper.stream_query(
@@ -277,13 +303,17 @@ class TestStreamQuery:
     @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
     @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
     @patch("app.services.adk.runner.homework_coach_agent.Runner")
-    def test_passes_none_session_id_to_run_async(
+    def test_creates_session_and_passes_id_to_run_async(
         self,
         mock_runner_cls: MagicMock,
         mock_session_factory: MagicMock,  # noqa: ARG002
         mock_memory_factory: MagicMock,  # noqa: ARG002
     ) -> None:
-        """run_async に session_id=None を渡す（ADK Runner にセッション自動作成させる）"""
+        """stream_query はセッションを事前作成し、そのIDを run_async に渡す
+
+        InMemorySessionService は session_id=None で自動作成しないため、
+        明示的にセッションを作成してから run_async に渡す。
+        """
         call_args: dict[str, Any] = {}
 
         async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:
@@ -291,9 +321,7 @@ class TestStreamQuery:
             return
             yield  # noqa: B027
 
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-        mock_runner_cls.return_value = mock_runner_instance
+        mock_runner_instance = _make_stream_runner_mock(mock_runner_cls, mock_run_async)
 
         wrapper = HomeworkCoachAgent(MagicMock())
         list(
@@ -304,8 +332,13 @@ class TestStreamQuery:
             )
         )
 
-        # Cloud Run のセッションID ではなく None が渡されることを確認
-        assert call_args["session_id"] is None
+        # セッションが事前に作成されることを確認
+        mock_runner_instance.session_service.create_session.assert_called_once_with(
+            app_name="homework-coach-agent-engine",
+            user_id="u-1",
+        )
+        # 作成されたセッションIDが run_async に渡されることを確認（None ではない）
+        assert call_args["session_id"] == "auto-created-session"
         assert call_args["user_id"] == "u-1"
 
     @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
@@ -332,9 +365,7 @@ class TestStreamQuery:
             event2.content.parts = [part2]
             yield event2
 
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-        mock_runner_cls.return_value = mock_runner_instance
+        _make_stream_runner_mock(mock_runner_cls, mock_run_async)
 
         wrapper = HomeworkCoachAgent(MagicMock())
         events = list(
@@ -367,9 +398,7 @@ class TestStreamQuery:
             event.content.parts = [part]
             yield event
 
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-        mock_runner_cls.return_value = mock_runner_instance
+        _make_stream_runner_mock(mock_runner_cls, mock_run_async)
 
         wrapper = HomeworkCoachAgent(MagicMock())
 
