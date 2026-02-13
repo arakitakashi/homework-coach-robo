@@ -8,9 +8,10 @@ sync メソッド (create_session, stream_query) から async_create_session,
 async_stream_query を自動生成する。そのため sync 版のみ定義すればよい。
 
 Agent Engine ランタイムでは GOOGLE_CLOUD_AGENT_ENGINE_ID 環境変数が
-自動設定されるため、これを検出して VertexAiSessionService /
-VertexAiMemoryBankService を直接使用する。ローカル開発時はファクトリ関数に
-フォールバックする。
+自動設定されるため、これを検出して InMemorySessionService /
+InMemoryMemoryService を使用する。VertexAiSessionService は Agent Engine 内部
+では session_events.list() API が INVALID_ARGUMENT を返すため使用しない。
+ローカル開発時はファクトリ関数にフォールバックする。
 """
 
 from __future__ import annotations
@@ -24,8 +25,8 @@ from typing import Any, TypeVar
 
 from google.adk import Runner
 from google.adk.agents import Agent
-from google.adk.memory import BaseMemoryService, VertexAiMemoryBankService
-from google.adk.sessions import BaseSessionService, VertexAiSessionService
+from google.adk.memory import BaseMemoryService, InMemoryMemoryService
+from google.adk.sessions import BaseSessionService, InMemorySessionService
 from google.genai import types
 
 from app.services.adk.memory.memory_factory import create_memory_service
@@ -65,12 +66,11 @@ def _run_coroutine_sync(coro: Coroutine[Any, Any, T]) -> T:
 
 
 def _create_agent_engine_services() -> tuple[BaseSessionService, BaseMemoryService] | None:
-    """Agent Engine ランタイム環境を検出し、Vertex AI マネージドサービスを作成する
+    """Agent Engine ランタイム環境を検出し、InMemory サービスを作成する
 
-    Agent Engine ランタイムでは以下の環境変数が自動設定される:
-    - GOOGLE_CLOUD_AGENT_ENGINE_ID: Agent Engine ID
-    - GOOGLE_CLOUD_PROJECT: GCP プロジェクト ID
-    - GOOGLE_CLOUD_LOCATION: GCP ロケーション
+    Agent Engine ランタイムでは GOOGLE_CLOUD_AGENT_ENGINE_ID が自動設定される。
+    VertexAiSessionService は Agent Engine 内部では session_events.list() API が
+    INVALID_ARGUMENT を返すため、InMemorySessionService を使用する。
 
     Returns:
         (session_service, memory_service) のタプル。
@@ -80,26 +80,13 @@ def _create_agent_engine_services() -> tuple[BaseSessionService, BaseMemoryServi
     if not agent_engine_id:
         return None
 
-    project = os.environ.get("GOOGLE_CLOUD_PROJECT") or None
-    location = os.environ.get("GOOGLE_CLOUD_LOCATION") or None
-
     logger.info(
-        "Agent Engine runtime detected: engine_id=%s, project=%s, location=%s",
+        "Agent Engine runtime detected: engine_id=%s, using InMemory services",
         agent_engine_id,
-        project,
-        location,
     )
 
-    session_service = VertexAiSessionService(
-        project=project,
-        location=location,
-        agent_engine_id=agent_engine_id,
-    )
-    memory_service = VertexAiMemoryBankService(
-        project=project,
-        location=location,
-        agent_engine_id=agent_engine_id,
-    )
+    session_service = InMemorySessionService()  # type: ignore[no-untyped-call]
+    memory_service = InMemoryMemoryService()  # type: ignore[no-untyped-call]
 
     return session_service, memory_service
 
@@ -111,7 +98,7 @@ class HomeworkCoachAgent:
     create_session, stream_query, query メソッドを提供する。
 
     Agent Engine ランタイムでは GOOGLE_CLOUD_AGENT_ENGINE_ID を検出し、
-    VertexAiSessionService / VertexAiMemoryBankService を直接使用する。
+    InMemorySessionService / InMemoryMemoryService を使用する。
     ローカル開発時はファクトリ関数にフォールバックする。
     """
 
@@ -139,7 +126,7 @@ class HomeworkCoachAgent:
         """Runner を遅延初期化する（デシリアライズ後に初めて呼ばれる）
 
         Agent Engine ランタイムでは GOOGLE_CLOUD_AGENT_ENGINE_ID を検出し、
-        VertexAiSessionService / VertexAiMemoryBankService を使用する。
+        InMemorySessionService / InMemoryMemoryService を使用する。
         ローカル環境ではファクトリ関数にフォールバックする。
         """
         if self._runner is None:
@@ -147,7 +134,7 @@ class HomeworkCoachAgent:
             ae_services = _create_agent_engine_services()
             if ae_services is not None:
                 session_service, memory_service = ae_services
-                logger.info("Using Vertex AI managed services for Agent Engine")
+                logger.info("Using InMemory services for Agent Engine")
             else:
                 # ローカル開発 / テスト環境: ファクトリ関数にフォールバック
                 logger.info("Agent Engine runtime not detected, using factory functions")
