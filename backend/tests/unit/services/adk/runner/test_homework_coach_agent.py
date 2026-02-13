@@ -270,9 +270,6 @@ class TestStreamQuery:
 
         mock_runner_instance = MagicMock()
         mock_runner_instance.run_async = mock_run_async
-        mock_runner_instance.session_service.get_session = AsyncMock(
-            return_value=MagicMock(),
-        )
         mock_runner_cls.return_value = mock_runner_instance
 
         wrapper = HomeworkCoachAgent(MagicMock())
@@ -287,89 +284,36 @@ class TestStreamQuery:
     @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
     @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
     @patch("app.services.adk.runner.homework_coach_agent.Runner")
-    def test_creates_session_before_run_async(
+    def test_passes_none_session_id_to_run_async(
         self,
         mock_runner_cls: MagicMock,
         mock_session_factory: MagicMock,  # noqa: ARG002
         mock_memory_factory: MagicMock,  # noqa: ARG002
     ) -> None:
-        """stream_query は run_async の前にセッションを確認・作成する"""
+        """run_async に session_id=None を渡す（ADK Runner にセッション自動作成させる）"""
+        call_args: dict[str, Any] = {}
 
-        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:
+            call_args.update(kwargs)
             return
             yield  # noqa: B027
 
-        mock_session = MagicMock()
-        mock_session.id = "s-1"
-
         mock_runner_instance = MagicMock()
         mock_runner_instance.run_async = mock_run_async
-        # get_session が None を返す → セッションが存在しない
-        mock_runner_instance.session_service.get_session = AsyncMock(return_value=None)
-        mock_runner_instance.session_service.create_session = AsyncMock(
-            return_value=mock_session,
-        )
         mock_runner_cls.return_value = mock_runner_instance
 
         wrapper = HomeworkCoachAgent(MagicMock())
         list(
             wrapper.stream_query(
                 user_id="u-1",
-                session_id="s-1",
+                session_id="cloud-run-session-id",
                 message="テスト",
             )
         )
 
-        # セッションの存在確認が呼ばれたことを確認
-        mock_runner_instance.session_service.get_session.assert_called_once_with(
-            app_name="homework-coach-agent-engine",
-            user_id="u-1",
-            session_id="s-1",
-        )
-        # セッションが存在しないため create_session が呼ばれたことを確認
-        mock_runner_instance.session_service.create_session.assert_called_once_with(
-            app_name="homework-coach-agent-engine",
-            user_id="u-1",
-        )
-
-    @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
-    @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
-    @patch("app.services.adk.runner.homework_coach_agent.Runner")
-    def test_skips_session_creation_when_exists(
-        self,
-        mock_runner_cls: MagicMock,
-        mock_session_factory: MagicMock,  # noqa: ARG002
-        mock_memory_factory: MagicMock,  # noqa: ARG002
-    ) -> None:
-        """セッションが既に存在する場合は create_session を呼ばない"""
-
-        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
-            return
-            yield  # noqa: B027
-
-        mock_existing_session = MagicMock()
-
-        mock_runner_instance = MagicMock()
-        mock_runner_instance.run_async = mock_run_async
-        # get_session がセッションを返す → 既に存在する
-        mock_runner_instance.session_service.get_session = AsyncMock(
-            return_value=mock_existing_session,
-        )
-        mock_runner_instance.session_service.create_session = AsyncMock()
-        mock_runner_cls.return_value = mock_runner_instance
-
-        wrapper = HomeworkCoachAgent(MagicMock())
-        list(
-            wrapper.stream_query(
-                user_id="u-1",
-                session_id="s-1",
-                message="テスト",
-            )
-        )
-
-        # get_session は呼ばれるが create_session は呼ばれない
-        mock_runner_instance.session_service.get_session.assert_called_once()
-        mock_runner_instance.session_service.create_session.assert_not_called()
+        # Cloud Run のセッションID ではなく None が渡されることを確認
+        assert call_args["session_id"] is None
+        assert call_args["user_id"] == "u-1"
 
     @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
     @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
@@ -397,9 +341,6 @@ class TestStreamQuery:
 
         mock_runner_instance = MagicMock()
         mock_runner_instance.run_async = mock_run_async
-        mock_runner_instance.session_service.get_session = AsyncMock(
-            return_value=MagicMock(),
-        )
         mock_runner_cls.return_value = mock_runner_instance
 
         wrapper = HomeworkCoachAgent(MagicMock())
@@ -435,9 +376,6 @@ class TestStreamQuery:
 
         mock_runner_instance = MagicMock()
         mock_runner_instance.run_async = mock_run_async
-        mock_runner_instance.session_service.get_session = AsyncMock(
-            return_value=MagicMock(),
-        )
         mock_runner_cls.return_value = mock_runner_instance
 
         wrapper = HomeworkCoachAgent(MagicMock())
