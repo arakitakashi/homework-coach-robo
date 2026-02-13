@@ -5,11 +5,12 @@ test.describe("Session Cleanup", () => {
 	test.beforeEach(async ({ mockAPI, page }) => {
 		await mockAPI.mockAllSessionAPIs()
 		await page.goto("/session?character=robot")
-		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("end button returns to home page", async ({ page }) => {
-		await page.getByRole("button", { name: SESSION.endButton }).click()
+		await page.getByRole("button", { name: SESSION.endButton }).first().click()
 
 		await page.waitForURL("**/")
 		await expect(page.getByRole("heading", { name: HOME.title })).toBeVisible()
@@ -25,7 +26,7 @@ test.describe("Session Cleanup", () => {
 			}
 		})
 
-		await page.getByRole("button", { name: SESSION.endButton }).click()
+		await page.getByRole("button", { name: SESSION.endButton }).first().click()
 		await page.waitForURL("**/")
 
 		expect(deleteCalled).toBe(true)
@@ -33,7 +34,7 @@ test.describe("Session Cleanup", () => {
 
 	test("can start new session after ending previous one", async ({ page, mockAPI }) => {
 		// セッション終了
-		await page.getByRole("button", { name: SESSION.endButton }).click()
+		await page.getByRole("button", { name: SESSION.endButton }).first().click()
 		await page.waitForURL("**/")
 
 		// ホームページに戻り、新しいセッションを開始
@@ -48,7 +49,8 @@ test.describe("Session Cleanup", () => {
 		await page.getByRole("button", { name: HOME.startButton }).click()
 		await page.waitForURL("**/session?character=wizard")
 
-		// 新しいセッションのウェルカムメッセージが表示される
-		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
+		// 新しいセッションのウェルカムメッセージが表示される（対話履歴内で確認）
+		const newDialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(newDialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 })

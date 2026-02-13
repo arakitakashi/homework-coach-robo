@@ -103,18 +103,18 @@ test.describe("Dialogue Stream (Integration)", () => {
 
 		await page.goto("/session?character=robot")
 
-		// ウェルカムメッセージ表示
-		await expect(page.getByText("こんにちは！いっしょにがんばろうね！")).toBeVisible({
+		// ウェルカムメッセージ表示（対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText("こんにちは！いっしょにがんばろうね！")).toBeVisible({
 			timeout: 10_000,
 		})
 
-		// テキスト入力して送信
-		const input = page.getByLabel("メッセージ入力")
+		// テキスト入力して送信（roleベースで表示要素を取得）
+		const input = page.getByRole("textbox", { name: "メッセージ入力" })
 		await input.fill("1たす1はなに？")
-		await page.getByLabel("送信").click()
+		await page.getByRole("button", { name: "送信" }).click()
 
 		// MockAgentRunnerServiceの応答が表示される
-		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
 		await expect(dialogueLog.getByText("いい質問だね！")).toBeVisible({ timeout: 10_000 })
 	})
 })
