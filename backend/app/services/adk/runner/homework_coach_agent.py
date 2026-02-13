@@ -11,8 +11,9 @@ async_stream_query を自動生成する。そのため sync 版のみ定義す�
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Generator
-from typing import Any
+from collections.abc import Coroutine, Generator
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, TypeVar
 
 from google.adk import Runner
 from google.adk.agents import Agent
@@ -20,6 +21,31 @@ from google.genai import types
 
 from app.services.adk.memory.memory_factory import create_memory_service
 from app.services.adk.sessions.session_factory import create_session_service
+
+T = TypeVar("T")
+
+
+def _run_coroutine_sync(coro: Coroutine[Any, Any, T]) -> T:
+    """コルーチンを同期的に実行する（既存イベントループ内でも安全に動作）
+
+    Agent Engine サーバー環境では既にイベントループが動作しているため、
+    asyncio.run() を直接呼ぶと RuntimeError が発生する。
+    その場合は別スレッドでイベントループを作成して実行する。
+
+    Args:
+        coro: 実行するコルーチン
+
+    Returns:
+        コルーチンの戻り値
+    """
+    try:
+        asyncio.get_running_loop()
+        # 既存イベントループが存在 → 別スレッドで実行
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            return executor.submit(asyncio.run, coro).result()
+    except RuntimeError:
+        # イベントループなし → 直接実行
+        return asyncio.run(coro)
 
 
 class HomeworkCoachAgent:
@@ -76,7 +102,7 @@ class HomeworkCoachAgent:
         """
         runner = self._get_runner()
 
-        session = asyncio.run(
+        session = _run_coroutine_sync(
             runner.session_service.create_session(
                 app_name="homework-coach-agent-engine",
                 user_id=user_id,
@@ -133,7 +159,7 @@ class HomeworkCoachAgent:
                             )
             return events
 
-        yield from asyncio.run(collect_events())
+        yield from _run_coroutine_sync(collect_events())
 
     def query(self, message: str) -> str:
         """Query the agent with a message
@@ -165,4 +191,4 @@ class HomeworkCoachAgent:
                             response_texts.append(part.text)
             return " ".join(response_texts)
 
-        return asyncio.run(run_query())
+        return _run_coroutine_sync(run_query())
