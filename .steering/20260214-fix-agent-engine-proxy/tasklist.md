@@ -78,13 +78,14 @@
 
 ## Phase 7: PR作成
 
-- [ ] コミット作成
+- [x] コミット作成
   - コミットメッセージ: `fix(backend): Agent Engineプロキシのregister_operations未定義 + asyncメソッド呼び出し修正 (#131)`
-- [ ] プッシュ
-- [ ] `/create-pr` スキルで PR 作成
+- [x] プッシュ
+- [x] `/create-pr` スキルで PR 作成
   - タイトル: `fix(backend): Agent Engineプロキシのregister_operations未定義 + asyncメソッド呼び出し修正 (#131)`
   - 本文: 修正内容のサマリー、テスト結果、デプロイ手順
   - `closes #131` を含める
+  - PR URL: https://github.com/arakitakashi/homework-coach-robo/pull/132
 
 ## Phase 8: デプロイ確認（PR マージ後）
 
