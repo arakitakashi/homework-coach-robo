@@ -226,7 +226,7 @@ class HomeworkCoachAgent:
             try:
                 async for event in runner.run_async(
                     user_id=user_id,
-                    session_id=None,
+                    session_id=None,  # type: ignore[arg-type]  # ADK Runner は None でセッション自動作成
                     new_message=content,
                 ):
                     has_content = bool(event.content and event.content.parts)
