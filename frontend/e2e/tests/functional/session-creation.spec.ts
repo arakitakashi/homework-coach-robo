@@ -34,8 +34,9 @@ test.describe("Session Creation", () => {
 		// セッション作成を完了
 		deferred.resolve()
 
-		// メインUIが表示される
-		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
+		// メインUIが表示される（対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("shows error message on session creation failure", async ({ page, mockAPI }) => {
@@ -89,8 +90,9 @@ test.describe("Session Creation", () => {
 		// リトライ
 		await page.getByRole("button", { name: SESSION.retryButton }).click()
 
-		// 成功してメインUIが表示される
-		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
+		// 成功してメインUIが表示される（対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("back button navigates to home page", async ({ page, mockAPI }) => {

@@ -5,33 +5,34 @@ test.describe("Text Dialogue", () => {
 	test.beforeEach(async ({ mockAPI, page }) => {
 		await mockAPI.mockAllSessionAPIs()
 		await page.goto("/session?character=robot")
-		// セッション作成完了を待つ
-		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
+		// セッション作成完了を待つ（対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("displays welcome message on session start", async ({ page }) => {
 		// ウェルカムメッセージが対話履歴に表示される
-		const dialogueLog = page.getByRole("log", { name: SESSION.dialogueLogAriaLabel })
+		const dialogueLog = page.getByRole("log", { name: SESSION.dialogueLogAriaLabel }).first()
 		await expect(dialogueLog).toBeVisible()
-		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible()
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage).first()).toBeVisible()
 	})
 
 	test("shows text input with placeholder", async ({ page }) => {
-		const input = page.getByLabel(SESSION.inputAriaLabel)
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await expect(input).toBeVisible()
 		await expect(input).toHaveAttribute("placeholder", SESSION.textInputPlaceholder)
 	})
 
 	test("send button is disabled when input is empty", async ({ page }) => {
-		const sendButton = page.getByLabel(SESSION.sendAriaLabel)
+		const sendButton = page.getByRole("button", { name: SESSION.sendAriaLabel })
 		await expect(sendButton).toBeDisabled()
 	})
 
 	test("send button is enabled when input has text", async ({ page }) => {
-		const input = page.getByLabel(SESSION.inputAriaLabel)
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await input.fill("1+1はなに？")
 
-		const sendButton = page.getByLabel(SESSION.sendAriaLabel)
+		const sendButton = page.getByRole("button", { name: SESSION.sendAriaLabel })
 		await expect(sendButton).toBeEnabled()
 	})
 
@@ -42,14 +43,14 @@ test.describe("Text Dialogue", () => {
 		// 対話APIをモック（テキストチャンク付き）
 		await mockAPI.mockDialogueRun({ textChunks: robotChunks })
 
-		const input = page.getByLabel(SESSION.inputAriaLabel)
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await input.fill(userMessage)
 
-		const sendButton = page.getByLabel(SESSION.sendAriaLabel)
+		const sendButton = page.getByRole("button", { name: SESSION.sendAriaLabel })
 		await sendButton.click()
 
 		// ユーザーメッセージが対話履歴に表示される
-		const dialogueLog = page.getByRole("log", { name: SESSION.dialogueLogAriaLabel })
+		const dialogueLog = page.getByRole("log", { name: SESSION.dialogueLogAriaLabel }).first()
 		await expect(dialogueLog.getByText(userMessage)).toBeVisible({ timeout: 5_000 })
 
 		// ロボットの応答が表示される（チャンクが結合される）
@@ -63,12 +64,12 @@ test.describe("Text Dialogue", () => {
 	test("sends message with Enter key", async ({ page, mockAPI }) => {
 		await mockAPI.mockDialogueRun({ textChunks: ["わかった！"] })
 
-		const input = page.getByLabel(SESSION.inputAriaLabel)
+		const input = page.getByRole("textbox", { name: SESSION.inputAriaLabel })
 		await input.fill("たすけて")
 		await input.press("Enter")
 
 		// メッセージが送信される
-		const dialogueLog = page.getByRole("log", { name: SESSION.dialogueLogAriaLabel })
+		const dialogueLog = page.getByRole("log", { name: SESSION.dialogueLogAriaLabel }).first()
 		await expect(dialogueLog.getByText("たすけて")).toBeVisible({ timeout: 5_000 })
 	})
 })
