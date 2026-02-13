@@ -4,6 +4,7 @@ Agent Engine デプロイ用ラッパークラスのテスト。
 インスタンス化とメソッドシグネチャの確認を行う。
 """
 
+import asyncio
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -132,6 +133,34 @@ class TestCreateSession:
             user_id="user-42",
         )
 
+    @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
+    @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
+    @patch("app.services.adk.runner.homework_coach_agent.Runner")
+    def test_works_inside_running_event_loop(
+        self,
+        mock_runner_cls: MagicMock,
+        mock_session_factory: MagicMock,  # noqa: ARG002
+        mock_memory_factory: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """既存イベントループ内でもセッション作成が動作する（Agent Engine 環境を模倣）"""
+        mock_session = MagicMock()
+        mock_session.id = "loop-session"
+
+        mock_runner_instance = MagicMock()
+        mock_runner_instance.session_service.create_session = AsyncMock(
+            return_value=mock_session,
+        )
+        mock_runner_cls.return_value = mock_runner_instance
+
+        wrapper = HomeworkCoachAgent(MagicMock())
+
+        # 既存イベントループ内で呼び出す（Agent Engine サーバー環境を模倣）
+        async def run_in_loop() -> dict[str, Any]:
+            return wrapper.create_session(user_id="loop-user")
+
+        result = asyncio.run(run_in_loop())
+        assert result == {"id": "loop-session"}
+
 
 class TestStreamQuery:
     """stream_query のテスト"""
@@ -205,6 +234,44 @@ class TestStreamQuery:
         assert len(events) == 2
         assert events[0] == {"content": {"parts": [{"text": "こんにちは"}]}}
         assert events[1] == {"content": {"parts": [{"text": "元気ですか？"}]}}
+
+    @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
+    @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
+    @patch("app.services.adk.runner.homework_coach_agent.Runner")
+    def test_works_inside_running_event_loop(
+        self,
+        mock_runner_cls: MagicMock,
+        mock_session_factory: MagicMock,  # noqa: ARG002
+        mock_memory_factory: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """既存イベントループ内でも stream_query が動作する（Agent Engine 環境を模倣）"""
+
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
+            event = MagicMock()
+            part = MagicMock()
+            part.text = "ループ内応答"
+            event.content.parts = [part]
+            yield event
+
+        mock_runner_instance = MagicMock()
+        mock_runner_instance.run_async = mock_run_async
+        mock_runner_cls.return_value = mock_runner_instance
+
+        wrapper = HomeworkCoachAgent(MagicMock())
+
+        # 既存イベントループ内で呼び出す
+        async def run_in_loop() -> list[dict[str, Any]]:
+            return list(
+                wrapper.stream_query(
+                    user_id="u-1",
+                    session_id="s-1",
+                    message="テスト",
+                )
+            )
+
+        events = asyncio.run(run_in_loop())
+        assert len(events) == 1
+        assert events[0] == {"content": {"parts": [{"text": "ループ内応答"}]}}
 
 
 class TestRegisterOperations:
@@ -301,3 +368,33 @@ class TestQuery:
         result = wrapper.query("テスト")
 
         assert result == "応答テキスト"
+
+    @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
+    @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
+    @patch("app.services.adk.runner.homework_coach_agent.Runner")
+    def test_works_inside_running_event_loop(
+        self,
+        mock_runner_cls: MagicMock,
+        mock_session_factory: MagicMock,  # noqa: ARG002
+        mock_memory_factory: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """既存イベントループ内でも query が動作する（Agent Engine 環境を模倣）"""
+
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
+            event = MagicMock()
+            part = MagicMock()
+            part.text = "ループ内応答"
+            event.content.parts = [part]
+            yield event
+
+        mock_runner_instance = MagicMock()
+        mock_runner_instance.run_async = mock_run_async
+        mock_runner_cls.return_value = mock_runner_instance
+
+        wrapper = HomeworkCoachAgent(MagicMock())
+
+        async def run_in_loop() -> str:
+            return wrapper.query("テスト")
+
+        result = asyncio.run(run_in_loop())
+        assert result == "ループ内応答"
