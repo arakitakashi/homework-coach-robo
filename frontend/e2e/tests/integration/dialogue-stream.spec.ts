@@ -110,9 +110,9 @@ test.describe("Dialogue Stream (Integration)", () => {
 		})
 
 		// テキスト入力して送信
-		const input = page.getByLabel("メッセージ入力")
+		const input = page.getByLabel("メッセージ入力").first()
 		await input.fill("1たす1はなに？")
-		await page.getByLabel("送信").click()
+		await page.getByLabel("送信").first().click()
 
 		// MockAgentRunnerServiceの応答が表示される
 		await expect(dialogueLog.getByText("いい質問だね！")).toBeVisible({ timeout: 10_000 })
