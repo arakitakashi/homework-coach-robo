@@ -33,6 +33,22 @@ class HomeworkCoachAgent:
         self._agent = agent
         self._runner: Runner | None = None  # Lazy initialization
 
+    def register_operations(self) -> dict[str, list[str]]:
+        """Agent Engine プロキシに公開するメソッドを登録
+
+        Agent Engine にカスタムメソッド（create_session, stream_query）を
+        登録するための設定を返す。デフォルトの query メソッドも含める。
+
+        Returns:
+            メソッド登録情報
+                - "": 同期メソッドのリスト
+                - "stream": ストリーミングメソッドのリスト
+        """
+        return {
+            "": ["query", "create_session"],
+            "stream": ["stream_query"],
+        }
+
     def _get_runner(self) -> Runner:
         """Runner を遅延初期化する（デシリアライズ後に初めて呼ばれる）"""
         if self._runner is None:
