@@ -5,7 +5,8 @@ test.describe("Session Cleanup", () => {
 	test.beforeEach(async ({ mockAPI, page }) => {
 		await mockAPI.mockAllSessionAPIs()
 		await page.goto("/session?character=robot")
-		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("end button returns to home page", async ({ page }) => {
@@ -48,7 +49,8 @@ test.describe("Session Cleanup", () => {
 		await page.getByRole("button", { name: HOME.startButton }).click()
 		await page.waitForURL("**/session?character=wizard")
 
-		// 新しいセッションのウェルカムメッセージが表示される
-		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
+		// 新しいセッションのウェルカムメッセージが表示される（対話履歴内で確認）
+		const newDialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(newDialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 })

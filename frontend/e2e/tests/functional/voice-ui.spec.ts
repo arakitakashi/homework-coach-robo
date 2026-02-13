@@ -5,7 +5,8 @@ test.describe("Voice UI", () => {
 	test.beforeEach(async ({ mockAPI, page }) => {
 		await mockAPI.mockAllSessionAPIs()
 		await page.goto("/session?character=robot")
-		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("displays voice interface elements", async ({ page }) => {

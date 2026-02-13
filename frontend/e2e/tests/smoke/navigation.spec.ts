@@ -14,8 +14,9 @@ test.describe("Navigation", () => {
 		// セッションページに遷移
 		await page.waitForURL("**/session?character=robot")
 
-		// セッションUIが表示される（ローディング→メインUI）
-		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
+		// セッションUIが表示される（ローディング→メインUI、対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("session page shows loading then content", async ({ page, mockAPI }) => {
@@ -23,8 +24,9 @@ test.describe("Navigation", () => {
 
 		await page.goto("/session?character=robot")
 
-		// メインUIが表示される
-		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
+		// メインUIが表示される（対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 
 		// 終了ボタンが表示される
 		await expect(page.getByRole("button", { name: SESSION.endButton }).first()).toBeVisible()
@@ -34,7 +36,8 @@ test.describe("Navigation", () => {
 		await mockAPI.mockAllSessionAPIs()
 
 		await page.goto("/session?character=robot")
-		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 
 		// 「おわる」ボタンをクリック
 		await page.getByRole("button", { name: SESSION.endButton }).first().click()

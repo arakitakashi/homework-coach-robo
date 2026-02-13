@@ -5,8 +5,9 @@ test.describe("Text Dialogue", () => {
 	test.beforeEach(async ({ mockAPI, page }) => {
 		await mockAPI.mockAllSessionAPIs()
 		await page.goto("/session?character=robot")
-		// セッション作成完了を待つ
-		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
+		// セッション作成完了を待つ（対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("displays welcome message on session start", async ({ page }) => {
