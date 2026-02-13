@@ -79,6 +79,93 @@ class TestGetRunner:
         assert runner1 is runner2
         mock_runner_cls.assert_called_once()
 
+    @patch.dict(
+        "os.environ",
+        {
+            "GOOGLE_CLOUD_AGENT_ENGINE_ID": "test-engine-123",
+            "GOOGLE_CLOUD_PROJECT": "test-project",
+            "GOOGLE_CLOUD_LOCATION": "us-central1",
+        },
+    )
+    @patch("app.services.adk.runner.homework_coach_agent.VertexAiMemoryBankService")
+    @patch("app.services.adk.runner.homework_coach_agent.VertexAiSessionService")
+    @patch("app.services.adk.runner.homework_coach_agent.Runner")
+    def test_uses_vertex_ai_services_when_agent_engine_env_set(
+        self,
+        mock_runner_cls: MagicMock,
+        mock_vertex_session_cls: MagicMock,
+        mock_vertex_memory_cls: MagicMock,
+    ) -> None:
+        """Agent Engine 環境変数が設定されている場合、VertexAi サービスを使用する"""
+        mock_agent = MagicMock()
+        mock_vertex_session = MagicMock()
+        mock_vertex_memory = MagicMock()
+        mock_vertex_session_cls.return_value = mock_vertex_session
+        mock_vertex_memory_cls.return_value = mock_vertex_memory
+        mock_runner_instance = MagicMock()
+        mock_runner_cls.return_value = mock_runner_instance
+
+        wrapper = HomeworkCoachAgent(mock_agent)
+        runner = wrapper._get_runner()
+
+        assert runner is mock_runner_instance
+        # VertexAiSessionService が正しいパラメータで呼ばれたことを確認
+        mock_vertex_session_cls.assert_called_once_with(
+            project="test-project",
+            location="us-central1",
+            agent_engine_id="test-engine-123",
+        )
+        # VertexAiMemoryBankService が正しいパラメータで呼ばれたことを確認
+        mock_vertex_memory_cls.assert_called_once_with(
+            project="test-project",
+            location="us-central1",
+            agent_engine_id="test-engine-123",
+        )
+        # Runner に Vertex AI サービスが渡されたことを確認
+        mock_runner_cls.assert_called_once_with(
+            app_name="homework-coach-agent-engine",
+            agent=mock_agent,
+            session_service=mock_vertex_session,
+            memory_service=mock_vertex_memory,
+        )
+
+    @patch.dict(
+        "os.environ",
+        {
+            "GOOGLE_CLOUD_AGENT_ENGINE_ID": "test-engine-456",
+        },
+        clear=False,
+    )
+    @patch("app.services.adk.runner.homework_coach_agent.VertexAiMemoryBankService")
+    @patch("app.services.adk.runner.homework_coach_agent.VertexAiSessionService")
+    @patch("app.services.adk.runner.homework_coach_agent.Runner")
+    def test_uses_none_for_missing_project_and_location(
+        self,
+        mock_runner_cls: MagicMock,  # noqa: ARG002
+        mock_vertex_session_cls: MagicMock,
+        mock_vertex_memory_cls: MagicMock,
+    ) -> None:
+        """GOOGLE_CLOUD_PROJECT/LOCATION が未設定の場合、None を渡す"""
+        # GOOGLE_CLOUD_PROJECT と GOOGLE_CLOUD_LOCATION を削除
+        import os
+
+        os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
+        os.environ.pop("GOOGLE_CLOUD_LOCATION", None)
+
+        wrapper = HomeworkCoachAgent(MagicMock())
+        wrapper._get_runner()
+
+        mock_vertex_session_cls.assert_called_once_with(
+            project=None,
+            location=None,
+            agent_engine_id="test-engine-456",
+        )
+        mock_vertex_memory_cls.assert_called_once_with(
+            project=None,
+            location=None,
+            agent_engine_id="test-engine-456",
+        )
+
 
 class TestCreateSession:
     """create_session のテスト"""
