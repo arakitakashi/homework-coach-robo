@@ -216,11 +216,32 @@ class HomeworkCoachAgent:
         # 非同期イベントを同期的に収集し、dict 形式で yield
         async def collect_events() -> list[dict[str, Any]]:
             events: list[dict[str, Any]] = []
-            logger.info("collect_events: starting run_async for session=%s", session_id)
+
+            # セッションが存在しない場合は自動作成
+            existing = await runner.session_service.get_session(
+                app_name="homework-coach-agent-engine",
+                user_id=user_id,
+                session_id=session_id,
+            )
+            if existing is None:
+                logger.info("Session %s not found, creating new session", session_id)
+                new_session = await runner.session_service.create_session(
+                    app_name="homework-coach-agent-engine",
+                    user_id=user_id,
+                )
+                actual_session_id = new_session.id
+                logger.info(
+                    "Created new session: %s (requested: %s)", actual_session_id, session_id
+                )
+            else:
+                actual_session_id = session_id
+                logger.info("Session %s found, reusing", session_id)
+
+            logger.info("collect_events: starting run_async for session=%s", actual_session_id)
             try:
                 async for event in runner.run_async(
                     user_id=user_id,
-                    session_id=session_id,
+                    session_id=actual_session_id,
                     new_message=content,
                 ):
                     has_content = bool(event.content and event.content.parts)
