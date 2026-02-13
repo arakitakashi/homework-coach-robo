@@ -166,9 +166,7 @@ async def agent_engine_event_generator(
                     str(event)[:200],
                 )
 
-        logger.info(
-            "Agent Engine stream completed: %d events received", event_count
-        )
+        logger.info("Agent Engine stream completed: %d events received", event_count)
         done_event = DoneEvent(session_id=session_id)
         yield f"event: done\ndata: {done_event.model_dump_json()}\n\n"
 

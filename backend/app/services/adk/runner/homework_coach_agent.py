@@ -163,7 +163,7 @@ class HomeworkCoachAgent:
                         has_content,
                         getattr(event, "author", "unknown"),
                     )
-                    if has_content:
+                    if has_content and event.content and event.content.parts:
                         for part in event.content.parts:
                             if part.text:
                                 events.append(
