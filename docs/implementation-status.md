@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了
 
 ---
 
@@ -47,6 +47,7 @@
 - **HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新**: `HomeworkCoachAgent` クラスを `backend/app/services/adk/runner/homework_coach_agent.py` に共有モジュールとして抽出。`serialize_agent.py` と `deploy_agent_engine.py` の両方から参照。CDパイプライン（cd.yml）に「Update Agent Engine」ステップを追加し、GCSアーティファクトアップロード後に `deploy_agent_engine.py` で既存 Agent Engine を自動更新。Terraform に `roles/aiplatform.user` IAM 権限を追加。HomeworkCoachAgent の10ユニットテスト実装
 - **Phase 2 対話履歴拡張表示 (Issue #67)**: DialogueHistoryコンポーネントに7つの新規サブコンポーネント（QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter）追加、Phase 2メタデータ（questionType, emotion, activeAgent, responseAnalysis, toolExecutions）の表示に対応、74の新規テスト追加（全517テスト）
 - **Agent Engine プロキシ register_operations() 修正**: `HomeworkCoachAgent` に `register_operations()` メソッドを追加。Agent Engine プロキシが `create_session` / `stream_query` を正しく公開できるように修正。これにより、フロントエンドからのメッセージ送信時のエラー（`AttributeError: 'app' object has no attribute 'async_stream_query'`）を解消
+- **Agent Engine プロキシ同期メソッド対応 (Issue #133)**: `AgentEngineClient.stream_query` の `async for` を `for` に、`create_session` の `await` を削除。Agent Engine SDKが生成するプロキシは同期ジェネレータ/同期メソッドを返す仕様に対応し、フロントエンドでのメッセージ送信エラーを解消
 
 ---
 
@@ -932,3 +933,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260213-fix-agent-engine-missing-methods/` | Agent Engine ラッパーメソッド追加（create_session / stream_query）+ HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新 |
 | `.steering/20260213-dialogue-history-phase2-display/` | Phase 2 対話履歴拡張表示（Issue #67）|
 | `.steering/20260214-fix-agent-engine-proxy/` | Agent Engine プロキシ register_operations() 修正（create_session/stream_query メソッド公開） |
+| `.steering/20260214-agent-engine-stream-query-sync/` | Agent Engine プロキシ同期メソッド対応（Issue #133: async for/await削除） |
