@@ -35,7 +35,7 @@ test.describe("Session Creation", () => {
 		deferred.resolve()
 
 		// メインUIが表示される
-		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("shows error message on session creation failure", async ({ page, mockAPI }) => {
@@ -90,7 +90,7 @@ test.describe("Session Creation", () => {
 		await page.getByRole("button", { name: SESSION.retryButton }).click()
 
 		// 成功してメインUIが表示される
-		await expect(page.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByText(SESSION.welcomeMessage).first()).toBeVisible({ timeout: 10_000 })
 	})
 
 	test("back button navigates to home page", async ({ page, mockAPI }) => {
