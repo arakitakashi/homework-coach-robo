@@ -63,6 +63,12 @@ resource "google_cloud_run_v2_service" "backend" {
       }
       # NOTE: PORT is automatically set by Cloud Run (8080)
 
+      # CORS: フロントエンドCloud Run URLを許可
+      env {
+        name  = "CORS_ORIGINS"
+        value = google_cloud_run_v2_service.frontend.uri
+      }
+
       # Additional environment variables (Phase 2)
       dynamic "env" {
         for_each = var.backend_env_vars
@@ -91,14 +97,16 @@ resource "google_cloud_run_v2_service" "backend" {
       }
 
       # Health check
+      # NOTE: google.cloud.aiplatform のインポートが重く（Python 3.10で15-25秒）、
+      # uvicorn起動まで30秒以上かかるため、failure_threshold を余裕を持って設定
       startup_probe {
         http_get {
           path = "/health"
           port = 8080
         }
-        initial_delay_seconds = 5
+        initial_delay_seconds = 10
         period_seconds        = 10
-        failure_threshold     = 3
+        failure_threshold     = 12
         timeout_seconds       = 5
       }
 
