@@ -46,6 +46,7 @@
 - **Agent Engine ラッパーメソッド追加 (Issue #114)**: `serialize_agent.py` の `HomeworkCoachAgent` に `create_session()` / `stream_query()` メソッドを追加。Agent Engine プロキシが `async_create_session` / `async_stream_query` を自動生成できるように修正。既存コードの型注釈も改善
 - **HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新**: `HomeworkCoachAgent` クラスを `backend/app/services/adk/runner/homework_coach_agent.py` に共有モジュールとして抽出。`serialize_agent.py` と `deploy_agent_engine.py` の両方から参照。CDパイプライン（cd.yml）に「Update Agent Engine」ステップを追加し、GCSアーティファクトアップロード後に `deploy_agent_engine.py` で既存 Agent Engine を自動更新。Terraform に `roles/aiplatform.user` IAM 権限を追加。HomeworkCoachAgent の10ユニットテスト実装
 - **Phase 2 対話履歴拡張表示 (Issue #67)**: DialogueHistoryコンポーネントに7つの新規サブコンポーネント（QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter）追加、Phase 2メタデータ（questionType, emotion, activeAgent, responseAnalysis, toolExecutions）の表示に対応、74の新規テスト追加（全517テスト）
+- **Agent Engine プロキシ register_operations() 修正**: `HomeworkCoachAgent` に `register_operations()` メソッドを追加。Agent Engine プロキシが `create_session` / `stream_query` を正しく公開できるように修正。これにより、フロントエンドからのメッセージ送信時のエラー（`AttributeError: 'app' object has no attribute 'async_stream_query'`）を解消
 
 ---
 
@@ -930,3 +931,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260213-fix-gcs-permissions/` | GCS 権限修正 + CD ワークフロー改善 |
 | `.steering/20260213-fix-agent-engine-missing-methods/` | Agent Engine ラッパーメソッド追加（create_session / stream_query）+ HomeworkCoachAgent 共有モジュール化 + CD Agent Engine 自動更新 |
 | `.steering/20260213-dialogue-history-phase2-display/` | Phase 2 対話履歴拡張表示（Issue #67）|
+| `.steering/20260214-fix-agent-engine-proxy/` | Agent Engine プロキシ register_operations() 修正（create_session/stream_query メソッド公開） |

@@ -4,7 +4,8 @@ Agent Engine デプロイ用ラッパークラスのテスト。
 インスタンス化とメソッドシグネチャの確認を行う。
 """
 
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.adk.runner.homework_coach_agent import HomeworkCoachAgent
@@ -147,7 +148,7 @@ class TestStreamQuery:
         """Generator を返す"""
 
         # run_async が空のイベントを返すようにモック
-        async def mock_run_async(**kwargs: object) -> None:  # noqa: ARG001
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
             return
             yield  # noqa: B027 - async generator にするため
 
@@ -175,7 +176,7 @@ class TestStreamQuery:
     ) -> None:
         """イベントを期待するフォーマットで yield する"""
 
-        async def mock_run_async(**kwargs: object) -> None:  # noqa: ARG001
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
             event1 = MagicMock()
             part1 = MagicMock()
             part1.text = "こんにちは"
@@ -206,6 +207,36 @@ class TestStreamQuery:
         assert events[1] == {"content": {"parts": [{"text": "元気ですか？"}]}}
 
 
+class TestRegisterOperations:
+    """register_operations のテスト"""
+
+    def test_returns_correct_format(self) -> None:
+        """正しい形式（辞書）を返す"""
+        wrapper = HomeworkCoachAgent(MagicMock())
+        operations = wrapper.register_operations()
+
+        assert isinstance(operations, dict)
+        assert "" in operations
+        assert "stream" in operations
+
+    def test_registers_sync_methods(self) -> None:
+        """同期メソッド（query, create_session）を登録する"""
+        wrapper = HomeworkCoachAgent(MagicMock())
+        operations = wrapper.register_operations()
+
+        sync_methods = operations[""]
+        assert "query" in sync_methods
+        assert "create_session" in sync_methods
+
+    def test_registers_stream_methods(self) -> None:
+        """ストリーミングメソッド（stream_query）を登録する"""
+        wrapper = HomeworkCoachAgent(MagicMock())
+        operations = wrapper.register_operations()
+
+        stream_methods = operations["stream"]
+        assert "stream_query" in stream_methods
+
+
 class TestQuery:
     """query のテスト"""
 
@@ -220,7 +251,7 @@ class TestQuery:
     ) -> None:
         """複数パートの応答を結合して返す"""
 
-        async def mock_run_async(**kwargs: object) -> None:  # noqa: ARG001
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
             event = MagicMock()
             part1 = MagicMock()
             part1.text = "答えは"
@@ -249,7 +280,7 @@ class TestQuery:
     ) -> None:
         """テキストのないイベントをスキップする"""
 
-        async def mock_run_async(**kwargs: object) -> None:  # noqa: ARG001
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:  # noqa: ARG001
             # content が None のイベント
             event1 = MagicMock()
             event1.content = None
