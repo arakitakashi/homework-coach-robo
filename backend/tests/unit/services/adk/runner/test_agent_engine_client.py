@@ -3,9 +3,9 @@
 Agent Engine にデプロイされたエージェントとの通信を管理するクライアントのテスト。
 """
 
-from collections.abc import AsyncIterator
+from collections.abc import Iterator
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from app.services.adk.runner.agent_engine_client import AgentEngineClient
 
@@ -49,7 +49,7 @@ class TestCreateSession:
     ) -> None:
         """セッションを作成して ID を返す"""
         mock_remote_app = MagicMock()
-        mock_remote_app.create_session = AsyncMock(
+        mock_remote_app.create_session = MagicMock(
             return_value={"id": "session-abc", "user_id": "user-1"}
         )
         mock_agent_engines.get.return_value = mock_remote_app
@@ -67,7 +67,7 @@ class TestCreateSession:
     ) -> None:
         """プロキシの create_session メソッドを呼び出す（async_create_session ではない）"""
         mock_remote_app = MagicMock()
-        mock_remote_app.create_session = AsyncMock(return_value={"id": "s-1", "user_id": "u-1"})
+        mock_remote_app.create_session = MagicMock(return_value={"id": "s-1", "user_id": "u-1"})
         mock_agent_engines.get.return_value = mock_remote_app
 
         client = AgentEngineClient(resource_name="test")
@@ -91,9 +91,8 @@ class TestStreamQuery:
             {"content": {"parts": [{"text": "何かお手伝いしましょうか？"}]}},
         ]
 
-        async def mock_stream(**kwargs: object) -> AsyncIterator[dict[str, Any]]:  # noqa: ARG001
-            for event in events:
-                yield event
+        def mock_stream(**kwargs: object) -> Iterator[dict[str, Any]]:  # noqa: ARG001
+            yield from events
 
         mock_remote_app = MagicMock()
         mock_remote_app.stream_query = mock_stream
@@ -119,10 +118,10 @@ class TestStreamQuery:
         """正しいパラメータを渡す"""
         call_kwargs: dict[str, object] = {}
 
-        async def mock_stream(**kwargs: object) -> AsyncIterator[dict[str, Any]]:
+        def mock_stream(**kwargs: object) -> Iterator[dict[str, Any]]:
             call_kwargs.update(kwargs)
-            return
-            yield  # noqa: B027 - make it an async generator
+            if False:
+                yield  # noqa: B027 - make it a generator
 
         mock_remote_app = MagicMock()
         mock_remote_app.stream_query = mock_stream
@@ -147,7 +146,7 @@ class TestStreamQuery:
     ) -> None:
         """プロキシの stream_query メソッドを呼び出す（async_stream_query ではない）"""
 
-        async def mock_stream(**kwargs: object) -> AsyncIterator[dict[str, Any]]:  # noqa: ARG001
+        def mock_stream(**kwargs: object) -> Iterator[dict[str, Any]]:  # noqa: ARG001
             yield {"content": {"parts": [{"text": "test"}]}}
 
         mock_remote_app = MagicMock()
