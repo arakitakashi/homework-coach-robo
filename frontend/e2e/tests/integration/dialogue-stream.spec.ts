@@ -103,8 +103,9 @@ test.describe("Dialogue Stream (Integration)", () => {
 
 		await page.goto("/session?character=robot")
 
-		// ウェルカムメッセージ表示
-		await expect(page.getByText("こんにちは！いっしょにがんばろうね！").first()).toBeVisible({
+		// ウェルカムメッセージ表示（対話履歴内で確認）
+		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
+		await expect(dialogueLog.getByText("こんにちは！いっしょにがんばろうね！")).toBeVisible({
 			timeout: 10_000,
 		})
 
@@ -114,7 +115,6 @@ test.describe("Dialogue Stream (Integration)", () => {
 		await page.getByLabel("送信").click()
 
 		// MockAgentRunnerServiceの応答が表示される
-		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
 		await expect(dialogueLog.getByText("いい質問だね！")).toBeVisible({ timeout: 10_000 })
 	})
 })
