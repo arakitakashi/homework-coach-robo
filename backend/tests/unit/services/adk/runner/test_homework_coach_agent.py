@@ -87,6 +87,7 @@ class TestGetRunner:
             "GOOGLE_CLOUD_LOCATION": "us-central1",
         },
     )
+    @patch("app.services.adk.runner.homework_coach_agent.vertexai")
     @patch("app.services.adk.runner.homework_coach_agent.InMemoryMemoryService")
     @patch("app.services.adk.runner.homework_coach_agent.InMemorySessionService")
     @patch("app.services.adk.runner.homework_coach_agent.Runner")
@@ -95,11 +96,13 @@ class TestGetRunner:
         mock_runner_cls: MagicMock,
         mock_memory_session_cls: MagicMock,
         mock_memory_memory_cls: MagicMock,
+        mock_vertexai: MagicMock,
     ) -> None:
         """Agent Engine 環境変数が設定されている場合、InMemory サービスを使用する
 
         VertexAiSessionService は Agent Engine 内部では session_events.list() API が
         INVALID_ARGUMENT を返すため、InMemorySessionService を使用する。
+        また、Vertex AI を初期化して genai クライアントが Gemini を呼べるようにする。
         """
         mock_agent = MagicMock()
         mock_in_memory_session = MagicMock()
@@ -113,6 +116,8 @@ class TestGetRunner:
         runner = wrapper._get_runner()
 
         assert runner is mock_runner_instance
+        # vertexai.init() が呼ばれたことを確認（Gemini モデル呼び出しに必要）
+        mock_vertexai.init.assert_called_once()
         # InMemorySessionService がパラメータなしで呼ばれたことを確認
         mock_memory_session_cls.assert_called_once_with()
         # InMemoryMemoryService がパラメータなしで呼ばれたことを確認
