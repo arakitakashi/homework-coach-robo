@@ -23,6 +23,7 @@ from collections.abc import Coroutine, Generator
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, TypeVar
 
+import vertexai
 from google.adk import Runner
 from google.adk.agents import Agent
 from google.adk.memory import BaseMemoryService, InMemoryMemoryService
@@ -84,6 +85,11 @@ def _create_agent_engine_services() -> tuple[BaseSessionService, BaseMemoryServi
         "Agent Engine runtime detected: engine_id=%s, using InMemory services",
         agent_engine_id,
     )
+
+    # Vertex AI を初期化（genai クライアントが Gemini モデルを呼べるようにする）
+    # Agent Engine ランタイムでは GCP デフォルト認証情報・プロジェクトが自動検出される
+    vertexai.init()
+    logger.info("Vertex AI initialized for Agent Engine runtime")
 
     session_service = InMemorySessionService()  # type: ignore[no-untyped-call]
     memory_service = InMemoryMemoryService()  # type: ignore[no-untyped-call]
