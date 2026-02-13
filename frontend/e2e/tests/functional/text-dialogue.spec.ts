@@ -13,7 +13,7 @@ test.describe("Text Dialogue", () => {
 		// ウェルカムメッセージが対話履歴に表示される
 		const dialogueLog = page.getByRole("log", { name: SESSION.dialogueLogAriaLabel }).first()
 		await expect(dialogueLog).toBeVisible()
-		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible()
+		await expect(dialogueLog.getByText(SESSION.welcomeMessage).first()).toBeVisible()
 	})
 
 	test("shows text input with placeholder", async ({ page }) => {

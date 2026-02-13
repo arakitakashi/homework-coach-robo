@@ -104,7 +104,7 @@ test.describe("Dialogue Stream (Integration)", () => {
 		await page.goto("/session?character=robot")
 
 		// ウェルカムメッセージ表示
-		await expect(page.getByText("こんにちは！いっしょにがんばろうね！")).toBeVisible({
+		await expect(page.getByText("こんにちは！いっしょにがんばろうね！").first()).toBeVisible({
 			timeout: 10_000,
 		})
 
