@@ -142,16 +142,33 @@ async def agent_engine_event_generator(
         SSE形式のイベント文字列
     """
     try:
+        event_count = 0
         async for event in engine_client.stream_query(
             user_id=user_id,
             session_id=session_id,
             message=message,
         ):
+            event_count += 1
+            logger.info(
+                "Agent Engine event #%d type=%s keys=%s",
+                event_count,
+                type(event).__name__,
+                list(event.keys()) if isinstance(event, dict) else "N/A",
+            )
             text = engine_client.extract_text(event)
             if text:
                 text_event = TextEvent(text=text)
                 yield f"event: text\ndata: {text_event.model_dump_json()}\n\n"
+            else:
+                logger.warning(
+                    "Agent Engine event #%d had no extractable text: %s",
+                    event_count,
+                    str(event)[:200],
+                )
 
+        logger.info(
+            "Agent Engine stream completed: %d events received", event_count
+        )
         done_event = DoneEvent(session_id=session_id)
         yield f"event: done\ndata: {done_event.model_dump_json()}\n\n"
 

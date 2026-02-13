@@ -11,6 +11,7 @@ async_stream_query を自動生成する。そのため sync 版のみ定義す�
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Coroutine, Generator
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, TypeVar
@@ -21,6 +22,8 @@ from google.genai import types
 
 from app.services.adk.memory.memory_factory import create_memory_service
 from app.services.adk.sessions.session_factory import create_session_service
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -39,12 +42,17 @@ def _run_coroutine_sync(coro: Coroutine[Any, Any, T]) -> T:
         コルーチンの戻り値
     """
     try:
-        asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()
+        logger.info("Existing event loop detected (%s), running in separate thread", loop)
         # 既存イベントループが存在 → 別スレッドで実行
         with ThreadPoolExecutor(max_workers=1) as executor:
-            return executor.submit(asyncio.run, coro).result()
+            future = executor.submit(asyncio.run, coro)
+            result = future.result()
+            logger.info("Coroutine completed in separate thread")
+            return result
     except RuntimeError:
         # イベントループなし → 直接実行
+        logger.info("No running event loop, executing directly")
         return asyncio.run(coro)
 
 
@@ -142,21 +150,33 @@ class HomeworkCoachAgent:
         # 非同期イベントを同期的に収集し、dict 形式で yield
         async def collect_events() -> list[dict[str, Any]]:
             events: list[dict[str, Any]] = []
-            async for event in runner.run_async(
-                user_id=user_id,
-                session_id=session_id,
-                new_message=content,
-            ):
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if part.text:
-                            events.append(
-                                {
-                                    "content": {
-                                        "parts": [{"text": part.text}],
-                                    },
-                                }
-                            )
+            logger.info("collect_events: starting run_async for session=%s", session_id)
+            try:
+                async for event in runner.run_async(
+                    user_id=user_id,
+                    session_id=session_id,
+                    new_message=content,
+                ):
+                    has_content = bool(event.content and event.content.parts)
+                    logger.info(
+                        "collect_events: received event, has_content=%s, author=%s",
+                        has_content,
+                        getattr(event, "author", "unknown"),
+                    )
+                    if has_content:
+                        for part in event.content.parts:
+                            if part.text:
+                                events.append(
+                                    {
+                                        "content": {
+                                            "parts": [{"text": part.text}],
+                                        },
+                                    }
+                                )
+            except Exception:
+                logger.exception("collect_events: error during run_async")
+                raise
+            logger.info("collect_events: completed with %d text events", len(events))
             return events
 
         yield from _run_coroutine_sync(collect_events())
