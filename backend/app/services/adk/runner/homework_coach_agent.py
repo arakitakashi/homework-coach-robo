@@ -214,13 +214,19 @@ class HomeworkCoachAgent:
         )
 
         # 非同期イベントを同期的に収集し、dict 形式で yield
+        # Cloud Run のセッションID は Agent Engine 側では無効なため、
+        # session_id=None を渡して ADK Runner にセッションを自動作成させる
         async def collect_events() -> list[dict[str, Any]]:
             events: list[dict[str, Any]] = []
-            logger.info("collect_events: starting run_async for session=%s", session_id)
+            logger.info(
+                "collect_events: starting run_async (user=%s, cloud_run_session=%s)",
+                user_id,
+                session_id,
+            )
             try:
                 async for event in runner.run_async(
                     user_id=user_id,
-                    session_id=session_id,
+                    session_id=None,  # type: ignore[arg-type]  # ADK Runner は None でセッション自動作成
                     new_message=content,
                 ):
                     has_content = bool(event.content and event.content.parts)

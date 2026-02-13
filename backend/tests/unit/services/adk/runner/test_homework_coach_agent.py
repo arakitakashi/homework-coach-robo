@@ -284,6 +284,40 @@ class TestStreamQuery:
     @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
     @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
     @patch("app.services.adk.runner.homework_coach_agent.Runner")
+    def test_passes_none_session_id_to_run_async(
+        self,
+        mock_runner_cls: MagicMock,
+        mock_session_factory: MagicMock,  # noqa: ARG002
+        mock_memory_factory: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """run_async に session_id=None を渡す（ADK Runner にセッション自動作成させる）"""
+        call_args: dict[str, Any] = {}
+
+        async def mock_run_async(**kwargs: object) -> AsyncGenerator[Any, None]:
+            call_args.update(kwargs)
+            return
+            yield  # noqa: B027
+
+        mock_runner_instance = MagicMock()
+        mock_runner_instance.run_async = mock_run_async
+        mock_runner_cls.return_value = mock_runner_instance
+
+        wrapper = HomeworkCoachAgent(MagicMock())
+        list(
+            wrapper.stream_query(
+                user_id="u-1",
+                session_id="cloud-run-session-id",
+                message="テスト",
+            )
+        )
+
+        # Cloud Run のセッションID ではなく None が渡されることを確認
+        assert call_args["session_id"] is None
+        assert call_args["user_id"] == "u-1"
+
+    @patch("app.services.adk.runner.homework_coach_agent.create_memory_service")
+    @patch("app.services.adk.runner.homework_coach_agent.create_session_service")
+    @patch("app.services.adk.runner.homework_coach_agent.Runner")
     def test_yields_events_in_expected_format(
         self,
         mock_runner_cls: MagicMock,
