@@ -21,7 +21,11 @@ test.describe("Voice UI", () => {
 	test("shows status text based on connection state", async ({ page }) => {
 		// WebSocket接続後はステータステキストが表示される
 		// 初期状態は「接続中...」または「話しかけてね」（接続状態に依存）
-		const statusText = page.getByText(VOICE.idle).or(page.getByText(VOICE.connecting))
+		// 音声レベルインジケーターと同じコンテナ内で検索（重複要素を回避）
+		const voiceContainer = page.getByRole("progressbar", { name: "音声レベル" }).locator("..")
+		const statusText = voiceContainer
+			.getByText(VOICE.idle)
+			.or(voiceContainer.getByText(VOICE.connecting))
 		await expect(statusText).toBeVisible()
 	})
 
