@@ -27,6 +27,10 @@ export interface UseVoiceStreamOptions {
 	onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
 	/** Phase 2d: 感情更新コールバック */
 	onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
+	/** 画像問題確認コールバック */
+	onImageProblemConfirmed?: (problemId: string, coachResponse: string) => void
+	/** 画像認識エラーコールバック */
+	onImageRecognitionError?: (error: string, code: string) => void
 }
 
 /** フックの戻り値 */
@@ -49,6 +53,13 @@ export interface UseVoiceStreamReturn {
 	stopRecording: () => void
 	/** テキストメッセージを送信 */
 	sendText: (text: string) => void
+	/** 画像問題開始メッセージを送信 */
+	sendImageStart: (
+		problemText: string,
+		imageUrl: string,
+		problemType?: string,
+		metadata?: Record<string, unknown>,
+	) => void
 	/** エラーをクリア */
 	clearError: () => void
 }
@@ -76,6 +87,8 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 		onToolExecution,
 		onAgentTransition,
 		onEmotionUpdate,
+		onImageProblemConfirmed,
+		onImageRecognitionError,
 	} = options
 
 	// 状態
@@ -175,6 +188,16 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 							onEmotionUpdate(emotion, frustrationLevel, engagementLevel)
 						}
 					: undefined,
+				onImageProblemConfirmed: onImageProblemConfirmed
+					? (problemId, coachResponse) => {
+							onImageProblemConfirmed(problemId, coachResponse)
+						}
+					: undefined,
+				onImageRecognitionError: onImageRecognitionError
+					? (error, code) => {
+							onImageRecognitionError(error, code)
+						}
+					: undefined,
 			})
 
 			clientRef.current = client
@@ -188,6 +211,8 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 			onToolExecution,
 			onAgentTransition,
 			onEmotionUpdate,
+			onImageProblemConfirmed,
+			onImageRecognitionError,
 		],
 	)
 
@@ -285,6 +310,23 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 	}, [])
 
 	/**
+	 * 画像問題開始メッセージを送信
+	 */
+	const _sendImageStart = useCallback(
+		(
+			problemText: string,
+			imageUrl: string,
+			problemType?: string,
+			metadata?: Record<string, unknown>,
+		) => {
+			if (clientRef.current?.isConnected) {
+				clientRef.current.sendImageStart(problemText, imageUrl, problemType, metadata)
+			}
+		},
+		[],
+	)
+
+	/**
 	 * エラーをクリア
 	 */
 	const clearError = useCallback(() => {
@@ -301,6 +343,7 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 		startRecording,
 		stopRecording,
 		sendText,
+		sendImageStart: _sendImageStart,
 		clearError,
 	}
 }

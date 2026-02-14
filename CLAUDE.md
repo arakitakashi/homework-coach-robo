@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・学習プロファイル表示コンポーネント（Issue #66）実装完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・学習プロファイル表示コンポーネント（Issue #66）実装完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了・セッションページ画像アップロード機能統合基盤（Issue #154）実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -186,7 +186,8 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 - ✅ Phase 2 対話履歴拡張表示（Issue #67）: `DialogueHistory`コンポーネントに7つの新規サブコンポーネント（QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter）追加、Phase 2メタデータ（questionType, emotion, activeAgent, responseAnalysis, toolExecutions）の表示に対応
 - ✅ 学習プロファイル表示（Issue #66）: `LearningProfile`コンポーネント + `ProfileSummary`・`SubjectCard`・`TrendBadge`サブコンポーネント + Jotai `learningProfileAtom`連携 + 既存`ThinkingTendenciesDisplay`再利用
 - ✅ カメラインターフェース（Issue #153）: `CameraInterface`コンポーネント + `useCameraCapture`フック + `VisionClient` APIクライアント + 6状態UI（initial/active/preview/processing/recognized/error）
-- ✅ テスト: 596テスト（55テストファイル）
+- ✅ セッションページ画像アップロード機能統合基盤（Issue #154）: WebSocket画像イベント型定義（`types/websocket.ts`）、`VoiceWebSocketClient` 画像イベント対応、`InputModeSelector`コンポーネント、`useVoiceStream` 画像イベントハンドラ、`SessionContent` 画像アップロードフロー統合
+- ✅ テスト: 621テスト（56テストファイル）
 
 **Phase 2 ファイル構成:**
 ```

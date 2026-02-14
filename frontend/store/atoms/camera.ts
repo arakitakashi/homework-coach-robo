@@ -8,6 +8,9 @@
 import { atom } from "jotai"
 import type { CameraStatus, ImageRecognitionResponse } from "@/types"
 
+/** 入力モード: セッション開始時の選択（voice | image | null） */
+export const inputModeAtom = atom<"voice" | "image" | null>(null)
+
 /** カメラの現在の状態 */
 export const cameraStatusAtom = atom<CameraStatus>("initial")
 

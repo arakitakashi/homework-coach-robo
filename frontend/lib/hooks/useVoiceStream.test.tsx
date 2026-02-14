@@ -13,6 +13,7 @@ const {
 	mockConnect,
 	mockDisconnect,
 	mockSendText,
+	mockSendImageStart,
 	getMockClientOptions,
 	setMockClientOptions,
 	setMockIsConnected,
@@ -22,6 +23,7 @@ const {
 	const mockDisconnect = vi.fn()
 	const mockSendAudio = vi.fn()
 	const mockSendText = vi.fn()
+	const _mockSendImageStart = vi.fn()
 
 	interface MockClientOptions {
 		baseUrl: string
@@ -36,6 +38,8 @@ const {
 		onToolExecution?: (toolName: string, status: string, result?: Record<string, unknown>) => void
 		onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
 		onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
+		onImageProblemConfirmed?: (problemId: string, coachResponse: string) => void
+		onImageRecognitionError?: (error: string, code: string) => void
 	}
 
 	let mockClientOptions: MockClientOptions | null = null
@@ -50,6 +54,7 @@ const {
 		disconnect = mockDisconnect
 		sendAudio = mockSendAudio
 		sendText = mockSendText
+		sendImageStart = _mockSendImageStart
 		get isConnected() {
 			return mockIsConnected
 		}
@@ -59,6 +64,7 @@ const {
 		mockConnect,
 		mockDisconnect,
 		mockSendText,
+		mockSendImageStart: _mockSendImageStart,
 		getMockClientOptions: () => mockClientOptions,
 		setMockClientOptions: (opts: MockClientOptions | null) => {
 			mockClientOptions = opts
@@ -448,6 +454,83 @@ describe("useVoiceStream", () => {
 			})
 
 			expect(result.current.error).toBeNull()
+		})
+	})
+
+	describe("画像イベント", () => {
+		it("sendImageStart()で画像開始メッセージを送信する", () => {
+			const { TestWrapper } = createTestWrapper()
+			const { result } = renderHook(() => useVoiceStream(), { wrapper: TestWrapper })
+
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+			act(() => {
+				getMockClientOptions()?.onConnectionChange("connected")
+				setMockIsConnected(true)
+			})
+
+			act(() => {
+				result.current.sendImageStart("問題文", "https://example.com/image.jpg", "math", {
+					grade: 1,
+				})
+			})
+
+			expect(mockSendImageStart).toHaveBeenCalledWith(
+				"問題文",
+				"https://example.com/image.jpg",
+				"math",
+				{ grade: 1 },
+			)
+		})
+
+		it("onImageProblemConfirmedコールバックがVoiceWebSocketClientに渡される", () => {
+			const { TestWrapper } = createTestWrapper()
+			const onImageProblemConfirmed = vi.fn()
+			const { result } = renderHook(() => useVoiceStream({ onImageProblemConfirmed }), {
+				wrapper: TestWrapper,
+			})
+
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+
+			// VoiceWebSocketClient のオプションにonImageProblemConfirmedが渡されていることを確認
+			const clientOptions = getMockClientOptions()
+			expect(clientOptions).not.toBeNull()
+
+			// 画像問題確認イベントをシミュレート
+			act(() => {
+				clientOptions?.onImageProblemConfirmed?.("problem-123", "OK！わかったよ！")
+			})
+
+			expect(onImageProblemConfirmed).toHaveBeenCalledWith("problem-123", "OK！わかったよ！")
+		})
+
+		it("onImageRecognitionErrorコールバックがVoiceWebSocketClientに渡される", () => {
+			const { TestWrapper } = createTestWrapper()
+			const onImageRecognitionError = vi.fn()
+			const { result } = renderHook(() => useVoiceStream({ onImageRecognitionError }), {
+				wrapper: TestWrapper,
+			})
+
+			act(() => {
+				result.current.connect("user-1", "session-1")
+			})
+
+			// VoiceWebSocketClient のオプションにonImageRecognitionErrorが渡されていることを確認
+			const clientOptions = getMockClientOptions()
+			expect(clientOptions).not.toBeNull()
+
+			// 画像認識エラーイベントをシミュレート
+			act(() => {
+				clientOptions?.onImageRecognitionError?.("画像が認識できませんでした", "RECOGNITION_FAILED")
+			})
+
+			expect(onImageRecognitionError).toHaveBeenCalledWith(
+				"画像が認識できませんでした",
+				"RECOGNITION_FAILED",
+			)
 		})
 	})
 })
