@@ -2,6 +2,7 @@
 // 各機能のatomsはここからエクスポート
 
 export * from "./audio"
+export * from "./camera"
 export * from "./dialogue"
 export * from "./phase2"
 export * from "./session"

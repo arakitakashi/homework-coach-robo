@@ -19,4 +19,6 @@ export type {
 	VoiceTextMessage,
 	VoiceWebSocketOptions,
 } from "./types"
+export type { VisionClientOptions } from "./visionClient"
+export { VisionClient } from "./visionClient"
 export { VoiceWebSocketClient } from "./voiceWebSocket"
