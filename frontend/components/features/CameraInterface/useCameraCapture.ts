@@ -103,11 +103,6 @@ export function useCameraCapture(): UseCameraCaptureReturn {
 			})
 			streamRef.current = stream
 
-			// videoRefにストリームを接続
-			if (videoRef.current) {
-				videoRef.current.srcObject = stream
-			}
-
 			setError(null)
 			setStatus("active")
 		} catch (err) {
@@ -199,6 +194,13 @@ export function useCameraCapture(): UseCameraCaptureReturn {
 		setCapturedImage(null)
 		setRecognitionResult(null)
 	}, [stopStream])
+
+	/** active状態になったときにvideo要素にストリームを接続 */
+	useEffect(() => {
+		if (status === "active" && streamRef.current && videoRef.current) {
+			videoRef.current.srcObject = streamRef.current
+		}
+	}, [status])
 
 	/** クリーンアップ: アンマウント時にストリームを停止 */
 	useEffect(() => {
