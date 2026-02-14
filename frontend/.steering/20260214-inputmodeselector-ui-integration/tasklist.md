@@ -6,71 +6,70 @@
 - [x] requirements.md 作成
 - [x] design.md 作成
 - [x] tasklist.md 作成
-- [ ] 現在の実装状態確認（session.ts atoms確認）
+- [x] 現在の実装状態確認（camera.ts に inputModeAtom 既存確認）
 
 ## Phase 2: テスト実装（TDD）
 
 ### 2.1: inputModeAtom のテスト
 
-- [ ] store/atoms/session.test.ts を作成（または既存ファイルに追加）
-  - [ ] inputModeAtom の初期値が null であることをテスト
-  - [ ] inputModeAtom を "voice" に更新できることをテスト
-  - [ ] inputModeAtom を "image" に更新できることをテスト
+- [x] camera.test.ts で既に実装済みを確認
+  - [x] inputModeAtom の初期値が null であることをテスト（既存）
+  - [x] inputModeAtom を "voice" に更新できることをテスト（既存）
+  - [x] inputModeAtom を "image" に更新できることをテスト（既存）
 
 ### 2.2: SessionContent のモード選択テスト
 
-- [ ] SessionContent.test.tsx に新規テスト追加
-  - [ ] 初期表示時に InputModeSelector が表示されることをテスト
-  - [ ] 音声モード選択後、VoiceInterface が表示されることをテスト
-  - [ ] 画像モード選択後、プレースホルダーが表示されることをテスト
-  - [ ] 音声モード選択後、InputModeSelector が非表示になることをテスト
-  - [ ] 画像モード選択後、InputModeSelector が非表示になることをテスト
+- [x] SessionContent.test.tsx に新規テスト追加
+  - [x] 初期表示時に InputModeSelector が表示されることをテスト
+  - [x] 音声モード選択後、VoiceInterface が表示されることをテスト
+  - [x] 画像モード選択後、プレースホルダーが表示されることをテスト
+  - [x] 音声モード選択後、InputModeSelector が非表示になることをテスト
+  - [x] 画像モード選択後、InputModeSelector が非表示になることをテスト
 
 ## Phase 3: 実装
 
 ### 3.1: inputModeAtom 実装
 
-- [ ] store/atoms/session.ts を作成（または既存ファイルに追加）
-  - [ ] inputModeAtom を定義
-  - [ ] 型定義: `"voice" | "image" | null`
-  - [ ] 初期値: `null`
-  - [ ] エクスポート
+- [x] camera.ts で既に実装済みを確認
+  - [x] inputModeAtom 定義済み
+  - [x] 型定義: `"voice" | "image" | null` 済み
+  - [x] 初期値: `null` 済み
+  - [x] エクスポート済み
 
 ### 3.2: SessionContent 統合
 
-- [ ] SessionContent.tsx を編集
-  - [ ] InputModeSelector を import
-  - [ ] inputModeAtom を import
-  - [ ] useAtom(inputModeAtom) を使用
-  - [ ] 条件分岐ロジック実装（null → InputModeSelector表示）
-  - [ ] 条件分岐ロジック実装（voice → VoiceInterface表示）
-  - [ ] 条件分岐ロジック実装（image → プレースホルダー表示）
+- [x] SessionContent.tsx を編集
+  - [x] InputModeSelector を import
+  - [x] inputModeAtom を import（camera.ts から）
+  - [x] useAtom(inputModeAtom) を使用
+  - [x] 条件分岐ロジック実装（null → InputModeSelector表示）
+  - [x] 条件分岐ロジック実装（voice → VoiceInterface表示）
+  - [x] 条件分岐ロジック実装（image → プレースホルダー表示）
 
 ## Phase 4: テスト実行
 
-- [ ] `bunx vitest run` で全テスト実行
-  - [ ] Phase 2.1 のテストがパス
-  - [ ] Phase 2.2 のテストがパス
-  - [ ] 既存の27テストがパス
-  - [ ] 合計テスト数確認（27 + 新規 = ?）
+- [x] `bunx vitest run` で全テスト実行
+  - [x] SessionContent.test.tsx の新規5テストがパス
+  - [x] tests/pages/Session.test.tsx の14テストがパス（inputModeAtom対応後）
+  - [x] 全632テストがパス
 
 ## Phase 5: 品質チェック
 
-- [ ] リンター実行（`bun lint`）
-- [ ] 型チェック実行（`bun typecheck`）
-- [ ] 全テスト実行（`bunx vitest run`）
-- [ ] テストカバレッジ確認
+- [x] リンター実行（`bun lint`）- 既存警告のみ、新規エラーなし
+- [x] 型チェック実行（`bun typecheck`）- エラーなし
+- [x] 全テスト実行（`bunx vitest run`）- 全632テストパス
+- [x] テストカバレッジ確認
 
 ## Phase 6: コミット
 
-- [ ] 変更ファイルをステージング
-- [ ] コミットメッセージ作成
+- [x] 変更ファイルをステージング
+- [x] コミットメッセージ作成
   - Type: `feat`
   - Scope: `frontend`
   - Summary: InputModeSelectorのUI統合
-- [ ] git commit 実行
+- [x] git commit 実行（a6f93e5）
 
 ## Phase 7: PR更新
 
-- [ ] git push で PR #159 を更新
-- [ ] PR説明文を更新（新規コミット内容を追記）
+- [x] git push で PR #159 を更新
+- [x] PR説明文を更新（自動更新）
