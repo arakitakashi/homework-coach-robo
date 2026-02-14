@@ -254,7 +254,6 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		stopRecording,
 		connect: voiceConnect,
 		disconnect: voiceDisconnect,
-		sendImageStart,
 	} = useVoiceStream({
 		onAudioData: handleAudioData,
 		onTranscription: handleTranscription,

@@ -8,7 +8,7 @@
 "use client"
 
 /** InputModeSelector のprops */
-interface InputModeSelectorProps {
+export interface InputModeSelectorProps {
 	/** モード選択時のコールバック */
 	onModeSelect: (mode: "voice" | "image") => void
 }
