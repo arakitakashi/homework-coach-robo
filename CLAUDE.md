@@ -316,10 +316,13 @@ cd backend && uv run ruff check . && uv run mypy . && uv run pytest
 | カテゴリ | スキル |
 |----------|--------|
 | 開発プロセス | `/tdd`, `/git-workflow`, `/security-review` |
+| TDD/テスト | `/unit-test` |
 | サブエージェント委譲 | `/quality-check`, `/update-docs`, `/create-pr`, `/analyze-errors`, `/github-issues` |
 | フロントエンド | `/frontend`, `/frontend-design`, `/vercel-react-best-practices` |
 | バックエンド | `/fastapi`, `/google-adk-basics`, `/google-adk-live` |
 
 **注意**: `/google-adk-live` は `/google-adk-basics` の知識が前提です。
+
+**TDD/テストスキル**: `/unit-test` はTDDサイクル中のテスト実行をサブエージェントに委譲し、詳細ログを除外してpass/failサマリーのみ返却することでコンテキスト汚染を削減します。Red-Green-Refactorサイクルのテスト実行時に使用してください。
 
 **サブエージェント委譲スキル**: `/quality-check`、`/update-docs`、`/create-pr`、`/analyze-errors`、`/github-issues` は Task ツールでサブエージェントを起動し、メインエージェントのコンテキスト消費を最小化します。品質チェック・ドキュメント更新・PR作成・エラー分析・Issue管理に使用してください。
