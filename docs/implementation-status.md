@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了・学習プロファイル表示コンポーネント（Issue #66）実装完了
 
 ---
 
@@ -49,6 +49,7 @@
 - **Agent Engine プロキシ register_operations() 修正**: `HomeworkCoachAgent` に `register_operations()` メソッドを追加。Agent Engine プロキシが `create_session` / `stream_query` を正しく公開できるように修正。これにより、フロントエンドからのメッセージ送信時のエラー（`AttributeError: 'app' object has no attribute 'async_stream_query'`）を解消
 - **Agent Engine プロキシ同期メソッド対応 (Issue #133)**: `AgentEngineClient.stream_query` の `async for` を `for` に、`create_session` の `await` を削除。Agent Engine SDKが生成するプロキシは同期ジェネレータ/同期メソッドを返す仕様に対応し、フロントエンドでのメッセージ送信エラーを解消
 - **`/unit-test` スキル追加**: TDDサイクル中のテスト実行をサブエージェントに委譲し、詳細ログを除外してpass/failサマリーのみ返却することでコンテキスト汚染を削減。Red-Green-Refactorサイクルの効率化に貢献
+- **学習プロファイル表示コンポーネント (Issue #66)**: LearningProfile・ProfileSummary・SubjectCard・TrendBadgeの4コンポーネント実装、Jotai `learningProfileAtom`連携、既存`ThinkingTendenciesDisplay`再利用、33の新規テスト追加（全550テスト、52テストファイル）
 
 ---
 
@@ -474,6 +475,7 @@ export AGENT_ENGINE_ID=<engine-id>
 | | `DialogueHistory` | 対話履歴（吹き出し形式）+ Phase 2メタデータ表示（Issue #67: QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter） |
 | | `ProgressDisplay` | 学習進捗（ポイント表示） |
 | | `HintIndicator` | 宝箱型ヒントレベル表示 |
+| | `LearningProfile` | 学習プロファイル表示（ProfileSummary, SubjectCard, TrendBadge サブコンポーネント + Jotai atom連携 + ThinkingTendenciesDisplay再利用） |
 | | `Button`, `Card`, `LoadingSpinner`, `ErrorMessage`, `TextInput` | 基本UIコンポーネント |
 | **状態管理** | `store/atoms/dialogue.ts` | 対話履歴、ヒントレベル、キャラクター状態 |
 | | `store/atoms/session.ts` | セッション、学習進捗、ポイント計算 |
@@ -734,9 +736,38 @@ DialogueHistoryコンポーネントを拡張し、Phase 2メタデータ（ques
 
 詳細は `.steering/20260213-dialogue-history-phase2-display/` を参照。
 
+### 学習プロファイル表示コンポーネント（Issue #66）
+
+学習プロファイルデータ（`ChildLearningProfile`型）を視覚的に表示するコンポーネント群を実装。Jotai `learningProfileAtom`と連携し、既存の`ThinkingTendenciesDisplay`コンポーネントを再利用。
+
+**実装コンポーネント:**
+
+| コンポーネント | 説明 | 表示内容 |
+|-------------|------|---------|
+| `LearningProfile` | メインコンポーネント（Jotai atom連携） | プロファイル全体のレイアウト・データなし時のプレースホルダー |
+| `ProfileSummary` | プロファイルサマリー表示 | 総セッション数・総ポイント・全体理解度・最終セッション日 |
+| `SubjectCard` | 教科別カード表示 | 教科名・理解度・トレンド・セッション数・トピック一覧 |
+| `TrendBadge` | トレンドバッジ表示 | improving（上昇）/ stable（横ばい）/ declining（下降） |
+
+**変更ファイル:**
+- `frontend/components/features/LearningProfile/LearningProfile.tsx` - メインコンポーネント
+- `frontend/components/features/LearningProfile/ProfileSummary.tsx` - サマリーコンポーネント
+- `frontend/components/features/LearningProfile/SubjectCard.tsx` - 教科カードコンポーネント
+- `frontend/components/features/LearningProfile/TrendBadge.tsx` - トレンドバッジコンポーネント
+- `frontend/components/features/LearningProfile/LearningProfile.test.tsx` - メインテスト
+- `frontend/components/features/LearningProfile/ProfileSummary.test.tsx` - サマリーテスト
+- `frontend/components/features/LearningProfile/SubjectCard.test.tsx` - 教科カードテスト
+- `frontend/components/features/LearningProfile/TrendBadge.test.tsx` - トレンドバッジテスト
+- `frontend/components/features/LearningProfile/index.ts` - エクスポート集約
+- `frontend/components/features/index.ts` - LearningProfile エクスポート追加
+
+**テスト:** 33新規テスト（LearningProfile + ProfileSummary + SubjectCard + TrendBadge）
+
+詳細は `.steering/20260214-learning-profile-component/` を参照。
+
 ### テストカバレッジ
 
-- **ユニットテスト**: 33テストファイル、517テスト（Vitest + Testing Library）
+- **ユニットテスト**: 52テストファイル、550テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -936,3 +967,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260214-fix-agent-engine-proxy/` | Agent Engine プロキシ register_operations() 修正（create_session/stream_query メソッド公開） |
 | `.steering/20260214-agent-engine-stream-query-sync/` | Agent Engine プロキシ同期メソッド対応（Issue #133: async for/await削除） |
 | `.steering/20260214-unit-test-skill/` | `/unit-test` スキル追加（TDDサイクル中のテスト実行委譲） |
+| `.steering/20260214-learning-profile-component/` | 学習プロファイル表示コンポーネント（Issue #66）|

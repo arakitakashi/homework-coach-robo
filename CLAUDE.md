@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・学習プロファイル表示コンポーネント（Issue #66）実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -184,7 +184,8 @@ Phase 2a（ADK Function Tools）、Phase 2b（マルチエージェント構成�
 - ✅ Phase 2b エージェント切り替えUI（PR #81）: `AgentIndicator`コンポーネント + Framer Motionアニメーション + SessionContent統合
 - ✅ Phase 2d 感情適応UI（PR #84）: `EmotionIndicator`・`EmotionLevelBar`コンポーネント + `CharacterDisplay`感情連動 + Framer Motionアニメーション
 - ✅ Phase 2 対話履歴拡張表示（Issue #67）: `DialogueHistory`コンポーネントに7つの新規サブコンポーネント（QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter）追加、Phase 2メタデータ（questionType, emotion, activeAgent, responseAnalysis, toolExecutions）の表示に対応
-- ✅ テスト: 517テスト（33テストファイル）
+- ✅ 学習プロファイル表示（Issue #66）: `LearningProfile`コンポーネント + `ProfileSummary`・`SubjectCard`・`TrendBadge`サブコンポーネント + Jotai `learningProfileAtom`連携 + 既存`ThinkingTendenciesDisplay`再利用
+- ✅ テスト: 550テスト（52テストファイル）
 
 **Phase 2 ファイル構成:**
 ```
