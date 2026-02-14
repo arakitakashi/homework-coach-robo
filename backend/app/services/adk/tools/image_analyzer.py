@@ -60,7 +60,7 @@ async def _call_gemini_vision(
 
     response = await client.aio.models.generate_content(
         model="gemini-2.5-flash",
-        contents=[prompt, image_part],
+        contents=[prompt, image_part],  # type: ignore[arg-type]
     )
     return response
 
