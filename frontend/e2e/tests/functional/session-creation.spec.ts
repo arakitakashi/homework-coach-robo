@@ -1,5 +1,5 @@
 import { expect, test } from "../../fixtures/base"
-import { HOME, SESSION } from "../../helpers/selectors"
+import { HOME, INPUT_MODE_SELECTOR, SESSION } from "../../helpers/selectors"
 
 test.describe("Session Creation", () => {
 	test("shows loading spinner during session creation", async ({ page, mockAPI }) => {
@@ -33,6 +33,12 @@ test.describe("Session Creation", () => {
 
 		// セッション作成を完了
 		deferred.resolve()
+
+		// InputModeSelectorが表示されることを確認
+		await expect(page.getByText(INPUT_MODE_SELECTOR.title)).toBeVisible({ timeout: 10_000 })
+
+		// 音声モードを選択
+		await page.getByRole("button", { name: INPUT_MODE_SELECTOR.voiceButton }).click()
 
 		// メインUIが表示される（対話履歴内で確認）
 		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
@@ -89,6 +95,12 @@ test.describe("Session Creation", () => {
 
 		// リトライ
 		await page.getByRole("button", { name: SESSION.retryButton }).click()
+
+		// InputModeSelectorが表示されることを確認
+		await expect(page.getByText(INPUT_MODE_SELECTOR.title)).toBeVisible({ timeout: 10_000 })
+
+		// 音声モードを選択
+		await page.getByRole("button", { name: INPUT_MODE_SELECTOR.voiceButton }).click()
 
 		// 成功してメインUIが表示される（対話履歴内で確認）
 		const dialogueLog = page.getByRole("log", { name: "対話履歴" })

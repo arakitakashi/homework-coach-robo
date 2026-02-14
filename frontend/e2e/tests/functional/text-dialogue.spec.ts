@@ -1,10 +1,15 @@
 import { expect, test } from "../../fixtures/base"
-import { SESSION } from "../../helpers/selectors"
+import { INPUT_MODE_SELECTOR, SESSION } from "../../helpers/selectors"
 
 test.describe("Text Dialogue", () => {
 	test.beforeEach(async ({ mockAPI, page }) => {
 		await mockAPI.mockAllSessionAPIs()
 		await page.goto("/session?character=robot")
+
+		// InputModeSelectorで音声モードを選択
+		await expect(page.getByText(INPUT_MODE_SELECTOR.title)).toBeVisible({ timeout: 10_000 })
+		await page.getByRole("button", { name: INPUT_MODE_SELECTOR.voiceButton }).click()
+
 		// セッション作成完了を待つ（対話履歴内で確認）
 		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
 		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
