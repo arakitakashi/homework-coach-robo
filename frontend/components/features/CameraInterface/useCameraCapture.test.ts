@@ -127,6 +127,26 @@ describe("useCameraCapture", () => {
 			})
 		})
 
+		it("video要素がマウントされているときにstreamを接続する", async () => {
+			mockGetUserMedia.mockResolvedValue(mockStream)
+
+			const { result } = renderHook(() => useCameraCapture())
+
+			// videoRef にモックvideo要素を設定（DOMマウント後のシミュレート）
+			const mockVideo = document.createElement("video")
+			Object.defineProperty(result.current.videoRef, "current", {
+				value: mockVideo,
+				writable: true,
+			})
+
+			await act(async () => {
+				await result.current.startCamera()
+			})
+
+			// useEffectが実行されてsrcObjectが設定される
+			expect(mockVideo.srcObject).toBe(mockStream)
+		})
+
 		it("権限拒否時に error を設定する", async () => {
 			const permissionError = new DOMException("Permission denied", "NotAllowedError")
 			mockGetUserMedia.mockRejectedValue(permissionError)
