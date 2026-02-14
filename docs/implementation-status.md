@@ -48,6 +48,7 @@
 - **Phase 2 対話履歴拡張表示 (Issue #67)**: DialogueHistoryコンポーネントに7つの新規サブコンポーネント（QuestionTypeIcon, EmotionIcon, AgentBadge, UnderstandingIndicator, ToolExecutionBadges, DialogueMetadataHeader, DialogueMetadataFooter）追加、Phase 2メタデータ（questionType, emotion, activeAgent, responseAnalysis, toolExecutions）の表示に対応、74の新規テスト追加（全517テスト）
 - **Agent Engine プロキシ register_operations() 修正**: `HomeworkCoachAgent` に `register_operations()` メソッドを追加。Agent Engine プロキシが `create_session` / `stream_query` を正しく公開できるように修正。これにより、フロントエンドからのメッセージ送信時のエラー（`AttributeError: 'app' object has no attribute 'async_stream_query'`）を解消
 - **Agent Engine プロキシ同期メソッド対応 (Issue #133)**: `AgentEngineClient.stream_query` の `async for` を `for` に、`create_session` の `await` を削除。Agent Engine SDKが生成するプロキシは同期ジェネレータ/同期メソッドを返す仕様に対応し、フロントエンドでのメッセージ送信エラーを解消
+- **`/unit-test` スキル追加**: TDDサイクル中のテスト実行をサブエージェントに委譲し、詳細ログを除外してpass/failサマリーのみ返却することでコンテキスト汚染を削減。Red-Green-Refactorサイクルの効率化に貢献
 
 ---
 
@@ -934,3 +935,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260213-dialogue-history-phase2-display/` | Phase 2 対話履歴拡張表示（Issue #67）|
 | `.steering/20260214-fix-agent-engine-proxy/` | Agent Engine プロキシ register_operations() 修正（create_session/stream_query メソッド公開） |
 | `.steering/20260214-agent-engine-stream-query-sync/` | Agent Engine プロキシ同期メソッド対応（Issue #133: async for/await削除） |
+| `.steering/20260214-unit-test-skill/` | `/unit-test` スキル追加（TDDサイクル中のテスト実行委譲） |
