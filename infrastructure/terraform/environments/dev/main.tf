@@ -164,6 +164,7 @@ module "cloud_run" {
   backend_min_instances             = var.backend_min_instances
   frontend_min_instances            = var.frontend_min_instances
   backend_memory                    = var.backend_memory
+  vertex_ai_location                = var.gcp_location
 
   # Pass secret references to backend
   backend_secrets = {
