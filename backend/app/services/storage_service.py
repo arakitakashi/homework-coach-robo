@@ -246,11 +246,11 @@ class CloudStorageService:
             bucket_name: Cloud Storageバケット名
             project_id: GCPプロジェクトID（オプショナル）
         """
-        from google.cloud import storage
+        import google.cloud.storage
 
         self.bucket_name = bucket_name
         self.project_id = project_id
-        self.client = storage.Client(project=project_id)
+        self.client = google.cloud.storage.Client(project=project_id)
         self.bucket = self.client.bucket(bucket_name)
 
     async def upload_image(
@@ -308,7 +308,7 @@ class CloudStorageService:
             blob = self.bucket.blob(storage_path)
             expiration = datetime.now(timezone.utc) + expires_in
 
-            url = blob.generate_signed_url(
+            url: str = blob.generate_signed_url(
                 version="v4",
                 expiration=expiration,
                 method="GET",
