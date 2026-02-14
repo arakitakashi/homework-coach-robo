@@ -1,6 +1,7 @@
 // Feature Components exports
 
 export { AgentIndicator } from "./AgentIndicator"
+export { CameraInterface } from "./CameraInterface"
 export { CharacterDisplay } from "./CharacterDisplay"
 export { DialogueHistory } from "./DialogueHistory"
 export { EmotionIndicator } from "./EmotionIndicator"
