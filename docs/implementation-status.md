@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了・学習プロファイル表示コンポーネント（Issue #66）実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了・学習プロファイル表示コンポーネント（Issue #66）実装完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了
 
 ---
 
@@ -50,6 +50,8 @@
 - **Agent Engine プロキシ同期メソッド対応 (Issue #133)**: `AgentEngineClient.stream_query` の `async for` を `for` に、`create_session` の `await` を削除。Agent Engine SDKが生成するプロキシは同期ジェネレータ/同期メソッドを返す仕様に対応し、フロントエンドでのメッセージ送信エラーを解消
 - **`/unit-test` スキル追加**: TDDサイクル中のテスト実行をサブエージェントに委譲し、詳細ログを除外してpass/failサマリーのみ返却することでコンテキスト汚染を削減。Red-Green-Refactorサイクルの効率化に貢献
 - **学習プロファイル表示コンポーネント (Issue #66)**: LearningProfile・ProfileSummary・SubjectCard・TrendBadgeの4コンポーネント実装、Jotai `learningProfileAtom`連携、既存`ThinkingTendenciesDisplay`再利用、33の新規テスト追加（全550テスト、52テストファイル）
+- **Cloud Storage画像保存統合 (Issue #151, Phase 1-4, 6, 8)**: StorageServiceインターフェース、MockStorageService（テスト用）、CloudStorageService（本番用）を実装。画像バリデーション（最大10MB、JPEG/PNG/WebP）、GCSアップロード、Signed URL生成（有効期限1時間）、DI設定（E2E_MODE環境変数）、40新規テスト（スキーマ14 + 例外8 + Mock 14 + CloudStorage 12）、全659テストパス
+- **フロントエンド カメラインターフェース (Issue #153)**: `CameraInterface`コンポーネント + `useCameraCapture`フック + `VisionClient` APIクライアント + Jotai `cameraAtoms`状態管理。カメラ撮影・ファイルアップロード・画像認識API連携・6状態UI（initial/active/preview/processing/recognized/error）を実装。新規ファイル: `types/vision.ts`, `lib/api/visionClient.ts`, `store/atoms/camera.ts`, `components/features/CameraInterface/`（CameraInterface.tsx, CameraPreview.tsx, useCameraCapture.ts, index.ts, CameraInterface.test.tsx）。46新規テスト追加（全596テスト、55テストファイル）
 
 ---
 
@@ -767,7 +769,7 @@ DialogueHistoryコンポーネントを拡張し、Phase 2メタデータ（ques
 
 ### テストカバレッジ
 
-- **ユニットテスト**: 52テストファイル、550テスト（Vitest + Testing Library）
+- **ユニットテスト**: 55テストファイル、596テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -968,3 +970,5 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260214-agent-engine-stream-query-sync/` | Agent Engine プロキシ同期メソッド対応（Issue #133: async for/await削除） |
 | `.steering/20260214-unit-test-skill/` | `/unit-test` スキル追加（TDDサイクル中のテスト実行委譲） |
 | `.steering/20260214-learning-profile-component/` | 学習プロファイル表示コンポーネント（Issue #66）|
+| `.steering/20260214-cloud-storage-integration/` | Cloud Storage画像保存統合（Issue #151: Phase 1-4, 6, 8実装完了） |
+| `.steering/20260214-camera-interface/` | フロントエンド カメラインターフェース（Issue #153: カメラ撮影・ファイルアップロード・画像認識） |
