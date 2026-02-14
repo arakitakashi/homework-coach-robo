@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了
 
 ---
 
@@ -49,6 +49,7 @@
 - **Agent Engine プロキシ register_operations() 修正**: `HomeworkCoachAgent` に `register_operations()` メソッドを追加。Agent Engine プロキシが `create_session` / `stream_query` を正しく公開できるように修正。これにより、フロントエンドからのメッセージ送信時のエラー（`AttributeError: 'app' object has no attribute 'async_stream_query'`）を解消
 - **Agent Engine プロキシ同期メソッド対応 (Issue #133)**: `AgentEngineClient.stream_query` の `async for` を `for` に、`create_session` の `await` を削除。Agent Engine SDKが生成するプロキシは同期ジェネレータ/同期メソッドを返す仕様に対応し、フロントエンドでのメッセージ送信エラーを解消
 - **Cloud Storage画像保存統合 (Issue #151, Phase 1-4, 6, 8)**: StorageServiceインターフェース、MockStorageService（テスト用）、CloudStorageService（本番用）を実装。画像バリデーション（最大10MB、JPEG/PNG）、GCSアップロード、Signed URL生成（有効期限15分）、DI設定（E2E_MODE環境変数）、40新規テスト（スキーマ14 + Mock 14 + CloudStorage 12）、全659テストパス
+- **フロントエンド カメラインターフェース (Issue #153)**: `CameraInterface`コンポーネント + `useCameraCapture`フック + `VisionClient` APIクライアント + Jotai `cameraAtoms`状態管理。カメラ撮影・ファイルアップロード・画像認識API連携・6状態UI（initial/active/preview/processing/recognized/error）を実装。新規ファイル: `types/vision.ts`, `lib/api/visionClient.ts`, `store/atoms/camera.ts`, `components/features/CameraInterface/`（CameraInterface.tsx, CameraPreview.tsx, useCameraCapture.ts, index.ts, CameraInterface.test.tsx）。46新規テスト追加（全596テスト、55テストファイル）
 
 ---
 
@@ -736,7 +737,7 @@ DialogueHistoryコンポーネントを拡張し、Phase 2メタデータ（ques
 
 ### テストカバレッジ
 
-- **ユニットテスト**: 33テストファイル、517テスト（Vitest + Testing Library）
+- **ユニットテスト**: 55テストファイル、596テスト（Vitest + Testing Library）
 - **E2Eテスト**: 9テストファイル（Playwright）- スモーク・機能・統合
 - 適切なモック（MediaDevices, AudioContext, WebSocket, AudioWorklet）
 
@@ -936,3 +937,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260214-fix-agent-engine-proxy/` | Agent Engine プロキシ register_operations() 修正（create_session/stream_query メソッド公開） |
 | `.steering/20260214-agent-engine-stream-query-sync/` | Agent Engine プロキシ同期メソッド対応（Issue #133: async for/await削除） |
 | `.steering/20260214-cloud-storage-integration/` | Cloud Storage画像保存統合（Issue #151: Phase 1-4, 6, 8実装完了） |
+| `.steering/20260214-camera-interface/` | フロントエンド カメラインターフェース（Issue #153: カメラ撮影・ファイルアップロード・画像認識） |
