@@ -7,6 +7,7 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { type ReactNode, useMemo } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { inputModeAtom } from "@/store/atoms/camera"
 import { gamificationStateAtom } from "@/store/atoms/gamification"
 import {
 	activeAgentAtom,
@@ -146,8 +147,12 @@ vi.mock("@/lib/api", () => {
 })
 
 // テスト用ラッパー
-function createTestWrapper() {
+function createTestWrapper(options?: { inputMode?: "voice" | "image" | null }) {
 	const store = createStore()
+	// デフォルトは "voice" モード（既存テストの互換性のため）
+	// 明示的に null を指定した場合のみ未選択状態
+	const inputMode = options?.inputMode !== undefined ? options.inputMode : "voice"
+	store.set(inputModeAtom, inputMode)
 	const TestWrapper = ({ children }: { children: ReactNode }) => {
 		const memoizedStore = useMemo(() => store, [])
 		return <Provider store={memoizedStore}>{children}</Provider>
@@ -704,6 +709,8 @@ describe("SessionContent", () => {
 
 			const { unmount, store } = (() => {
 				const testStore = createStore()
+				// 音声モードを設定（メインUIを表示するため）
+				testStore.set(inputModeAtom, "voice")
 				const result = render(
 					<Provider store={testStore}>
 						<SessionContent characterType="robot" />
@@ -823,6 +830,107 @@ describe("SessionContent", () => {
 			// タブレット以上ではgridレイアウトを使用（md:grid）
 			// この検証は実際のブレークポイント動作ではなく、クラス名の存在確認のみ
 			expect(main?.className).toMatch(/md:grid/)
+		})
+	})
+
+	describe("入力モード選択", () => {
+		it("セッション作成後、初期表示時に InputModeSelector が表示される", async () => {
+			const { TestWrapper } = createTestWrapper({ inputMode: null })
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ（InputModeSelectorが表示されることで確認）
+			await waitFor(() => {
+				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+			})
+
+			// 2つのモード選択ボタンが表示される
+			expect(screen.getByRole("button", { name: "声で伝える" })).toBeInTheDocument()
+			expect(screen.getByRole("button", { name: "写真で伝える" })).toBeInTheDocument()
+		})
+
+		it("音声モード選択後、VoiceInterface が表示される", async () => {
+			const { TestWrapper } = createTestWrapper({ inputMode: null })
+			const user = userEvent.setup()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+			})
+
+			// 音声モードを選択
+			const voiceButton = screen.getByRole("button", { name: "声で伝える" })
+			await user.click(voiceButton)
+
+			// VoiceInterface が表示される（録音ボタンで確認）
+			await waitFor(() => {
+				expect(screen.getAllByRole("button", { name: /録音|マイク/ })[0]).toBeInTheDocument()
+			})
+		})
+
+		it("画像モード選択後、プレースホルダーが表示される", async () => {
+			const { TestWrapper } = createTestWrapper({ inputMode: null })
+			const user = userEvent.setup()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+			})
+
+			// 画像モードを選択
+			const imageButton = screen.getByRole("button", { name: "写真で伝える" })
+			await user.click(imageButton)
+
+			// プレースホルダーが表示される
+			await waitFor(() => {
+				expect(screen.getByText("画像モードは準備中です")).toBeInTheDocument()
+			})
+		})
+
+		it("音声モード選択後、InputModeSelector が非表示になる", async () => {
+			const { TestWrapper } = createTestWrapper({ inputMode: null })
+			const user = userEvent.setup()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+			})
+
+			// 音声モードを選択
+			const voiceButton = screen.getByRole("button", { name: "声で伝える" })
+			await user.click(voiceButton)
+
+			// InputModeSelector が非表示になる
+			await waitFor(() => {
+				expect(screen.queryByText("どうやってつたえる？")).not.toBeInTheDocument()
+			})
+		})
+
+		it("画像モード選択後、InputModeSelector が非表示になる", async () => {
+			const { TestWrapper } = createTestWrapper({ inputMode: null })
+			const user = userEvent.setup()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+			})
+
+			// 画像モードを選択
+			const imageButton = screen.getByRole("button", { name: "写真で伝える" })
+			await user.click(imageButton)
+
+			// InputModeSelector が非表示になる
+			await waitFor(() => {
+				expect(screen.queryByText("どうやってつたえる？")).not.toBeInTheDocument()
+			})
 		})
 	})
 })

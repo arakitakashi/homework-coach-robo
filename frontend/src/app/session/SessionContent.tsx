@@ -11,6 +11,7 @@ import {
 	DialogueHistory,
 	EmotionIndicator,
 	HintIndicator,
+	InputModeSelector,
 	PointDisplay,
 	ProgressDisplay,
 	StoryProgress,
@@ -23,6 +24,7 @@ import { ErrorMessage } from "@/components/ui/ErrorMessage"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { TextInput } from "@/components/ui/TextInput"
 import { useDialogue, usePcmPlayer, useSession, useVoiceStream } from "@/lib/hooks"
+import { inputModeAtom } from "@/store/atoms/camera"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
 import {
 	activeAgentAtom,
@@ -74,6 +76,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [, _setAgentTransitionHistory] = useAtom(agentTransitionHistoryAtom)
 	const [, _setEmotionAnalysis] = useAtom(emotionAnalysisAtom)
 	const [, _setEmotionHistory] = useAtom(emotionHistoryAtom)
+	const [inputMode, setInputMode] = useAtom(inputModeAtom)
 
 	// 音声入力の有効化状態
 	const [isVoiceEnabled] = useState(true)
@@ -367,7 +370,28 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		)
 	}
 
-	// セッションが存在する場合のメインUI
+	// セッション作成完了後、モード未選択の場合は InputModeSelector を表示
+	if (session && inputMode === null) {
+		return (
+			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 p-4">
+				<InputModeSelector onModeSelect={setInputMode} />
+			</main>
+		)
+	}
+
+	// 画像モード選択時のプレースホルダー
+	if (session && inputMode === "image") {
+		return (
+			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 p-4">
+				<div className="text-center">
+					<p className="text-2xl font-bold text-gray-700">画像モードは準備中です</p>
+					<p className="mt-4 text-gray-600">もうしばらくおまちください</p>
+				</div>
+			</main>
+		)
+	}
+
+	// セッションが存在し、音声モードが選択された場合のメインUI
 	const isConnected = !!session
 	const isVoiceConnected = isVoiceEnabled && voiceConnectionState === "connected"
 
