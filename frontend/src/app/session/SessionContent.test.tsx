@@ -885,9 +885,9 @@ describe("SessionContent", () => {
 			const imageButton = screen.getByRole("button", { name: "写真で伝える" })
 			await user.click(imageButton)
 
-			// プレースホルダーが表示される
+			// CameraInterfaceが表示される
 			await waitFor(() => {
-				expect(screen.getByText("画像モードは準備中です")).toBeInTheDocument()
+				expect(screen.getByText("しゅくだいのしゃしんをとろう！")).toBeInTheDocument()
 			})
 		})
 

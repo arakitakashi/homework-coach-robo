@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
 	AgentIndicator,
 	BadgeNotification,
+	CameraInterface,
 	CharacterDisplay,
 	DialogueHistory,
 	EmotionIndicator,
@@ -43,6 +44,7 @@ import type {
 	DialogueTurn,
 	EmotionAnalysis,
 	EmotionType,
+	ImageAnalysisResult,
 	ToolExecution,
 	ToolExecutionStatus,
 	ToolName,
@@ -227,8 +229,10 @@ export function SessionContent({ characterType }: SessionContentProps) {
 			}
 			setDialogueTurns((prev) => [...prev, turn])
 			setCharacterState("speaking")
+			// 音声モードに自動切り替え
+			setInputMode("voice")
 		},
-		[setDialogueTurns, setCharacterState],
+		[setDialogueTurns, setCharacterState, setInputMode],
 	)
 
 	// 画像認識エラーイベントハンドラ
@@ -257,6 +261,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		stopRecording,
 		connect: voiceConnect,
 		disconnect: voiceDisconnect,
+		sendImageStart,
 	} = useVoiceStream({
 		onAudioData: handleAudioData,
 		onTranscription: handleTranscription,
@@ -268,6 +273,26 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		onImageProblemConfirmed: handleImageProblemConfirmed,
 		onImageRecognitionError: handleImageRecognitionError,
 	})
+
+	// 画像問題認識完了ハンドラ
+	// biome-ignore lint/correctness/noUnusedVariables: 早期リターン後に使用されるが、フックルールのため早期リターン前に定義
+	const handleProblemRecognized = useCallback(
+		(recognizedText: string, result: ImageAnalysisResult) => {
+			// sendImageStartを呼び出してWebSocket経由でバックエンドに送信
+			if (session) {
+				sendImageStart(
+					recognizedText,
+					"", // imageUrl: バックエンドが既に保存している想定
+					result.problemType,
+					{
+						confidence: result.confidence,
+						extractedExpression: result.extractedExpression,
+					},
+				)
+			}
+		},
+		[session, sendImageStart],
+	)
 
 	// 初期化時にセッションを作成
 	useEffect(() => {
@@ -380,14 +405,11 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		)
 	}
 
-	// 画像モード選択時のプレースホルダー
+	// 画像モード選択時のCameraInterface表示
 	if (session && inputMode === "image") {
 		return (
 			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 p-4">
-				<div className="text-center">
-					<p className="text-2xl font-bold text-gray-700">画像モードは準備中です</p>
-					<p className="mt-4 text-gray-600">もうしばらくおまちください</p>
-				</div>
+				<CameraInterface onProblemRecognized={handleProblemRecognized} />
 			</main>
 		)
 	}
