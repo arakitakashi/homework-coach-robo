@@ -211,6 +211,40 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		[_setEmotionAnalysis, _setEmotionHistory],
 	)
 
+	// 画像問題確認イベントハンドラ
+	const handleImageProblemConfirmed = useCallback(
+		(problemId: string, coachResponse: string) => {
+			// 画像認識完了メッセージを対話履歴に追加
+			transcriptionIdRef.current += 1
+			const turn: DialogueTurn = {
+				id: `image-confirmed-${problemId}`,
+				speaker: "robot",
+				text: coachResponse,
+				timestamp: new Date(),
+			}
+			setDialogueTurns((prev) => [...prev, turn])
+			setCharacterState("speaking")
+		},
+		[setDialogueTurns, setCharacterState],
+	)
+
+	// 画像認識エラーイベントハンドラ
+	const handleImageRecognitionError = useCallback(
+		(_error: string, code: string) => {
+			// エラーメッセージを対話履歴に追加
+			transcriptionIdRef.current += 1
+			const turn: DialogueTurn = {
+				id: `image-error-${Date.now()}`,
+				speaker: "robot",
+				text: `しゃしんがよめなかったよ。もういちどためしてね！（${code}）`,
+				timestamp: new Date(),
+			}
+			setDialogueTurns((prev) => [...prev, turn])
+			setCharacterState("thinking")
+		},
+		[setDialogueTurns, setCharacterState],
+	)
+
 	// 音声ストリーミングフック
 	const {
 		connectionState: voiceConnectionState,
@@ -220,6 +254,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		stopRecording,
 		connect: voiceConnect,
 		disconnect: voiceDisconnect,
+		sendImageStart,
 	} = useVoiceStream({
 		onAudioData: handleAudioData,
 		onTranscription: handleTranscription,
@@ -228,6 +263,8 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		onToolExecution: handleToolExecution,
 		onAgentTransition: handleAgentTransition,
 		onEmotionUpdate: handleEmotionUpdate,
+		onImageProblemConfirmed: handleImageProblemConfirmed,
+		onImageRecognitionError: handleImageRecognitionError,
 	})
 
 	// 初期化時にセッションを作成
