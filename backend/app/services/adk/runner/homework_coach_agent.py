@@ -93,6 +93,7 @@ def _create_agent_engine_services() -> tuple[BaseSessionService, BaseMemoryServi
     # ADK Runner は内部で google.genai.Client() を作成するが、
     # genai は vertexai.init() の設定を参照しないため、環境変数で明示的に指定する
     from google.cloud import aiplatform  # noqa: PLC0415 - Agent Engine 検出後のみ使用
+
     project = aiplatform.initializer.global_config.project
     location = aiplatform.initializer.global_config.location
     os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
