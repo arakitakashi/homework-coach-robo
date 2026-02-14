@@ -103,6 +103,24 @@ export interface ADKEmotionUpdateEvent {
 	engagementLevel: number
 }
 
+/** 画像問題確認イベント（サーバー → クライアント） */
+export interface ImageProblemConfirmedEvent {
+	type: "image_problem_confirmed"
+	payload: {
+		problem_id: string
+		coach_response: string
+	}
+}
+
+/** 画像認識エラーイベント（サーバー → クライアント） */
+export interface ImageRecognitionErrorEvent {
+	type: "image_recognition_error"
+	payload: {
+		error: string
+		code: string
+	}
+}
+
 /** ADKイベント - サーバーからのWebSocketメッセージ */
 export interface ADKEvent {
 	/** イベント発行者 */
@@ -126,6 +144,12 @@ export interface ADKEvent {
 	/** Phase 2d: 感情更新イベント */
 	emotionUpdate?: ADKEmotionUpdateEvent
 }
+
+/** WebSocket受信イベント（統合型） */
+export type WebSocketIncomingEvent =
+	| ADKEvent
+	| ImageProblemConfirmedEvent
+	| ImageRecognitionErrorEvent
 
 /** ADKコンテンツパート */
 export interface ADKContentPart {
