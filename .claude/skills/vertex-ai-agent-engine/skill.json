@@ -1,0 +1,5 @@
+{
+  "name": "vertex-ai-agent-engine",
+  "description": "Vertex AI Agent Engine デプロイ・運用ガイド: HomeworkCoachAgent ラッパーパターン、cloudpickle シリアライズ、ランタイム環境の制約（vertexai.init vs genai 環境変数、InMemorySessionService、イベントループ問題）、Cloud Run プロキシ構成、デバッグ手法、テスト戦略。Agent Engine にエージェントをデプロイする際に参照。",
+  "user-invocable": true
+}

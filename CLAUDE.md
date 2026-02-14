@@ -157,7 +157,7 @@ homework-coach-robo/
 
 ## Development Context
 
-このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了**の段階です。
+このプロジェクトは現在、**MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・学習プロファイル表示コンポーネント（Issue #66）実装完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了**の段階です。
 
 - 実装済み機能の詳細: [`docs/implementation-status.md`](docs/implementation-status.md)
 - Phase 2〜3 ロードマップ: [GitHub Milestones](https://github.com/arakitakashi/homework-coach-robo/milestones)
@@ -318,10 +318,14 @@ cd backend && uv run ruff check . && uv run mypy . && uv run pytest
 | カテゴリ | スキル |
 |----------|--------|
 | 開発プロセス | `/tdd`, `/git-workflow`, `/security-review` |
+| TDD/テスト | `/unit-test` |
 | サブエージェント委譲 | `/quality-check`, `/update-docs`, `/create-pr`, `/analyze-errors`, `/github-issues` |
 | フロントエンド | `/frontend`, `/frontend-design`, `/vercel-react-best-practices` |
-| バックエンド | `/fastapi`, `/google-adk-basics`, `/google-adk-live` |
+| バックエンド | `/fastapi`, `/google-adk-basics`, `/google-adk-live`, `/vertex-ai-agent-engine` |
 
 **注意**: `/google-adk-live` は `/google-adk-basics` の知識が前提です。
+**注意**: `/vertex-ai-agent-engine` は `/google-adk-basics` の知識が前提です。Agent Engine デプロイ時に参照。
+
+**TDD/テストスキル**: `/unit-test` はTDDサイクル中のテスト実行をサブエージェントに委譲し、詳細ログを除外してpass/failサマリーのみ返却することでコンテキスト汚染を削減します。Red-Green-Refactorサイクルのテスト実行時に使用してください。
 
 **サブエージェント委譲スキル**: `/quality-check`、`/update-docs`、`/create-pr`、`/analyze-errors`、`/github-issues` は Task ツールでサブエージェントを起動し、メインエージェントのコンテキスト消費を最小化します。品質チェック・ドキュメント更新・PR作成・エラー分析・Issue管理に使用してください。

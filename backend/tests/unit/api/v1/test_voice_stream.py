@@ -329,3 +329,84 @@ class TestCleanup:
             mock_service.close.assert_called_once()
         finally:
             app.dependency_overrides.clear()
+
+
+class TestErrorHandling:
+    """エラーハンドリングのテスト"""
+
+    @patch("app.api.v1.voice_stream.VoiceStreamingService")
+    def test_session_init_failure_sends_error_to_client(
+        self,
+        mock_service_cls: MagicMock,
+    ) -> None:
+        """セッション初期化失敗時にクライアントにエラーを送信する"""
+        mock_service = MagicMock()
+        mock_service_cls.return_value = mock_service
+
+        mock_session_service = MagicMock()
+        mock_session_service.get_session = AsyncMock(
+            side_effect=RuntimeError("Firestore connection failed")
+        )
+
+        app = create_app_with_mocks(mock_service, mock_session_service)
+
+        try:
+            client = TestClient(app)
+            with client.websocket_connect("/ws/user-1/session-1") as ws:
+                data = ws.receive_json()
+                assert "error" in data
+                assert "セッション" in data["error"]
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_service_init_failure_sends_error_to_client(
+        self,
+    ) -> None:
+        """VoiceStreamingService初期化失敗時にクライアントにエラーを送信する"""
+        mock_session_service = MagicMock()
+        mock_session_service.get_session = AsyncMock(return_value=MagicMock())
+
+        with patch(
+            "app.api.v1.voice_stream.VoiceStreamingService",
+            side_effect=RuntimeError("Agent creation failed"),
+        ):
+            app = create_app_with_mocks(MagicMock(), mock_session_service)
+
+            try:
+                client = TestClient(app)
+                with client.websocket_connect("/ws/user-1/session-1") as ws:
+                    data = ws.receive_json()
+                    assert "error" in data
+                    assert "音声サービス" in data["error"]
+            finally:
+                app.dependency_overrides.clear()
+
+    @patch("app.api.v1.voice_stream.VoiceStreamingService")
+    def test_agent_stream_error_sends_error_to_client(
+        self,
+        mock_service_cls: MagicMock,
+    ) -> None:
+        """エージェントストリームエラー時にクライアントにエラーを送信する"""
+        mock_service = MagicMock()
+
+        async def failing_events(user_id: str, session_id: str) -> Any:  # noqa: ARG001
+            raise RuntimeError("Gemini API connection failed")
+            yield  # noqa: B901 - async generator
+
+        mock_service.receive_events = failing_events
+        mock_service.close = MagicMock()
+        mock_service_cls.return_value = mock_service
+
+        mock_session_service = MagicMock()
+        mock_session_service.get_session = AsyncMock(return_value=MagicMock())
+
+        app = create_app_with_mocks(mock_service, mock_session_service)
+
+        try:
+            client = TestClient(app)
+            with client.websocket_connect("/ws/user-1/session-1") as ws:
+                data = ws.receive_json()
+                assert "error" in data
+                assert "AI" in data["error"]
+        finally:
+            app.dependency_overrides.clear()
