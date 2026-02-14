@@ -194,4 +194,8 @@ export interface VoiceWebSocketOptions {
 	onAgentTransition?: (fromAgent: string, toAgent: string, reason: string) => void
 	/** Phase 2d: 感情更新コールバック */
 	onEmotionUpdate?: (emotion: string, frustrationLevel: number, engagementLevel: number) => void
+	/** 画像問題確認コールバック */
+	onImageProblemConfirmed?: (problemId: string, coachResponse: string) => void
+	/** 画像認識エラーコールバック */
+	onImageRecognitionError?: (error: string, code: string) => void
 }
