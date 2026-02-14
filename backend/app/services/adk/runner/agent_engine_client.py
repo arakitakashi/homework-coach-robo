@@ -44,7 +44,7 @@ class AgentEngineClient:
         Returns:
             セッションID
         """
-        session: dict[str, Any] = await self._remote_app.async_create_session(  # type: ignore[attr-defined]
+        session: dict[str, Any] = self._remote_app.create_session(  # type: ignore[attr-defined]
             user_id=user_id,
         )
         session_id: str = session["id"]
@@ -67,7 +67,7 @@ class AgentEngineClient:
         Yields:
             Agent Engine からのイベント辞書
         """
-        async for event in self._remote_app.async_stream_query(  # type: ignore[attr-defined]
+        for event in self._remote_app.stream_query(  # type: ignore[attr-defined]
             user_id=user_id,
             session_id=session_id,
             message=message,

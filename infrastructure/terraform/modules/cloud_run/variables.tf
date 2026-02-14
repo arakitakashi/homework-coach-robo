@@ -146,6 +146,13 @@ variable "frontend_concurrency" {
   default     = 80
 }
 
+# Vertex AI location for Gemini API (may differ from Cloud Run region)
+variable "vertex_ai_location" {
+  description = "GCP location for Vertex AI / Gemini API (e.g. us-central1)"
+  type        = string
+  default     = "us-central1"
+}
+
 # Backend additional environment variables (Phase 2)
 variable "backend_env_vars" {
   description = "Additional environment variables for backend service"

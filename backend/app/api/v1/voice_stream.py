@@ -68,6 +68,12 @@ async def _agent_to_client(
             await websocket.send_text(json_str)
     except Exception:
         logger.exception("Error in agent-to-client stream")
+        # エラーをクライアントに通知（デバッグ用）
+        try:
+            error_msg = json.dumps({"error": "AIとの接続でエラーが発生しました"})
+            await websocket.send_text(error_msg)
+        except Exception:
+            logger.debug("Failed to send error message to client")
 
 
 async def _client_to_agent(
@@ -117,14 +123,28 @@ async def voice_stream_endpoint(
     """
     await websocket.accept()
 
-    # セッションの確認/作成
-    await _ensure_session_exists(session_service, user_id, session_id)
+    try:
+        # セッションの確認/作成
+        await _ensure_session_exists(session_service, user_id, session_id)
+    except Exception:
+        logger.exception(f"Failed to ensure session: {user_id}/{session_id}")
+        error_msg = json.dumps({"error": "セッションの初期化に失敗しました"})
+        await websocket.send_text(error_msg)
+        await websocket.close(code=1011)
+        return
 
-    # VoiceStreamingServiceの作成
-    service = VoiceStreamingService(
-        session_service=session_service,
-        memory_service=memory_service,
-    )
+    try:
+        # VoiceStreamingServiceの作成
+        service = VoiceStreamingService(
+            session_service=session_service,
+            memory_service=memory_service,
+        )
+    except Exception:
+        logger.exception("Failed to create VoiceStreamingService")
+        error_msg = json.dumps({"error": "音声サービスの初期化に失敗しました"})
+        await websocket.send_text(error_msg)
+        await websocket.close(code=1011)
+        return
 
     try:
         # エージェントからのイベント転送を開始

@@ -15,8 +15,6 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Generator
-from typing import Any
 
 # backend ディレクトリを PYTHONPATH に追加
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
