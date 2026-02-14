@@ -318,8 +318,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		voiceDisconnect()
 		cleanupPlayer()
 		await clearSession()
+		setInputMode(null) // 入力モードをリセット
 		router.push("/")
-	}, [voiceDisconnect, cleanupPlayer, clearSession, router])
+	}, [voiceDisconnect, cleanupPlayer, clearSession, setInputMode, router])
 
 	const handleSendMessage = useCallback(
 		(text: string) => {
