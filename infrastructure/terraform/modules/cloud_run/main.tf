@@ -61,6 +61,20 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "GCP_REGION"
         value = var.region
       }
+
+      # genai / ADK Runner が Vertex AI Gemini API に接続するために必要
+      env {
+        name  = "GOOGLE_GENAI_USE_VERTEXAI"
+        value = "TRUE"
+      }
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+      env {
+        name  = "GOOGLE_CLOUD_LOCATION"
+        value = var.vertex_ai_location
+      }
       # NOTE: PORT is automatically set by Cloud Run (8080)
 
       # CORS: フロントエンドCloud Run URLを許可
