@@ -76,3 +76,46 @@ class TextInputMessage(BaseModel):
 
     type: Literal["text"]
     text: str
+
+
+# --- 画像イベント関連スキーマ（Issue #152） ---
+
+
+class StartWithImagePayload(BaseModel):
+    """start_with_image イベントのペイロード
+
+    フロントエンドから画像認識済みの問題データを受け取る。
+    """
+
+    problem_text: str
+    problem_type: str
+    image_url: str | None = None
+    metadata: dict[str, object] | None = None
+
+
+class ImageProblemConfirmedPayload(BaseModel):
+    """image_problem_confirmed レスポンスのペイロード"""
+
+    problem_id: str
+    coach_response: str
+
+
+class ImageProblemConfirmedMessage(BaseModel):
+    """サーバー → クライアント: 画像問題確認レスポンス"""
+
+    type: Literal["image_problem_confirmed"] = "image_problem_confirmed"
+    payload: ImageProblemConfirmedPayload
+
+
+class ImageRecognitionErrorPayload(BaseModel):
+    """image_recognition_error レスポンスのペイロード"""
+
+    error: str
+    code: str
+
+
+class ImageRecognitionErrorMessage(BaseModel):
+    """サーバー → クライアント: 画像認識エラーレスポンス"""
+
+    type: Literal["image_recognition_error"] = "image_recognition_error"
+    payload: ImageRecognitionErrorPayload

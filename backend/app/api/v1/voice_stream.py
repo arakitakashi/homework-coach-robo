@@ -7,11 +7,18 @@
 import asyncio
 import json
 import logging
+import uuid
 from typing import Any
 
 from fastapi import Depends, WebSocket, WebSocketDisconnect
 from google.adk.memory import BaseMemoryService
 
+from app.schemas.voice_stream import (
+    ImageProblemConfirmedMessage,
+    ImageProblemConfirmedPayload,
+    ImageRecognitionErrorMessage,
+    ImageRecognitionErrorPayload,
+)
 from app.services.adk.memory.memory_factory import create_memory_service
 from app.services.adk.sessions import FirestoreSessionService
 from app.services.voice.streaming_service import VoiceStreamingService
@@ -76,6 +83,79 @@ async def _agent_to_client(
             logger.debug("Failed to send error message to client")
 
 
+async def _handle_start_with_image(
+    websocket: WebSocket,
+    service: VoiceStreamingService,
+    data: dict[str, Any],
+) -> None:
+    """start_with_image イベントを処理する
+
+    画像認識済みの問題データを受け取り、エージェントに転送して
+    確認レスポンスをクライアントに返す。
+
+    Args:
+        websocket: WebSocket接続
+        service: VoiceStreamingService
+        data: 受信したJSONデータ
+    """
+    payload = data.get("payload")
+
+    # ペイロードのバリデーション
+    if not payload or not isinstance(payload, dict):
+        error_msg = ImageRecognitionErrorMessage(
+            payload=ImageRecognitionErrorPayload(
+                error="payloadが必要です",
+                code="INVALID_PAYLOAD",
+            )
+        )
+        await websocket.send_text(error_msg.model_dump_json())
+        return
+
+    problem_text = payload.get("problem_text", "")
+    if not problem_text or not problem_text.strip():
+        error_msg = ImageRecognitionErrorMessage(
+            payload=ImageRecognitionErrorPayload(
+                error="problem_textが必要です",
+                code="INVALID_PAYLOAD",
+            )
+        )
+        await websocket.send_text(error_msg.model_dump_json())
+        return
+
+    problem_type = payload.get("problem_type", "other")
+    image_url = payload.get("image_url")
+
+    # エージェントに問題テキストを転送
+    # 画像から認識した問題であることをコンテキストとして含める
+    agent_message = f"【画像から読み取った問題（{problem_type}）】\n{problem_text}"
+    if image_url:
+        agent_message += f"\n（画像URL: {image_url}）"
+
+    try:
+        service.send_text(agent_message)
+    except Exception:
+        logger.exception("Failed to send image problem to agent")
+        error_msg = ImageRecognitionErrorMessage(
+            payload=ImageRecognitionErrorPayload(
+                error="エージェントへの問題送信に失敗しました",
+                code="AGENT_ERROR",
+            )
+        )
+        await websocket.send_text(error_msg.model_dump_json())
+        return
+
+    # 確認レスポンスを返す
+    problem_id = str(uuid.uuid4())
+    confirmed_msg = ImageProblemConfirmedMessage(
+        payload=ImageProblemConfirmedPayload(
+            problem_id=problem_id,
+            coach_response="画像から問題を読み取りました！一緒に考えよう！",
+        )
+    )
+    await websocket.send_text(confirmed_msg.model_dump_json())
+    logger.info(f"Image problem confirmed: {problem_id} (type={problem_type})")
+
+
 async def _client_to_agent(
     websocket: WebSocket,
     service: VoiceStreamingService,
@@ -97,6 +177,8 @@ async def _client_to_agent(
                 data: dict[str, Any] = json.loads(message["text"])
                 if data.get("type") == "text" and data.get("text"):
                     service.send_text(data["text"])
+                elif data.get("type") == "start_with_image":
+                    await _handle_start_with_image(websocket, service, data)
                 else:
                     logger.warning(f"Unknown message type: {data.get('type')}")
             except json.JSONDecodeError:
