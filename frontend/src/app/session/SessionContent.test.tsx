@@ -835,103 +835,69 @@ describe("SessionContent", () => {
 		})
 	})
 
-	describe("入力モード選択", () => {
-		it("セッション作成後、初期表示時に InputModeSelector が表示される", async () => {
-			const { TestWrapper } = createTestWrapper({ inputMode: null })
+	describe("フローティングカメラボタン", () => {
+		it("フローティングカメラボタンが表示される", async () => {
+			const { TestWrapper } = createTestWrapper()
 
 			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
 
-			// セッション作成完了を待つ（InputModeSelectorが表示されることで確認）
+			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
-			// 2つのモード選択ボタンが表示される
-			expect(screen.getByRole("button", { name: "声で伝える" })).toBeInTheDocument()
-			expect(screen.getByRole("button", { name: "写真で伝える" })).toBeInTheDocument()
+			// フローティングカメラボタンが表示される
+			expect(screen.getByRole("button", { name: "しゃしんをとる" })).toBeInTheDocument()
 		})
 
-		it("音声モード選択後、VoiceInterface が表示される", async () => {
-			const { TestWrapper } = createTestWrapper({ inputMode: null })
+		it("カメラボタンタップでCameraInterfaceオーバーレイが表示される", async () => {
+			const { TestWrapper } = createTestWrapper()
 			const user = userEvent.setup()
 
 			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
-			// 音声モードを選択
-			const voiceButton = screen.getByRole("button", { name: "声で伝える" })
-			await user.click(voiceButton)
+			// カメラボタンをタップ
+			const cameraButton = screen.getByRole("button", { name: "しゃしんをとる" })
+			await user.click(cameraButton)
 
-			// VoiceInterface が表示される（録音ボタンで確認）
-			await waitFor(() => {
-				expect(screen.getAllByRole("button", { name: /録音|マイク/ })[0]).toBeInTheDocument()
-			})
-		})
-
-		it("画像モード選択後、プレースホルダーが表示される", async () => {
-			const { TestWrapper } = createTestWrapper({ inputMode: null })
-			const user = userEvent.setup()
-
-			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
-
-			// セッション作成完了を待つ
-			await waitFor(() => {
-				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
-			})
-
-			// 画像モードを選択
-			const imageButton = screen.getByRole("button", { name: "写真で伝える" })
-			await user.click(imageButton)
-
-			// CameraInterfaceが表示される
+			// CameraInterfaceオーバーレイが表示される
 			await waitFor(() => {
 				expect(screen.getByText("しゅくだいのしゃしんをとろう！")).toBeInTheDocument()
 			})
 		})
 
-		it("音声モード選択後、InputModeSelector が非表示になる", async () => {
-			const { TestWrapper } = createTestWrapper({ inputMode: null })
+		it("オーバーレイの閉じるボタンでCameraInterfaceが非表示になる", async () => {
+			const { TestWrapper } = createTestWrapper()
 			const user = userEvent.setup()
 
 			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
 
 			// セッション作成完了を待つ
 			await waitFor(() => {
-				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
 			})
 
-			// 音声モードを選択
-			const voiceButton = screen.getByRole("button", { name: "声で伝える" })
-			await user.click(voiceButton)
+			// カメラボタンをタップしてオーバーレイを開く
+			const cameraButton = screen.getByRole("button", { name: "しゃしんをとる" })
+			await user.click(cameraButton)
 
-			// InputModeSelector が非表示になる
+			// オーバーレイが表示される
 			await waitFor(() => {
-				expect(screen.queryByText("どうやってつたえる？")).not.toBeInTheDocument()
-			})
-		})
-
-		it("画像モード選択後、InputModeSelector が非表示になる", async () => {
-			const { TestWrapper } = createTestWrapper({ inputMode: null })
-			const user = userEvent.setup()
-
-			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
-
-			// セッション作成完了を待つ
-			await waitFor(() => {
-				expect(screen.getByText("どうやってつたえる？")).toBeInTheDocument()
+				expect(screen.getByText("しゅくだいのしゃしんをとろう！")).toBeInTheDocument()
 			})
 
-			// 画像モードを選択
-			const imageButton = screen.getByRole("button", { name: "写真で伝える" })
-			await user.click(imageButton)
+			// 閉じるボタンをタップ
+			const closeButton = screen.getByRole("button", { name: "とじる" })
+			await user.click(closeButton)
 
-			// InputModeSelector が非表示になる
+			// CameraInterfaceが非表示になる
 			await waitFor(() => {
-				expect(screen.queryByText("どうやってつたえる？")).not.toBeInTheDocument()
+				expect(screen.queryByText("しゅくだいのしゃしんをとろう！")).not.toBeInTheDocument()
 			})
 		})
 	})

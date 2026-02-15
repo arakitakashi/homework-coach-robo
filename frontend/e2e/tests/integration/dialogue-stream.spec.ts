@@ -103,10 +103,6 @@ test.describe("Dialogue Stream (Integration)", () => {
 
 		await page.goto("/session?character=robot")
 
-		// InputModeSelectorで音声モードを選択
-		await expect(page.getByText("どうやってつたえる？")).toBeVisible({ timeout: 10_000 })
-		await page.getByRole("button", { name: "声で伝える" }).click()
-
 		// ウェルカムメッセージ表示（対話履歴内で確認）
 		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
 		await expect(dialogueLog.getByText("こんにちは！いっしょにがんばろうね！")).toBeVisible({
