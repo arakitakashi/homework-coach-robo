@@ -44,6 +44,7 @@ import type {
 	DialogueTurn,
 	EmotionAnalysis,
 	EmotionType,
+	HintLevel,
 	ImageAnalysisResult,
 	ToolExecution,
 	ToolExecutionStatus,
@@ -69,9 +70,9 @@ function createInitialDialogue(characterType: CharacterType): DialogueTurn {
 export function SessionContent({ characterType }: SessionContentProps) {
 	const router = useRouter()
 	const [dialogueTurns, setDialogueTurns] = useAtom(dialogueTurnsAtom)
-	const [hintLevel] = useAtom(hintLevelAtom)
+	const [hintLevel, setHintLevel] = useAtom(hintLevelAtom)
 	const [characterState, setCharacterState] = useAtom(characterStateAtom)
-	const [learningProgress] = useAtom(learningProgressAtom)
+	const [learningProgress, setLearningProgress] = useAtom(learningProgressAtom)
 	const [activeToolExecutions, setActiveToolExecutions] = useAtom(activeToolExecutionsAtom)
 	const [isToolRunning] = useAtom(isToolRunningAtom)
 	const [, _setActiveAgent] = useAtom(activeAgentAtom)
@@ -175,8 +176,30 @@ export function SessionContent({ characterType }: SessionContentProps) {
 				}
 				return [...prev, execution]
 			})
+
+			// ヒントレベル同期: manage_hint_tool完了時にhintLevelAtomを更新
+			if (toolName === "manage_hint_tool" && status === "completed" && result) {
+				const level = result.current_level
+				if (typeof level === "number" && level >= 0 && level <= 3) {
+					setHintLevel(level as HintLevel)
+				}
+			}
+
+			// 進捗ポイント同期: record_progress_tool完了時にlearningProgressAtomを更新
+			if (toolName === "record_progress_tool" && status === "completed" && result) {
+				const pointsEarned = result.points_earned
+				if (typeof pointsEarned === "number") {
+					setLearningProgress((prev) => {
+						if (pointsEarned === 3)
+							return { ...prev, selfDiscoveryCount: prev.selfDiscoveryCount + 1 }
+						if (pointsEarned === 2)
+							return { ...prev, hintDiscoveryCount: prev.hintDiscoveryCount + 1 }
+						return { ...prev, togetherCount: prev.togetherCount + 1 }
+					})
+				}
+			}
 		},
-		[setActiveToolExecutions],
+		[setActiveToolExecutions, setHintLevel, setLearningProgress],
 	)
 
 	// エージェント遷移イベントハンドラ

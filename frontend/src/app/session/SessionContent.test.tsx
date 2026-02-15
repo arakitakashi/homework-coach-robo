@@ -8,6 +8,7 @@ import { createStore, Provider } from "jotai"
 import { type ReactNode, useMemo } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { inputModeAtom } from "@/store/atoms/camera"
+import { hintLevelAtom } from "@/store/atoms/dialogue"
 import { gamificationStateAtom } from "@/store/atoms/gamification"
 import {
 	activeAgentAtom,
@@ -16,6 +17,7 @@ import {
 	emotionAnalysisAtom,
 	emotionHistoryAtom,
 } from "@/store/atoms/phase2"
+import { learningProgressAtom } from "@/store/atoms/session"
 import type { ToolExecution } from "@/types"
 import { SessionContent } from "./SessionContent"
 
@@ -931,6 +933,129 @@ describe("SessionContent", () => {
 			await waitFor(() => {
 				expect(screen.queryByText("どうやってつたえる？")).not.toBeInTheDocument()
 			})
+		})
+	})
+
+	describe("ツール実行結果のatom同期", () => {
+		it("manage_hint_tool completedでhintLevelAtomが更新される", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			// セッション作成完了を待つ
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			// 初期値は0
+			expect(store.get(hintLevelAtom)).toBe(0)
+
+			// manage_hint_tool completedイベントをシミュレート
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("manage_hint_tool", "completed", {
+					current_level: 2,
+					max_level: 3,
+					hint_template: "ヒント",
+					can_advance: true,
+					hints_used_total: 2,
+				})
+			})
+
+			// hintLevelAtomが更新される
+			expect(store.get(hintLevelAtom)).toBe(2)
+		})
+
+		it("record_progress_tool completedで3ポイント時にselfDiscoveryCountがインクリメントされる", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			// 初期値確認
+			expect(store.get(learningProgressAtom).selfDiscoveryCount).toBe(0)
+
+			// record_progress_tool completedイベント（3ポイント = 自分で気づいた）
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("record_progress_tool", "completed", {
+					points_earned: 3,
+					total_points: 3,
+					streak: 1,
+					achievement_unlocked: null,
+					encouragement_message: "すごい！",
+				})
+			})
+
+			expect(store.get(learningProgressAtom).selfDiscoveryCount).toBe(1)
+		})
+
+		it("record_progress_tool completedで2ポイント時にhintDiscoveryCountがインクリメントされる", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			expect(store.get(learningProgressAtom).hintDiscoveryCount).toBe(0)
+
+			// record_progress_tool completedイベント（2ポイント = ヒントで気づいた）
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("record_progress_tool", "completed", {
+					points_earned: 2,
+					total_points: 2,
+					streak: 1,
+					achievement_unlocked: null,
+					encouragement_message: "がんばった！",
+				})
+			})
+
+			expect(store.get(learningProgressAtom).hintDiscoveryCount).toBe(1)
+		})
+
+		it("record_progress_tool completedで1ポイント時にtogetherCountがインクリメントされる", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			expect(store.get(learningProgressAtom).togetherCount).toBe(0)
+
+			// record_progress_tool completedイベント（1ポイント = 一緒に解いた）
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("record_progress_tool", "completed", {
+					points_earned: 1,
+					total_points: 1,
+					streak: 1,
+					achievement_unlocked: null,
+					encouragement_message: "いっしょにできたね！",
+				})
+			})
+
+			expect(store.get(learningProgressAtom).togetherCount).toBe(1)
+		})
+
+		it("runningステータスではhintLevelAtomは更新されない", async () => {
+			const { store, TestWrapper } = createTestWrapper()
+
+			render(<SessionContent characterType="robot" />, { wrapper: TestWrapper })
+
+			await waitFor(() => {
+				expect(screen.getAllByPlaceholderText("ここにかいてね")[0]).toBeInTheDocument()
+			})
+
+			// runningステータスではatom更新しない
+			act(() => {
+				capturedVoiceStreamOptions.onToolExecution?.("manage_hint_tool", "running")
+			})
+
+			expect(store.get(hintLevelAtom)).toBe(0)
 		})
 	})
 })
