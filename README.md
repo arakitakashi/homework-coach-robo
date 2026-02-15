@@ -1,6 +1,260 @@
 ## 概要
 
+**宿題コーチロボット (Homework Coach Robot)** は、小学校低学年（1〜3年生）向けのリアルタイム音声アシスタントです。答えをすぐに教えるのではなく、ソクラテス式対話で子供が自分で考え、自分で気づくプロセスを支援します。
+
 開発を進めるうえで遵守すべき標準ルールを定義します。
+
+## アーキテクチャ
+
+### システム全体構成
+
+```mermaid
+graph TB
+  subgraph Client["クライアント (ブラウザ)"]
+    FE["Frontend<br/>Next.js 16 App Router<br/>Bun + TypeScript + Jotai"]
+  end
+
+  subgraph GCP["Google Cloud Platform"]
+    subgraph CloudRun["Cloud Run (asia-northeast1)"]
+      CR_FE["Cloud Run<br/>Frontend"]
+      CR_BE["Cloud Run<br/>Backend<br/>FastAPI + Python"]
+    end
+
+    subgraph ADKLayer["ADK エージェントレイヤー"]
+      AE["Vertex AI Agent Engine<br/>(us-central1)<br/>セッション・メモリ管理"]
+      LR["ローカル Runner<br/>(フォールバック)"]
+    end
+
+    subgraph AIServices["AI/ML サービス"]
+      GEMINI["Gemini Live API<br/>gemini-2.5-flash"]
+      STT["Cloud<br/>Speech-to-Text"]
+      TTS["Cloud<br/>Text-to-Speech"]
+      VISION["Gemini Vision /<br/>Cloud Vision API"]
+    end
+
+    subgraph DataLayer["データレイヤー"]
+      FS["Cloud Firestore<br/>アプリデータ<br/>(ユーザー・問題・カリキュラム)"]
+      BQ["BigQuery<br/>分析用データ"]
+      GCS["Cloud Storage<br/>アセット + Agent Engine"]
+    end
+
+    subgraph Security["セキュリティ"]
+      SM["Secret Manager"]
+      VPC["VPC ネットワーク"]
+      IAM["IAM / WIF"]
+    end
+  end
+
+  Client -- "HTTPS" --> CR_FE
+  CR_FE -- "WebSocket / REST" --> CR_BE
+  CR_BE -- "テキスト対話" --> AE
+  CR_BE -- "テキスト対話" --> LR
+  CR_BE -- "音声ストリーミング" --> GEMINI
+  AE --> GEMINI
+  LR --> GEMINI
+  CR_BE --> STT
+  CR_BE --> TTS
+  CR_BE --> VISION
+  CR_BE --> FS
+  CR_BE --> BQ
+  CR_BE --> GCS
+  CR_BE --> SM
+
+  style Client fill:#e1f5fe
+  style CloudRun fill:#fff3e0
+  style ADKLayer fill:#f3e5f5
+  style AIServices fill:#e8f5e9
+  style DataLayer fill:#fce4ec
+  style Security fill:#f5f5f5
+```
+
+### マルチエージェント構成 (ADK Phase 2)
+
+```mermaid
+graph TD
+  INPUT["子供の入力<br/>(音声 / テキスト / 画像)"]
+  ROUTER["Router Agent<br/>(AutoFlow委譲)<br/>tools: update_emotion"]
+
+  subgraph SubAgents["サブエージェント"]
+    MATH["🔢 Math Coach<br/>算数コーチ"]
+    JPN["📖 Japanese Coach<br/>国語コーチ"]
+    ENC["💪 Encouragement<br/>励まし"]
+    REV["📊 Review<br/>振り返り"]
+  end
+
+  subgraph Tools["ADK Function Tools"]
+    T_CALC["calculate_tool<br/>計算検証"]
+    T_HINT["manage_hint_tool<br/>ヒント段階管理"]
+    T_CURR["check_curriculum_tool<br/>カリキュラム参照"]
+    T_PROG["record_progress_tool<br/>進捗記録"]
+    T_IMG["analyze_image_tool<br/>画像分析"]
+    T_EMO["update_emotion_tool<br/>感情分析"]
+  end
+
+  INPUT --> ROUTER
+  ROUTER --> MATH
+  ROUTER --> JPN
+  ROUTER --> ENC
+  ROUTER --> REV
+  ROUTER --> T_EMO
+
+  MATH --> T_CALC
+  MATH --> T_HINT
+  MATH --> T_CURR
+  MATH --> T_PROG
+  MATH --> T_IMG
+
+  JPN --> T_HINT
+  JPN --> T_CURR
+  JPN --> T_PROG
+
+  ENC --> T_PROG
+
+  REV --> T_PROG
+
+  style ROUTER fill:#7e57c2,color:#fff
+  style MATH fill:#42a5f5,color:#fff
+  style JPN fill:#66bb6a,color:#fff
+  style ENC fill:#ffa726,color:#fff
+  style REV fill:#ef5350,color:#fff
+```
+
+### データフロー
+
+```mermaid
+sequenceDiagram
+  participant Child as 👧 子供
+  participant FE as Frontend<br/>(Next.js)
+  participant BE as Backend<br/>(FastAPI)
+  participant ADK as ADK Agent<br/>(Router)
+  participant AI as Gemini API
+  participant DB as Firestore /<br/>BigQuery
+
+  Note over Child,DB: 音声入力フロー (WebSocket)
+  Child->>FE: 🎤 音声入力
+  FE->>FE: Web Audio API<br/>PCM 16kHz 変換
+  FE->>BE: WebSocket<br/>audio_blob
+  BE->>AI: Gemini Live API<br/>(native audio)
+  AI-->>BE: audio_chunk / text_chunk
+  BE-->>FE: WebSocket event
+  FE-->>Child: 🔊 音声再生 + テキスト表示
+
+  Note over Child,DB: テキスト入力フロー (REST + SSE)
+  Child->>FE: ⌨️ テキスト入力
+  FE->>BE: POST /dialogue/run
+  BE->>ADK: Runner.run_async()
+  ADK->>AI: Gemini API
+  AI-->>ADK: テキスト生成
+  ADK-->>BE: agent_transition /<br/>tool_execution / text
+  BE-->>FE: SSE stream
+  FE-->>Child: 💬 対話テキスト表示
+
+  Note over Child,DB: 画像入力フロー (REST)
+  Child->>FE: 📷 写真撮影
+  FE->>BE: POST /vision/recognize<br/>(base64)
+  BE->>AI: Gemini Vision
+  AI-->>BE: 問題文抽出
+  BE->>DB: 進捗記録
+  BE-->>FE: { text, type, difficulty }
+  FE-->>Child: 📝 認識結果表示
+
+  Note over Child,DB: 3段階ヒントシステム
+  ADK->>ADK: Lv1: 問題理解の確認
+  ADK->>ADK: Lv2: 既習事項の想起
+  ADK->>ADK: Lv3: 部分的支援
+  ADK->>DB: 進捗・感情記録
+```
+
+### インフラストラクチャ (Terraform)
+
+```mermaid
+graph LR
+  subgraph Bootstrap["bootstrap/"]
+    STATE["GCS State Bucket"]
+    APIS["GCP API 有効化"]
+  end
+
+  subgraph Modules["modules/"]
+    M_VPC["vpc"]
+    M_IAM["iam"]
+    M_SM["secret_manager"]
+    M_FS["firestore"]
+    M_BQ["bigquery"]
+    M_GCS["cloud_storage"]
+    M_CR["cloud_run"]
+    M_WIF["github_wif"]
+    M_AE["agent_engine"]
+  end
+
+  subgraph Env["environments/dev/"]
+    MAIN["main.tf<br/>モジュール統合"]
+  end
+
+  MAIN --> M_VPC
+  MAIN --> M_IAM
+  MAIN --> M_SM
+  MAIN --> M_FS
+  MAIN --> M_BQ
+  MAIN --> M_GCS
+  MAIN --> M_CR
+  MAIN --> M_WIF
+  MAIN --> M_AE
+
+  M_CR -- "depends_on" --> M_VPC
+  M_CR -- "depends_on" --> M_IAM
+  M_CR -- "depends_on" --> M_SM
+  M_AE -- "depends_on" --> M_GCS
+  M_WIF -- "depends_on" --> M_IAM
+
+  style Bootstrap fill:#fff9c4
+  style Modules fill:#e3f2fd
+  style Env fill:#f1f8e9
+```
+
+### CI/CD パイプライン
+
+```mermaid
+graph TD
+  subgraph Trigger["トリガー"]
+    PR["Pull Request"]
+    PUSH["Push to main"]
+  end
+
+  subgraph CI["CI (Pull Request)"]
+    CI_BE["ci-backend.yml<br/>Ruff + mypy + pytest"]
+    CI_FE["ci-frontend.yml<br/>Biome + tsc + Vitest"]
+    CI_E2E["ci-e2e.yml<br/>Docker Compose + Playwright"]
+  end
+
+  subgraph CD["CD (Push to main)"]
+    CD_BE["deploy-backend<br/>Docker Build → Cloud Run"]
+    CD_AE["deploy-agent-engine<br/>GCS Upload → Agent Engine 更新"]
+    CD_FE["deploy-frontend<br/>Docker Build → Cloud Run"]
+  end
+
+  subgraph Infra["インフラ"]
+    AR["Artifact Registry"]
+    CR_B["Cloud Run<br/>(Backend)"]
+    CR_F["Cloud Run<br/>(Frontend)"]
+    GCS_AE["Cloud Storage<br/>(Agent Engine)"]
+    AE["Agent Engine"]
+  end
+
+  PR --> CI_BE
+  PR --> CI_FE
+  PR --> CI_E2E
+  PUSH --> CD_BE
+  PUSH --> CD_AE
+  PUSH --> CD_FE
+
+  CD_BE --> AR --> CR_B
+  CD_AE --> GCS_AE --> AE
+  CD_FE --> AR --> CR_F
+
+  style CI fill:#e3f2fd
+  style CD fill:#e8f5e9
+  style Infra fill:#fff3e0
+```
 
 ## ローカル開発環境（Docker）
 
