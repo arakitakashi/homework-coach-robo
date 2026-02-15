@@ -15,6 +15,9 @@ dependencies = [
     "firebase-admin>=6.0.0",
     "google-cloud-firestore>=2.0.0",
     "google-cloud-storage>=2.14.0",
+    "google-cloud-bigquery>=3.10.0",
+    "structlog>=24.0.0",
+    "tenacity>=8.0.0",
     "python-magic>=0.4.27",
     "Pillow>=10.2.0",
 ]

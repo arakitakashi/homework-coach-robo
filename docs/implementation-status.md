@@ -2,7 +2,7 @@
 
 このドキュメントは、宿題コーチロボットの実装済み機能の詳細を記録します。
 
-**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了・学習プロファイル表示コンポーネント（Issue #66）実装完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了
+**プロジェクトステータス**: MVP実装完了・Phase 2d（感情適応）実装完了・Phase 3（Agent Engine デプロイ基盤）実装完了・Phase 2 フロントエンドWebSocketハンドラ統合完了・Phase 2b エージェント切り替えUI実装完了・Phase 2d 感情適応UIコンポーネント実装完了・Phase 2 Backend WebSocketイベント送信実装完了・CI/CD Agent Engineアーティファクト自動デプロイ + Agent Engine自動更新実装完了・Phase 2 対話履歴拡張表示（Issue #67）実装完了・Agent Engine プロキシ同期メソッド対応（Issue #133）完了・学習プロファイル表示コンポーネント（Issue #66）実装完了・Cloud Storage画像保存統合（Phase 1-4, 6, 8実装完了、Issue #151）・カメラインターフェース（Issue #153）実装完了・セッションページ画像アップロード機能統合基盤（Issue #154）実装完了・BigQuery学習データ永続化機能（Phase 1-3: スキーマ・サービス実装完了、Issue #164部分完了）
 
 ---
 
@@ -52,6 +52,7 @@
 - **学習プロファイル表示コンポーネント (Issue #66)**: LearningProfile・ProfileSummary・SubjectCard・TrendBadgeの4コンポーネント実装、Jotai `learningProfileAtom`連携、既存`ThinkingTendenciesDisplay`再利用、33の新規テスト追加（全550テスト、52テストファイル）
 - **Cloud Storage画像保存統合 (Issue #151, Phase 1-4, 6, 8)**: StorageServiceインターフェース、MockStorageService（テスト用）、CloudStorageService（本番用）を実装。画像バリデーション（最大10MB、JPEG/PNG/WebP）、GCSアップロード、Signed URL生成（有効期限1時間）、DI設定（E2E_MODE環境変数）、40新規テスト（スキーマ14 + 例外8 + Mock 14 + CloudStorage 12）、全659テストパス
 - **フロントエンド カメラインターフェース (Issue #153)**: `CameraInterface`コンポーネント + `useCameraCapture`フック + `VisionClient` APIクライアント + Jotai `cameraAtoms`状態管理。カメラ撮影・ファイルアップロード・画像認識API連携・6状態UI（initial/active/preview/processing/recognized/error）を実装。新規ファイル: `types/vision.ts`, `lib/api/visionClient.ts`, `store/atoms/camera.ts`, `components/features/CameraInterface/`（CameraInterface.tsx, CameraPreview.tsx, useCameraCapture.ts, index.ts, CameraInterface.test.tsx）。46新規テスト追加（全596テスト、55テストファイル）
+- **BigQuery学習データ永続化機能 (Phase 1-3, Issue #164部分完了)**: Pydanticスキーマ（`DialogueSessionBQ`, `LearningHistoryBQ`, `LearningProfileSnapshotBQ`）、`BigQueryDataService`クラス（`save_session_data`, `get_user_learning_history`, `get_user_stats`）、リトライロジック（exponential backoff、最大3回）、構造化ログ出力、カスタム例外（`BigQuerySaveError`, `BigQueryQueryError`）を実装。MockBigQueryDataService（E2E/テスト用）も実装。新規ファイル: `schemas/bigquery_data.py`, `services/bigquery_data_service.py`, `tests/unit/schemas/test_bigquery_data.py`, `tests/unit/services/test_bigquery_data_service.py`。23新規テスト追加（スキーマ14テスト + サービス9テスト）。セッション終了時の統合（Phase 4）は今後の作業
 
 ---
 
@@ -972,3 +973,4 @@ GCPプロジェクト `homework-coach-robo` にデプロイ済み。
 | `.steering/20260214-learning-profile-component/` | 学習プロファイル表示コンポーネント（Issue #66）|
 | `.steering/20260214-cloud-storage-integration/` | Cloud Storage画像保存統合（Issue #151: Phase 1-4, 6, 8実装完了） |
 | `.steering/20260214-camera-interface/` | フロントエンド カメラインターフェース（Issue #153: カメラ撮影・ファイルアップロード・画像認識） |
+| `.steering/20260215-bigquery-learning-data-persistence/` | BigQuery学習データ永続化機能（Phase 1-3: スキーマ・サービス実装完了、Issue #164部分完了） |
