@@ -71,7 +71,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Frontend**: Next.js 16 (App Router) + Bun + Biome
 - **Backend**: FastAPI + Python 3.10+ + uv + Ruff
 - **Infrastructure**: Google Cloud Run
-- **Database**: Cloud Firestore (リアルタイムデータ), BigQuery (分析用データ)
+- **Database**: Cloud Firestore (アプリケーションデータ: ユーザー・問題・カリキュラム), BigQuery (分析用データ)
 - **Session Management**: Vertex AI / ADK SessionService
 - **AI/ML**: Google ADK + Gemini Live API
 - **STT**: Cloud Speech-to-Text API

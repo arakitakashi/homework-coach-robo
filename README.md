@@ -21,7 +21,7 @@ graph TB
     end
 
     subgraph ADKLayer["ADK エージェントレイヤー"]
-      AE["Vertex AI<br/>Agent Engine<br/>(us-central1)"]
+      AE["Vertex AI Agent Engine<br/>(us-central1)<br/>セッション・メモリ管理"]
       LR["ローカル Runner<br/>(フォールバック)"]
     end
 
@@ -33,7 +33,7 @@ graph TB
     end
 
     subgraph DataLayer["データレイヤー"]
-      FS["Cloud Firestore<br/>リアルタイムデータ"]
+      FS["Cloud Firestore<br/>アプリデータ<br/>(ユーザー・問題・カリキュラム)"]
       BQ["BigQuery<br/>分析用データ"]
       GCS["Cloud Storage<br/>アセット + Agent Engine"]
     end
@@ -183,7 +183,6 @@ graph LR
     M_GCS["cloud_storage"]
     M_CR["cloud_run"]
     M_WIF["github_wif"]
-    M_REDIS["redis"]
     M_AE["agent_engine"]
   end
 
@@ -199,7 +198,6 @@ graph LR
   MAIN --> M_GCS
   MAIN --> M_CR
   MAIN --> M_WIF
-  MAIN --> M_REDIS
   MAIN --> M_AE
 
   M_CR -- "depends_on" --> M_VPC
