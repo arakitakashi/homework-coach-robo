@@ -1,5 +1,5 @@
 import { expect, test } from "../../fixtures/base"
-import { HOME, INPUT_MODE_SELECTOR, SESSION } from "../../helpers/selectors"
+import { HOME, SESSION } from "../../helpers/selectors"
 
 test.describe("Navigation", () => {
 	test("navigates from home to session page", async ({ page, mockAPI }) => {
@@ -14,10 +14,6 @@ test.describe("Navigation", () => {
 		// セッションページに遷移
 		await page.waitForURL("**/session?character=robot")
 
-		// InputModeSelectorで音声モードを選択
-		await expect(page.getByText(INPUT_MODE_SELECTOR.title)).toBeVisible({ timeout: 10_000 })
-		await page.getByRole("button", { name: INPUT_MODE_SELECTOR.voiceButton }).click()
-
 		// セッションUIが表示される（ローディング→メインUI、対話履歴内で確認）
 		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
 		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
@@ -27,10 +23,6 @@ test.describe("Navigation", () => {
 		await mockAPI.mockAllSessionAPIs()
 
 		await page.goto("/session?character=robot")
-
-		// InputModeSelectorで音声モードを選択
-		await expect(page.getByText(INPUT_MODE_SELECTOR.title)).toBeVisible({ timeout: 10_000 })
-		await page.getByRole("button", { name: INPUT_MODE_SELECTOR.voiceButton }).click()
 
 		// メインUIが表示される（対話履歴内で確認）
 		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
@@ -44,10 +36,6 @@ test.describe("Navigation", () => {
 		await mockAPI.mockAllSessionAPIs()
 
 		await page.goto("/session?character=robot")
-
-		// InputModeSelectorで音声モードを選択
-		await expect(page.getByText(INPUT_MODE_SELECTOR.title)).toBeVisible({ timeout: 10_000 })
-		await page.getByRole("button", { name: INPUT_MODE_SELECTOR.voiceButton }).click()
 
 		const dialogueLog = page.getByRole("log", { name: "対話履歴" })
 		await expect(dialogueLog.getByText(SESSION.welcomeMessage)).toBeVisible({ timeout: 10_000 })
