@@ -12,7 +12,6 @@ import {
 	DialogueHistory,
 	EmotionIndicator,
 	HintIndicator,
-	InputModeSelector,
 	PointDisplay,
 	ProgressDisplay,
 	StoryProgress,
@@ -80,6 +79,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [, _setEmotionAnalysis] = useAtom(emotionAnalysisAtom)
 	const [, _setEmotionHistory] = useAtom(emotionHistoryAtom)
 	const [inputMode, setInputMode] = useAtom(inputModeAtom)
+
+	// カメラオーバーレイ表示状態
+	const [showCamera, setShowCamera] = useState(false)
 
 	// 音声入力の有効化状態
 	const [isVoiceEnabled] = useState(true)
@@ -298,7 +300,6 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	})
 
 	// 画像問題認識完了ハンドラ
-	// biome-ignore lint/correctness/noUnusedVariables: 早期リターン後に使用されるが、フックルールのため早期リターン前に定義
 	const handleProblemRecognized = useCallback(
 		(recognizedText: string, result: ImageAnalysisResult) => {
 			// sendImageStartを呼び出してWebSocket経由でバックエンドに送信
@@ -313,6 +314,8 @@ export function SessionContent({ characterType }: SessionContentProps) {
 					},
 				)
 			}
+			// オーバーレイを閉じる
+			setShowCamera(false)
 		},
 		[session, sendImageStart],
 	)
@@ -336,8 +339,12 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		if (session) {
 			initPlayer()
 			voiceConnect(session.userId || "anonymous", session.id)
+			// 入力モードが未設定の場合は音声モードをデフォルトに設定
+			if (inputMode === null) {
+				setInputMode("voice")
+			}
 		}
-	}, [session, initPlayer, voiceConnect])
+	}, [session, initPlayer, voiceConnect, inputMode, setInputMode])
 
 	// コンポーネントアンマウント時のクリーンアップ処理
 	useEffect(() => {
@@ -419,25 +426,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		)
 	}
 
-	// セッション作成完了後、モード未選択の場合は InputModeSelector を表示
-	if (session && inputMode === null) {
-		return (
-			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 p-4">
-				<InputModeSelector onModeSelect={setInputMode} />
-			</main>
-		)
-	}
-
-	// 画像モード選択時のCameraInterface表示
-	if (session && inputMode === "image") {
-		return (
-			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 p-4">
-				<CameraInterface onProblemRecognized={handleProblemRecognized} />
-			</main>
-		)
-	}
-
-	// セッションが存在し、音声モードが選択された場合のメインUI
+	// セッションが存在する場合のメインUI
 	const isConnected = !!session
 	const isVoiceConnected = isVoiceEnabled && voiceConnectionState === "connected"
 
@@ -445,6 +434,18 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		<>
 			{/* バッジ通知（フロート表示） */}
 			<BadgeNotification />
+
+			{/* カメラオーバーレイ */}
+			{showCamera && (
+				<div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50">
+					<div className="mb-4 flex w-full max-w-lg justify-end px-4">
+						<Button variant="secondary" size="medium" onClick={() => setShowCamera(false)}>
+							とじる
+						</Button>
+					</div>
+					<CameraInterface onProblemRecognized={handleProblemRecognized} />
+				</div>
+			)}
 
 			<main className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-purple-50 md:grid md:grid-cols-[280px_1fr] md:grid-rows-[auto_1fr] lg:grid-cols-[360px_1fr]">
 				{/* ヘッダー */}
@@ -597,6 +598,16 @@ export function SessionContent({ characterType }: SessionContentProps) {
 					)}
 				</section>
 			</main>
+
+			{/* フローティングカメラボタン */}
+			<button
+				type="button"
+				aria-label="しゃしんをとる"
+				className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-2xl text-white shadow-lg transition-colors hover:bg-green-600 active:bg-green-700"
+				onClick={() => setShowCamera(true)}
+			>
+				📷
+			</button>
 		</>
 	)
 }
