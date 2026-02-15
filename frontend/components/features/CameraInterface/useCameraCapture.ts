@@ -157,11 +157,10 @@ export function useCameraCapture(): UseCameraCaptureReturn {
 		try {
 			// Base64データ部分のみ抽出（data:image/jpeg;base64, を除去）
 			const base64Data = capturedImage.split(",")[1] || capturedImage
-			const mimeType = capturedImage.match(/data:(.*?);/)?.[1] || "image/jpeg"
 
 			const result = await visionClientRef.current.recognizeImage({
-				imageData: base64Data,
-				mimeType,
+				image: base64Data,
+				recognition_type: "homework_problem",
 			})
 
 			setRecognitionResult(result)

@@ -50,12 +50,13 @@ export function CameraInterface({ onProblemRecognized }: CameraInterfaceProps) {
 
 	/** 問題文確定ハンドラ */
 	const onConfirmProblem = () => {
-		if (recognitionResult && onProblemRecognized) {
-			onProblemRecognized(recognitionResult.recognizedText, {
-				recognizedText: recognitionResult.recognizedText,
-				problemType: recognitionResult.problemType,
+		if (recognitionResult && recognitionResult.problems.length > 0 && onProblemRecognized) {
+			const firstProblem = recognitionResult.problems[0]
+			onProblemRecognized(firstProblem.text, {
+				recognizedText: firstProblem.text,
+				problemType: firstProblem.type,
 				confidence: recognitionResult.confidence,
-				extractedExpression: recognitionResult.extractedExpression,
+				extractedExpression: firstProblem.expression,
 			})
 		}
 	}
@@ -164,11 +165,11 @@ export function CameraInterface({ onProblemRecognized }: CameraInterfaceProps) {
 			)}
 
 			{/* recognized 状態: 認識結果表示 */}
-			{status === "recognized" && recognitionResult && (
+			{status === "recognized" && recognitionResult && recognitionResult.problems.length > 0 && (
 				<div className="flex flex-col items-center gap-4">
 					<div className="w-full max-w-[500px] rounded-xl bg-green-50 p-4">
 						<p className="mb-2 text-sm font-bold text-green-700">よみとったもんだい:</p>
-						<p className="text-xl font-bold text-gray-800">{recognitionResult.recognizedText}</p>
+						<p className="text-xl font-bold text-gray-800">{recognitionResult.problems[0].text}</p>
 					</div>
 
 					<div className="flex gap-4">

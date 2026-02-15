@@ -269,9 +269,17 @@ describe("useCameraCapture", () => {
 		it("成功時に status が recognized になる", async () => {
 			mockGetUserMedia.mockResolvedValue(mockStream)
 			mockRecognizeImage.mockResolvedValue({
-				recognizedText: "1 + 2 = ?",
-				problemType: "math",
+				success: true,
+				problems: [
+					{
+						text: "1 + 2 = ?",
+						type: "arithmetic",
+						difficulty: 1,
+						expression: "1 + 2",
+					},
+				],
 				confidence: 0.95,
+				needs_confirmation: false,
 			})
 
 			const { result } = renderHook(() => useCameraCapture())
@@ -294,9 +302,17 @@ describe("useCameraCapture", () => {
 
 			expect(result.current.status).toBe("recognized")
 			expect(result.current.recognitionResult).toEqual({
-				recognizedText: "1 + 2 = ?",
-				problemType: "math",
+				success: true,
+				problems: [
+					{
+						text: "1 + 2 = ?",
+						type: "arithmetic",
+						difficulty: 1,
+						expression: "1 + 2",
+					},
+				],
 				confidence: 0.95,
+				needs_confirmation: false,
 			})
 		})
 

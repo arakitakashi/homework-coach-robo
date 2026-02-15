@@ -37,9 +37,25 @@ export interface CameraError {
  */
 export interface ImageRecognitionRequest {
 	/** Base64エンコードされた画像データ */
-	imageData: string
-	/** MIMEタイプ（例: "image/jpeg"） */
-	mimeType: string
+	image: string
+	/** 認識タイプ */
+	recognition_type?: "homework_problem" | "handwriting" | "diagram"
+	/** 予想される教科 */
+	expected_subject?: string
+}
+
+/**
+ * 認識された問題の詳細
+ */
+export interface ProblemDetail {
+	/** 問題文のテキスト */
+	text: string
+	/** 問題タイプ（arithmetic, word_problem, kanji, reading, other） */
+	type: string
+	/** 難易度 */
+	difficulty: number
+	/** 計算式（算数の場合のみ） */
+	expression?: string
 }
 
 /**
@@ -47,12 +63,12 @@ export interface ImageRecognitionRequest {
  * バックエンドから返される認識結果
  */
 export interface ImageRecognitionResponse {
-	/** 認識されたテキスト */
-	recognizedText: string
-	/** 問題タイプ（算数、国語など） */
-	problemType?: string
+	/** 認識成功フラグ */
+	success: boolean
+	/** 認識された問題リスト */
+	problems: ProblemDetail[]
 	/** 認識の確信度（0〜1） */
 	confidence: number
-	/** 抽出された数式 */
-	extractedExpression?: string
+	/** 子供に確認が必要かどうか */
+	needs_confirmation: boolean
 }

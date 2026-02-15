@@ -37,15 +37,22 @@ describe("VisionClient", () => {
 
 	describe("recognizeImage", () => {
 		const mockRequest = {
-			imageData: "base64encodeddata",
-			mimeType: "image/jpeg",
+			image: "base64encodeddata",
+			recognition_type: "homework_problem" as const,
 		}
 
 		const mockResponse = {
-			recognizedText: "1 + 2 = ?",
-			problemType: "math",
+			success: true,
+			problems: [
+				{
+					text: "1 + 2 = ?",
+					type: "arithmetic",
+					difficulty: 1,
+					expression: "1 + 2",
+				},
+			],
 			confidence: 0.95,
-			extractedExpression: "1 + 2",
+			needs_confirmation: false,
 		}
 
 		it("正しいエンドポイントにPOSTリクエストを送信する", async () => {

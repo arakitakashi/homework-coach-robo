@@ -149,9 +149,17 @@ describe("CameraInterface", () => {
 				...defaultMockReturn,
 				status: "recognized",
 				recognitionResult: {
-					recognizedText: "1 + 2 = ?",
-					problemType: "math",
+					success: true,
+					problems: [
+						{
+							text: "1 + 2 = ?",
+							type: "arithmetic",
+							difficulty: 1,
+							expression: "1 + 2",
+						},
+					],
 					confidence: 0.95,
+					needs_confirmation: false,
 				},
 			}
 		})
@@ -177,8 +185,9 @@ describe("CameraInterface", () => {
 
 			expect(mockCallback).toHaveBeenCalledWith("1 + 2 = ?", {
 				recognizedText: "1 + 2 = ?",
-				problemType: "math",
+				problemType: "arithmetic",
 				confidence: 0.95,
+				extractedExpression: "1 + 2",
 			})
 		})
 	})
