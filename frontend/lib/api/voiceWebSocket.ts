@@ -73,12 +73,16 @@ export class VoiceWebSocketClient {
 	 * @param imageUrl - アップロード済み画像URL
 	 * @param problemType - 問題タイプ（optional）
 	 * @param metadata - 追加メタデータ（optional）
+	 * @param problemIndex - 0ベースの問題インデックス（複数問題時、optional）
+	 * @param totalProblems - 全問題数（複数問題時、optional）
 	 */
 	sendImageStart(
 		problemText: string,
 		imageUrl: string,
 		problemType?: string,
 		metadata?: Record<string, unknown>,
+		problemIndex?: number,
+		totalProblems?: number,
 	): void {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			const message = JSON.stringify({
@@ -88,6 +92,8 @@ export class VoiceWebSocketClient {
 					image_url: imageUrl,
 					...(problemType && { problem_type: problemType }),
 					...(metadata && { metadata }),
+					...(problemIndex !== undefined && { problem_index: problemIndex }),
+					...(totalProblems !== undefined && { total_problems: totalProblems }),
 				},
 			})
 			this.ws.send(message)

@@ -10,13 +10,15 @@
 
 "use client"
 
-import type { ImageAnalysisResult } from "@/types"
+import type { ImageAnalysisResult, ImageRecognitionResponse } from "@/types"
 import { useCameraCapture } from "./useCameraCapture"
 
 /** CameraInterface のprops */
 interface CameraInterfaceProps {
-	/** 問題文認識完了時のコールバック */
+	/** 問題文認識完了時のコールバック（単一問題・後方互換） */
 	onProblemRecognized?: (recognizedText: string, result: ImageAnalysisResult) => void
+	/** 認識完了時のコールバック（全問題を返す・複数問題対応） */
+	onRecognitionComplete?: (result: ImageRecognitionResponse) => void
 }
 
 /**
@@ -25,7 +27,10 @@ interface CameraInterfaceProps {
  * カメラ撮影またはファイルアップロードで宿題プリントの画像を取得し、
  * 画像認識APIで問題文を抽出する。
  */
-export function CameraInterface({ onProblemRecognized }: CameraInterfaceProps) {
+export function CameraInterface({
+	onProblemRecognized,
+	onRecognitionComplete,
+}: CameraInterfaceProps) {
 	const {
 		status,
 		error,
@@ -48,7 +53,7 @@ export function CameraInterface({ onProblemRecognized }: CameraInterfaceProps) {
 		}
 	}
 
-	/** 問題文確定ハンドラ */
+	/** 問題文確定ハンドラ（単一問題・後方互換） */
 	const onConfirmProblem = () => {
 		if (recognitionResult && recognitionResult.problems.length > 0 && onProblemRecognized) {
 			const firstProblem = recognitionResult.problems[0]
@@ -58,6 +63,13 @@ export function CameraInterface({ onProblemRecognized }: CameraInterfaceProps) {
 				confidence: recognitionResult.confidence,
 				extractedExpression: firstProblem.expression,
 			})
+		}
+	}
+
+	/** 全問題選択へ進むハンドラ */
+	const onSelectProblems = () => {
+		if (recognitionResult && onRecognitionComplete) {
+			onRecognitionComplete(recognitionResult)
 		}
 	}
 
@@ -167,30 +179,77 @@ export function CameraInterface({ onProblemRecognized }: CameraInterfaceProps) {
 			{/* recognized 状態: 認識結果表示 */}
 			{status === "recognized" && recognitionResult && recognitionResult.problems.length > 0 && (
 				<div className="flex flex-col items-center gap-4">
-					<div className="w-full max-w-[500px] rounded-xl bg-green-50 p-4">
-						<p className="mb-2 text-sm font-bold text-green-700">よみとったもんだい:</p>
-						<p className="text-xl font-bold text-gray-800">{recognitionResult.problems[0].text}</p>
-					</div>
+					{onRecognitionComplete ? (
+						<>
+							{/* 複数問題対応UI: 問題数サマリー + 選択へ進むボタン */}
+							<div className="w-full max-w-[500px] rounded-xl bg-green-50 p-4">
+								<p className="mb-2 text-sm font-bold text-green-700">よみとったもんだい:</p>
+								<p className="text-xl font-bold text-gray-800">
+									{recognitionResult.problems.length} もん みつけたよ！
+								</p>
+								<ul className="mt-2 space-y-1">
+									{recognitionResult.problems.map((problem, i) => (
+										<li
+											key={`preview-${problem.text.slice(0, 10)}-${i}`}
+											className="text-sm text-gray-600"
+										>
+											{i + 1}. {problem.text}
+										</li>
+									))}
+								</ul>
+							</div>
 
-					<div className="flex gap-4">
-						<button
-							type="button"
-							aria-label="とりなおす"
-							className="min-h-[48px] rounded-2xl bg-gray-400 px-6 py-3 text-lg font-bold text-white shadow hover:bg-gray-500"
-							onClick={retake}
-						>
-							とりなおす
-						</button>
+							<div className="flex gap-4">
+								<button
+									type="button"
+									aria-label="とりなおす"
+									className="min-h-[48px] rounded-2xl bg-gray-400 px-6 py-3 text-lg font-bold text-white shadow hover:bg-gray-500"
+									onClick={retake}
+								>
+									とりなおす
+								</button>
 
-						<button
-							type="button"
-							aria-label="このもんだいでべんきょうする"
-							className="min-h-[48px] rounded-2xl bg-green-500 px-6 py-3 text-lg font-bold text-white shadow-lg hover:bg-green-600"
-							onClick={onConfirmProblem}
-						>
-							このもんだいでべんきょうする
-						</button>
-					</div>
+								<button
+									type="button"
+									aria-label="もんだいをえらぶ"
+									className="min-h-[48px] rounded-2xl bg-green-500 px-6 py-3 text-lg font-bold text-white shadow-lg hover:bg-green-600"
+									onClick={onSelectProblems}
+								>
+									もんだいをえらぶ
+								</button>
+							</div>
+						</>
+					) : (
+						<>
+							{/* 従来の単一問題UI（後方互換） */}
+							<div className="w-full max-w-[500px] rounded-xl bg-green-50 p-4">
+								<p className="mb-2 text-sm font-bold text-green-700">よみとったもんだい:</p>
+								<p className="text-xl font-bold text-gray-800">
+									{recognitionResult.problems[0].text}
+								</p>
+							</div>
+
+							<div className="flex gap-4">
+								<button
+									type="button"
+									aria-label="とりなおす"
+									className="min-h-[48px] rounded-2xl bg-gray-400 px-6 py-3 text-lg font-bold text-white shadow hover:bg-gray-500"
+									onClick={retake}
+								>
+									とりなおす
+								</button>
+
+								<button
+									type="button"
+									aria-label="このもんだいでべんきょうする"
+									className="min-h-[48px] rounded-2xl bg-green-500 px-6 py-3 text-lg font-bold text-white shadow-lg hover:bg-green-600"
+									onClick={onConfirmProblem}
+								>
+									このもんだいでべんきょうする
+								</button>
+							</div>
+						</>
+					)}
 				</div>
 			)}
 

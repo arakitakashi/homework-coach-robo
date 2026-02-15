@@ -73,6 +73,10 @@ export interface StartWithImageMessage {
 		problem_type?: string
 		image_url: string
 		metadata?: Record<string, unknown>
+		/** 0ベースの問題インデックス（複数問題時） */
+		problem_index?: number
+		/** 全問題数（複数問題時） */
+		total_problems?: number
 	}
 }
 

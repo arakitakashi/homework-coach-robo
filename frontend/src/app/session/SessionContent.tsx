@@ -13,6 +13,7 @@ import {
 	EmotionIndicator,
 	HintIndicator,
 	PointDisplay,
+	ProblemSelector,
 	ProgressDisplay,
 	StoryProgress,
 	ToolExecutionDisplay,
@@ -26,6 +27,12 @@ import { TextInput } from "@/components/ui/TextInput"
 import { useDialogue, usePcmPlayer, useSession, useVoiceStream } from "@/lib/hooks"
 import { inputModeAtom } from "@/store/atoms/camera"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
+import type { ProblemState } from "@/store/atoms/multiProblem"
+import {
+	currentProblemIndexAtom,
+	showProblemSelectorAtom,
+	worksheetProblemsAtom,
+} from "@/store/atoms/multiProblem"
 import {
 	activeAgentAtom,
 	activeToolExecutionsAtom,
@@ -44,7 +51,7 @@ import type {
 	EmotionAnalysis,
 	EmotionType,
 	HintLevel,
-	ImageAnalysisResult,
+	ImageRecognitionResponse,
 	ToolExecution,
 	ToolExecutionStatus,
 	ToolName,
@@ -79,6 +86,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [, _setEmotionAnalysis] = useAtom(emotionAnalysisAtom)
 	const [, _setEmotionHistory] = useAtom(emotionHistoryAtom)
 	const [inputMode, setInputMode] = useAtom(inputModeAtom)
+	const [worksheetProblems, setWorksheetProblems] = useAtom(worksheetProblemsAtom)
+	const [currentProblemIndex, setCurrentProblemIndex] = useAtom(currentProblemIndexAtom)
+	const [showProblemSelector, setShowProblemSelector] = useAtom(showProblemSelectorAtom)
 
 	// カメラオーバーレイ表示状態
 	const [showCamera, setShowCamera] = useState(false)
@@ -199,9 +209,23 @@ export function SessionContent({ characterType }: SessionContentProps) {
 						return { ...prev, togetherCount: prev.togetherCount + 1 }
 					})
 				}
+
+				// 複数問題モード: 現在の問題を完了に更新
+				setWorksheetProblems((prev) => {
+					if (currentProblemIndex === null) return prev
+					return prev.map((p, i) =>
+						i === currentProblemIndex ? { ...p, status: "completed" as const } : p,
+					)
+				})
 			}
 		},
-		[setActiveToolExecutions, setHintLevel, setLearningProgress],
+		[
+			setActiveToolExecutions,
+			setHintLevel,
+			setLearningProgress,
+			setWorksheetProblems,
+			currentProblemIndex,
+		],
 	)
 
 	// エージェント遷移イベントハンドラ
@@ -299,26 +323,78 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		onImageRecognitionError: handleImageRecognitionError,
 	})
 
-	// 画像問題認識完了ハンドラ
-	const handleProblemRecognized = useCallback(
-		(recognizedText: string, result: ImageAnalysisResult) => {
-			// sendImageStartを呼び出してWebSocket経由でバックエンドに送信
+	// 画像認識完了ハンドラ（複数問題対応）
+	const handleRecognitionComplete = useCallback(
+		(result: ImageRecognitionResponse) => {
+			// 全問題をatomにセット
+			const problemStates: ProblemState[] = result.problems.map((problem, i) => ({
+				id: `problem-${Date.now()}-${i}`,
+				problem,
+				status: "pending" as const,
+			}))
+			setWorksheetProblems(problemStates)
+			setCurrentProblemIndex(null)
+			// カメラを閉じてProblemSelectorを表示
+			setShowCamera(false)
+			setShowProblemSelector(true)
+		},
+		[setWorksheetProblems, setCurrentProblemIndex, setShowProblemSelector],
+	)
+
+	// 問題選択ハンドラ（ProblemSelectorから呼ばれる）
+	const handleProblemSelect = useCallback(
+		(index: number) => {
+			const problems = worksheetProblems
+			if (index < 0 || index >= problems.length) return
+
+			const selected = problems[index]
+			// 問題のステータスをin_progressに更新
+			setWorksheetProblems((prev) =>
+				prev.map((p, i) => (i === index ? { ...p, status: "in_progress" as const } : p)),
+			)
+			setCurrentProblemIndex(index)
+			setShowProblemSelector(false)
+
+			// WebSocket経由でバックエンドに送信
 			if (session) {
 				sendImageStart(
-					recognizedText,
+					selected.problem.text,
 					"", // imageUrl: バックエンドが既に保存している想定
-					result.problemType,
+					selected.problem.type,
 					{
-						confidence: result.confidence,
-						extractedExpression: result.extractedExpression,
+						confidence: 0.9,
+						extractedExpression: selected.problem.expression,
 					},
+					index,
+					problems.length,
 				)
 			}
-			// オーバーレイを閉じる
-			setShowCamera(false)
+			// 音声モードに切り替え
+			setInputMode("voice")
 		},
-		[session, sendImageStart],
+		[
+			worksheetProblems,
+			setWorksheetProblems,
+			setCurrentProblemIndex,
+			setShowProblemSelector,
+			session,
+			sendImageStart,
+			setInputMode,
+		],
 	)
+
+	// 問題リストに戻るハンドラ
+	const handleReturnToProblemList = useCallback(() => {
+		setShowProblemSelector(true)
+	}, [setShowProblemSelector])
+
+	// 撮り直しハンドラ（ProblemSelectorから）
+	const handleRetakeFromSelector = useCallback(() => {
+		setShowProblemSelector(false)
+		setWorksheetProblems([])
+		setCurrentProblemIndex(null)
+		setShowCamera(true)
+	}, [setShowProblemSelector, setWorksheetProblems, setCurrentProblemIndex])
 
 	// 初期化時にセッションを作成
 	useEffect(() => {
@@ -358,6 +434,10 @@ export function SessionContent({ characterType }: SessionContentProps) {
 			_setAgentTransitionHistory([])
 			_setEmotionAnalysis(null)
 			_setEmotionHistory([])
+			// 複数問題関連atomsもリセット
+			setWorksheetProblems([])
+			setCurrentProblemIndex(null)
+			setShowProblemSelector(false)
 		}
 	}, [
 		setDialogueTurns,
@@ -367,6 +447,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		_setAgentTransitionHistory,
 		_setEmotionAnalysis,
 		_setEmotionHistory,
+		setWorksheetProblems,
+		setCurrentProblemIndex,
+		setShowProblemSelector,
 	])
 
 	const handleEndSession = useCallback(async () => {
@@ -374,8 +457,21 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		cleanupPlayer()
 		await clearSession()
 		setInputMode(null) // 入力モードをリセット
+		// 複数問題関連atomsもリセット
+		setWorksheetProblems([])
+		setCurrentProblemIndex(null)
+		setShowProblemSelector(false)
 		router.push("/")
-	}, [voiceDisconnect, cleanupPlayer, clearSession, setInputMode, router])
+	}, [
+		voiceDisconnect,
+		cleanupPlayer,
+		clearSession,
+		setInputMode,
+		setWorksheetProblems,
+		setCurrentProblemIndex,
+		setShowProblemSelector,
+		router,
+	])
 
 	const handleSendMessage = useCallback(
 		(text: string) => {
@@ -443,7 +539,23 @@ export function SessionContent({ characterType }: SessionContentProps) {
 							とじる
 						</Button>
 					</div>
-					<CameraInterface onProblemRecognized={handleProblemRecognized} />
+					<CameraInterface onRecognitionComplete={handleRecognitionComplete} />
+				</div>
+			)}
+
+			{/* ProblemSelector オーバーレイ */}
+			{showProblemSelector && worksheetProblems.length > 0 && (
+				<div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-gradient-to-b from-blue-50 to-purple-50">
+					<div className="mb-4 flex w-full max-w-lg justify-end px-4 pt-4">
+						<Button variant="secondary" size="medium" onClick={() => setShowProblemSelector(false)}>
+							とじる
+						</Button>
+					</div>
+					<ProblemSelector
+						problems={worksheetProblems}
+						onProblemSelect={handleProblemSelect}
+						onRetake={handleRetakeFromSelector}
+					/>
 				</div>
 			)}
 
@@ -451,6 +563,17 @@ export function SessionContent({ characterType }: SessionContentProps) {
 				{/* ヘッダー */}
 				<header className="flex items-center justify-between gap-2 p-4 md:col-span-2">
 					<HintIndicator currentLevel={hintLevel} />
+					{/* 複数問題モード: 問題進捗インジケータ */}
+					{worksheetProblems.length > 1 && currentProblemIndex !== null && (
+						<button
+							type="button"
+							aria-label="もんだいリスト"
+							className="rounded-lg bg-blue-100 px-3 py-1 text-sm font-bold text-blue-700 hover:bg-blue-200"
+							onClick={handleReturnToProblemList}
+						>
+							もんだい {currentProblemIndex + 1}/{worksheetProblems.length}
+						</button>
+					)}
 					<PointDisplay />
 					<AgentIndicator />
 					<Button variant="secondary" size="medium" onClick={handleEndSession}>
