@@ -117,12 +117,18 @@ calculate_tool = FunctionTool(func=calculate_and_verify)
 
 ADK AutoFlowを活用し、Router Agentが子供の入力を分析して最適な専門エージェントに委譲:
 
-```
-Router Agent（振り分け）
-├── Math Coach Agent      # 算数専門（繰り上がり・繰り下がり、九九）
-├── Japanese Coach Agent  # 国語専門（漢字、読解、作文）
-├── Encouragement Agent   # 励まし・休憩提案
-└── Review Agent          # 復習・振り返り・保護者レポート
+```mermaid
+graph TB
+    Router["Router Agent<br/>（振り分け）"]
+    Math["Math Coach Agent<br/>算数専門（繰り上がり・繰り下がり、九九）"]
+    Japanese["Japanese Coach Agent<br/>国語専門（漢字、読解、作文）"]
+    Encouragement["Encouragement Agent<br/>励まし・休憩提案"]
+    Review["Review Agent<br/>復習・振り返り・保護者レポート"]
+
+    Router --> Math
+    Router --> Japanese
+    Router --> Encouragement
+    Router --> Review
 ```
 
 **Router Agentの判断ロジック:**
@@ -243,19 +249,31 @@ def update_emotion(
 
 Vertex AI Agent Engineを活用し、マネージドなエージェント実行環境を構築:
 
-```
-FastAPI (Cloud Run)
-├── POST /dialogue/run (SSE)
-│   ├── [AGENT_ENGINE_RESOURCE_NAME 設定時]
-│   │   └── AgentEngineClient
-│   │       └── remote_app.stream_query()
-│   │           └── Agent Engine (managed)
-│   │               └── Router Agent + 4 Sub-agents + 6 Tools
-│   │
-│   └── [未設定時 - フォールバック]
-│       └── AgentRunnerService
-│           └── Runner.run_async()
-│               └── Router Agent (in-process)
+```mermaid
+graph TB
+    FastAPI["FastAPI (Cloud Run)<br/>POST /dialogue/run"]
+
+    subgraph "AGENT_ENGINE_RESOURCE_NAME 設定時"
+        AEC["AgentEngineClient"]
+        RemoteApp["remote_app.stream_query()"]
+        AgentEngine["Agent Engine (managed)"]
+        RouterManaged["Router Agent + 4 Sub-agents + 6 Tools"]
+    end
+
+    subgraph "未設定時 - フォールバック"
+        ARS["AgentRunnerService"]
+        RunnerAsync["Runner.run_async()"]
+        RouterLocal["Router Agent (in-process)"]
+    end
+
+    FastAPI -->|設定あり| AEC
+    AEC --> RemoteApp
+    RemoteApp --> AgentEngine
+    AgentEngine --> RouterManaged
+
+    FastAPI -->|設定なし| ARS
+    ARS --> RunnerAsync
+    RunnerAsync --> RouterLocal
 ```
 
 **セッションファクトリパターン:**
@@ -296,25 +314,26 @@ resource "google_vertex_ai_reasoning_engine" "homework_coach" {
 
 ### システム全体像
 
-```
-                        ┌─────────────────────────────────────┐
-                        │     Vertex AI Agent Engine           │
-                        │     (マネージドデプロイ)              │
-                        └─────────────────────────────────────┘
-                                         │
-                        ┌────────────────┼────────────────┐
-                        │                │                │
-                   ┌────▼────┐    ┌──────▼──────┐   ┌────▼────┐
-                   │ Router  │    │  Math       │   │Japanese │
-                   │ Agent   │    │  Coach      │   │ Coach   │
-                   └────┬────┘    └──────┬──────┘   └────┬────┘
-                        │                │                │
-          ┌─────────────┼────────┐       │                │
-          │             │        │       │                │
-     ┌────▼────┐  ┌────▼────┐  ┌▼───────▼──┐       ┌────▼────┐
-     │Encourage│  │ Review  │  │   Tools    │       │  Tools  │
-     │ -ment   │  │ Agent   │  │   Layer    │       │  Layer  │
-     └─────────┘  └─────────┘  └────────────┘       └─────────┘
+```mermaid
+graph TB
+    subgraph "Vertex AI Agent Engine<br/>（マネージドデプロイ）"
+        Router["Router Agent"]
+        MathCoach["Math Coach Agent"]
+        JapaneseCoach["Japanese Coach Agent"]
+        Encouragement["Encouragement Agent"]
+        ReviewAgent["Review Agent"]
+
+        MathTools["Math Tools Layer<br/>・calculate_tool<br/>・manage_hint_tool<br/>・check_curriculum_tool"]
+        JapaneseTools["Japanese Tools Layer<br/>・analyze_image_tool<br/>・check_curriculum_tool"]
+
+        Router --> MathCoach
+        Router --> JapaneseCoach
+        Router --> Encouragement
+        Router --> ReviewAgent
+
+        MathCoach --> MathTools
+        JapaneseCoach --> JapaneseTools
+    end
 ```
 
 ### 技術スタック
@@ -347,23 +366,43 @@ resource "google_vertex_ai_reasoning_engine" "homework_coach" {
 ### データフロー
 
 **音声ストリーミング（WebSocket）:**
-```
-子供の音声 (16kHz PCM)
-    ↓
-WebSocket → Backend → Gemini Live API
-    ↓
-PCM音声データ (24kHz) → AudioWorklet → 再生
+```mermaid
+flowchart LR
+    Voice["子供の音声<br/>16kHz PCM"]
+    WS["WebSocket"]
+    Backend["Backend"]
+    Gemini["Gemini Live API"]
+    PCM["PCM音声データ<br/>24kHz"]
+    Worklet["AudioWorklet"]
+    Play["再生"]
+
+    Voice --> WS
+    WS --> Backend
+    Backend --> Gemini
+    Gemini --> PCM
+    PCM --> Worklet
+    Worklet --> Play
 ```
 
 **テキスト対話（SSE）:**
-```
-ユーザー入力
-    ↓
-FastAPI → Agent Engine (or Local Runner)
-    ↓
-Router Agent → 専門エージェント → ツール実行
-    ↓
-SSEストリーミング → フロントエンド表示
+```mermaid
+flowchart LR
+    Input["ユーザー入力"]
+    FastAPI["FastAPI"]
+    Engine["Agent Engine<br/>or Local Runner"]
+    Router["Router Agent"]
+    SubAgent["専門エージェント"]
+    Tools["ツール実行"]
+    SSE["SSEストリーミング"]
+    Display["フロントエンド表示"]
+
+    Input --> FastAPI
+    FastAPI --> Engine
+    Engine --> Router
+    Router --> SubAgent
+    SubAgent --> Tools
+    Tools --> SSE
+    SSE --> Display
 ```
 
 ## 実装の詳細
