@@ -104,6 +104,72 @@ ADK AutoFlowにより、子供の入力を分析して最適な専門エージ�
 - セッションファクトリパターンで段階的移行をサポート
 - TerraformによるIaC管理
 
+## アーキテクチャ
+
+### システム全体構成
+
+```mermaid
+graph TB
+  subgraph Client["クライアント (ブラウザ)"]
+    FE["Frontend<br/>Next.js 16 App Router<br/>Bun + TypeScript + Jotai"]
+  end
+
+  subgraph GCP["Google Cloud Platform"]
+    subgraph CloudRun["Cloud Run (asia-northeast1)"]
+      CR_FE["Cloud Run<br/>Frontend"]
+      CR_BE["Cloud Run<br/>Backend<br/>FastAPI + Python"]
+    end
+
+    subgraph ADKLayer["ADK エージェントレイヤー"]
+      AE["Vertex AI Agent Engine<br/>(us-central1)<br/>セッション・メモリ管理"]
+      LR["ローカル Runner<br/>(フォールバック)"]
+    end
+
+    subgraph AIServices["AI/ML サービス"]
+      GEMINI["Gemini Live API<br/>gemini-2.5-flash"]
+      STT["Cloud<br/>Speech-to-Text"]
+      TTS["Cloud<br/>Text-to-Speech"]
+      VISION["Gemini Vision /<br/>Cloud Vision API"]
+    end
+
+    subgraph DataLayer["データレイヤー"]
+      FS["Cloud Firestore<br/>アプリデータ<br/>(ユーザー・問題・カリキュラム)"]
+      BQ["BigQuery<br/>分析用データ"]
+      GCS["Cloud Storage<br/>アセット + Agent Engine"]
+    end
+
+    subgraph Security["セキュリティ"]
+      SM["Secret Manager"]
+      VPC["VPC ネットワーク"]
+      IAM["IAM / WIF"]
+    end
+  end
+
+  Client -- "HTTPS" --> CR_FE
+  CR_FE -- "WebSocket / REST" --> CR_BE
+  CR_BE -- "テキスト対話" --> AE
+  CR_BE -- "テキスト対話" --> LR
+  CR_BE -- "音声ストリーミング" --> GEMINI
+  AE --> GEMINI
+  LR --> GEMINI
+  CR_BE --> STT
+  CR_BE --> TTS
+  CR_BE --> VISION
+  CR_BE --> FS
+  CR_BE --> BQ
+  CR_BE --> GCS
+  CR_BE --> SM
+
+  style Client fill:#e1f5fe
+  style CloudRun fill:#fff3e0
+  style ADKLayer fill:#f3e5f5
+  style AIServices fill:#e8f5e9
+  style DataLayer fill:#fce4ec
+  style Security fill:#f5f5f5
+```
+
+### Agent Engine デプロイ構成
+
 ```mermaid
 graph TB
     FastAPI["FastAPI (Cloud Run)<br/>POST /dialogue/run"]
