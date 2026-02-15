@@ -55,10 +55,17 @@ describe("camera atoms", () => {
 		it("画像認識結果を保存できる", () => {
 			const store = createStore()
 			const result = {
-				recognizedText: "3 + 5 = ?",
-				problemType: "math",
+				success: true,
+				problems: [
+					{
+						text: "3 + 5 = ?",
+						type: "arithmetic",
+						difficulty: 1,
+						expression: "3 + 5",
+					},
+				],
 				confidence: 0.95,
-				extractedExpression: "3 + 5",
+				needs_confirmation: false,
 			}
 			store.set(cameraRecognitionAtom, result)
 			const recognition = store.get(cameraRecognitionAtom)
