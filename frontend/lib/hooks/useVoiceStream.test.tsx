@@ -481,6 +481,8 @@ describe("useVoiceStream", () => {
 				"https://example.com/image.jpg",
 				"math",
 				{ grade: 1 },
+				undefined,
+				undefined,
 			)
 		})
 

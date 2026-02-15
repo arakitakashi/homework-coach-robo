@@ -143,7 +143,7 @@ describe("CameraInterface", () => {
 		})
 	})
 
-	describe("recognized 状態", () => {
+	describe("recognized 状態（単一問題）", () => {
 		beforeEach(() => {
 			mockHookReturn = {
 				...defaultMockReturn,
@@ -174,12 +174,10 @@ describe("CameraInterface", () => {
 			expect(screen.getByRole("button", { name: /とりなおす/i })).toBeInTheDocument()
 		})
 
-		it("onProblemRecognized コールバックが呼ばれる", () => {
+		it("onProblemRecognized コールバックが呼ばれる（後方互換）", () => {
 			const mockCallback = vi.fn()
 			render(<CameraInterface onProblemRecognized={mockCallback} />)
 
-			// コンポーネントが recognized 状態でレンダリングされた際にコールバック確認
-			// コールバックは「このもんだいでべんきょうする」ボタン経由で呼ばれる
 			const confirmButton = screen.getByRole("button", { name: /このもんだいでべんきょうする/i })
 			fireEvent.click(confirmButton)
 
@@ -189,6 +187,61 @@ describe("CameraInterface", () => {
 				confidence: 0.95,
 				extractedExpression: "1 + 2",
 			})
+		})
+	})
+
+	describe("recognized 状態（onRecognitionComplete）", () => {
+		beforeEach(() => {
+			mockHookReturn = {
+				...defaultMockReturn,
+				status: "recognized",
+				recognitionResult: {
+					success: true,
+					problems: [
+						{
+							text: "1 + 2 = ?",
+							type: "arithmetic",
+							difficulty: 1,
+							expression: "1 + 2",
+						},
+						{
+							text: "5 - 3 = ?",
+							type: "arithmetic",
+							difficulty: 1,
+							expression: "5 - 3",
+						},
+					],
+					confidence: 0.9,
+					needs_confirmation: false,
+				},
+			}
+		})
+
+		it("onRecognitionCompleteが提供されている場合、全問題の数が表示される", () => {
+			const mockComplete = vi.fn()
+			render(<CameraInterface onRecognitionComplete={mockComplete} />)
+			expect(screen.getByText(/2 もん/)).toBeInTheDocument()
+		})
+
+		it("もんだいをえらぶボタンが表示される", () => {
+			const mockComplete = vi.fn()
+			render(<CameraInterface onRecognitionComplete={mockComplete} />)
+			expect(screen.getByRole("button", { name: /もんだいをえらぶ/ })).toBeInTheDocument()
+		})
+
+		it("もんだいをえらぶボタンをクリックするとonRecognitionCompleteが呼ばれる", () => {
+			const mockComplete = vi.fn()
+			render(<CameraInterface onRecognitionComplete={mockComplete} />)
+			fireEvent.click(screen.getByRole("button", { name: /もんだいをえらぶ/ }))
+			expect(mockComplete).toHaveBeenCalledWith(mockHookReturn.recognitionResult)
+		})
+
+		it("onRecognitionCompleteがない場合は従来のUIが表示される", () => {
+			render(<CameraInterface />)
+			// 従来の「このもんだいでべんきょうする」ボタンが表示される
+			expect(
+				screen.getByRole("button", { name: /このもんだいでべんきょうする/ }),
+			).toBeInTheDocument()
 		})
 	})
 

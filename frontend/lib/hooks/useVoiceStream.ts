@@ -59,6 +59,8 @@ export interface UseVoiceStreamReturn {
 		imageUrl: string,
 		problemType?: string,
 		metadata?: Record<string, unknown>,
+		problemIndex?: number,
+		totalProblems?: number,
 	) => void
 	/** エラーをクリア */
 	clearError: () => void
@@ -318,9 +320,18 @@ export function useVoiceStream(options: UseVoiceStreamOptions = {}): UseVoiceStr
 			imageUrl: string,
 			problemType?: string,
 			metadata?: Record<string, unknown>,
+			problemIndex?: number,
+			totalProblems?: number,
 		) => {
 			if (clientRef.current?.isConnected) {
-				clientRef.current.sendImageStart(problemText, imageUrl, problemType, metadata)
+				clientRef.current.sendImageStart(
+					problemText,
+					imageUrl,
+					problemType,
+					metadata,
+					problemIndex,
+					totalProblems,
+				)
 			}
 		},
 		[],

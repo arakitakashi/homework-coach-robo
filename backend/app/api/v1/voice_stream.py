@@ -124,10 +124,18 @@ async def _handle_start_with_image(
 
     problem_type = payload.get("problem_type", "other")
     image_url = payload.get("image_url")
+    problem_index = payload.get("problem_index")
+    total_problems = payload.get("total_problems")
 
     # エージェントに問題テキストを転送
     # 画像から認識した問題であることをコンテキストとして含める
-    agent_message = f"【画像から読み取った問題（{problem_type}）】\n{problem_text}"
+    if total_problems is not None and total_problems > 1 and problem_index is not None:
+        agent_message = (
+            f"【画像から読み取った問題 {problem_index + 1}/{total_problems}"
+            f"（{problem_type}）】\n{problem_text}"
+        )
+    else:
+        agent_message = f"【画像から読み取った問題（{problem_type}）】\n{problem_text}"
     if image_url:
         agent_message += f"\n（画像URL: {image_url}）"
 
