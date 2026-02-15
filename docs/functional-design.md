@@ -43,7 +43,7 @@ graph TB
     end
 
     subgraph Data["データ層 (Google Cloud)"]
-        Firestore["Cloud Firestore<br/>(リアルタイムデータ)"]
+        Firestore["Cloud Firestore<br/>(アプリデータ)"]
         BigQuery["BigQuery<br/>(学習データ永続化)"]
     end
 
@@ -91,7 +91,7 @@ graph TB
 
 1. **音声入力フロー**: クライアント → WebSocket → ADK Runner → Gemini Live API
 2. **音声出力フロー**: Gemini Live API → ADK Events → WebSocket → クライアント
-3. **セッション管理**: SessionService ↔ Firestore（リアルタイム保存）
+3. **セッション管理**: SessionService ↔ Vertex AI SessionService（Agent Engine経由）
 4. **学習データ永続化**: セッション終了時 → BigQueryDataService → BigQuery
 
 **Cloud Run設定方針:**
@@ -2491,7 +2491,7 @@ WHERE user_id = @user_id
 GROUP BY emotion;
 ```
 
-#### 4.5.4 Firestoreデータ構造（リアルタイムデータ）
+#### 4.5.4 Firestoreデータ構造（アプリケーションデータ）
 
 **users コレクション**
 ```
