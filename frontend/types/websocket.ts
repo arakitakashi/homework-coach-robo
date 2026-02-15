@@ -65,6 +65,35 @@ export interface EmotionUpdateMessage {
 	engagementLevel: number
 }
 
+/** 画像問題開始メッセージ（クライアント → サーバー） */
+export interface StartWithImageMessage {
+	type: "start_with_image"
+	payload: {
+		problem_text: string
+		problem_type?: string
+		image_url: string
+		metadata?: Record<string, unknown>
+	}
+}
+
+/** 画像問題確認メッセージ（サーバー → クライアント） */
+export interface ImageProblemConfirmedMessage {
+	type: "image_problem_confirmed"
+	payload: {
+		problem_id: string
+		coach_response: string
+	}
+}
+
+/** 画像認識エラーメッセージ（サーバー → クライアント） */
+export interface ImageRecognitionErrorMessage {
+	type: "image_recognition_error"
+	payload: {
+		error: string
+		code: string
+	}
+}
+
 /** WebSocketメッセージ（受信） */
 export type WebSocketIncomingMessage =
 	| AudioMessage
@@ -76,9 +105,11 @@ export type WebSocketIncomingMessage =
 	| ToolExecutionMessage
 	| AgentTransitionMessage
 	| EmotionUpdateMessage
+	| ImageProblemConfirmedMessage
+	| ImageRecognitionErrorMessage
 
 /** WebSocketメッセージ（送信） */
-export type WebSocketOutgoingMessage = AudioMessage | SessionEndMessage
+export type WebSocketOutgoingMessage = AudioMessage | SessionEndMessage | StartWithImageMessage
 
 /** WebSocket接続状態 */
 export type WebSocketConnectionState = "disconnected" | "connecting" | "connected" | "error"

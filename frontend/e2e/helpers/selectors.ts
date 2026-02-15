@@ -36,6 +36,13 @@ export const SESSION = {
 	closeButton: "とじる",
 } as const
 
+/** 入力モード選択のテキスト */
+export const INPUT_MODE_SELECTOR = {
+	title: "どうやってつたえる？",
+	voiceButton: "声で伝える",
+	imageButton: "写真で伝える",
+} as const
+
 /** 音声UIのテキスト */
 export const VOICE = {
 	idle: "話しかけてね",

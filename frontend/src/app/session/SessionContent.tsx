@@ -7,10 +7,12 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
 	AgentIndicator,
 	BadgeNotification,
+	CameraInterface,
 	CharacterDisplay,
 	DialogueHistory,
 	EmotionIndicator,
 	HintIndicator,
+	InputModeSelector,
 	PointDisplay,
 	ProgressDisplay,
 	StoryProgress,
@@ -23,6 +25,7 @@ import { ErrorMessage } from "@/components/ui/ErrorMessage"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { TextInput } from "@/components/ui/TextInput"
 import { useDialogue, usePcmPlayer, useSession, useVoiceStream } from "@/lib/hooks"
+import { inputModeAtom } from "@/store/atoms/camera"
 import { characterStateAtom, dialogueTurnsAtom, hintLevelAtom } from "@/store/atoms/dialogue"
 import {
 	activeAgentAtom,
@@ -41,6 +44,7 @@ import type {
 	DialogueTurn,
 	EmotionAnalysis,
 	EmotionType,
+	ImageAnalysisResult,
 	ToolExecution,
 	ToolExecutionStatus,
 	ToolName,
@@ -74,6 +78,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 	const [, _setAgentTransitionHistory] = useAtom(agentTransitionHistoryAtom)
 	const [, _setEmotionAnalysis] = useAtom(emotionAnalysisAtom)
 	const [, _setEmotionHistory] = useAtom(emotionHistoryAtom)
+	const [inputMode, setInputMode] = useAtom(inputModeAtom)
 
 	// 音声入力の有効化状態
 	const [isVoiceEnabled] = useState(true)
@@ -211,6 +216,42 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		[_setEmotionAnalysis, _setEmotionHistory],
 	)
 
+	// 画像問題確認イベントハンドラ
+	const handleImageProblemConfirmed = useCallback(
+		(problemId: string, coachResponse: string) => {
+			// 画像認識完了メッセージを対話履歴に追加
+			transcriptionIdRef.current += 1
+			const turn: DialogueTurn = {
+				id: `image-confirmed-${problemId}`,
+				speaker: "robot",
+				text: coachResponse,
+				timestamp: new Date(),
+			}
+			setDialogueTurns((prev) => [...prev, turn])
+			setCharacterState("speaking")
+			// 音声モードに自動切り替え
+			setInputMode("voice")
+		},
+		[setDialogueTurns, setCharacterState, setInputMode],
+	)
+
+	// 画像認識エラーイベントハンドラ
+	const handleImageRecognitionError = useCallback(
+		(_error: string, code: string) => {
+			// エラーメッセージを対話履歴に追加
+			transcriptionIdRef.current += 1
+			const turn: DialogueTurn = {
+				id: `image-error-${Date.now()}`,
+				speaker: "robot",
+				text: `しゃしんがよめなかったよ。もういちどためしてね！（${code}）`,
+				timestamp: new Date(),
+			}
+			setDialogueTurns((prev) => [...prev, turn])
+			setCharacterState("thinking")
+		},
+		[setDialogueTurns, setCharacterState],
+	)
+
 	// 音声ストリーミングフック
 	const {
 		connectionState: voiceConnectionState,
@@ -220,6 +261,7 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		stopRecording,
 		connect: voiceConnect,
 		disconnect: voiceDisconnect,
+		sendImageStart,
 	} = useVoiceStream({
 		onAudioData: handleAudioData,
 		onTranscription: handleTranscription,
@@ -228,7 +270,29 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		onToolExecution: handleToolExecution,
 		onAgentTransition: handleAgentTransition,
 		onEmotionUpdate: handleEmotionUpdate,
+		onImageProblemConfirmed: handleImageProblemConfirmed,
+		onImageRecognitionError: handleImageRecognitionError,
 	})
+
+	// 画像問題認識完了ハンドラ
+	// biome-ignore lint/correctness/noUnusedVariables: 早期リターン後に使用されるが、フックルールのため早期リターン前に定義
+	const handleProblemRecognized = useCallback(
+		(recognizedText: string, result: ImageAnalysisResult) => {
+			// sendImageStartを呼び出してWebSocket経由でバックエンドに送信
+			if (session) {
+				sendImageStart(
+					recognizedText,
+					"", // imageUrl: バックエンドが既に保存している想定
+					result.problemType,
+					{
+						confidence: result.confidence,
+						extractedExpression: result.extractedExpression,
+					},
+				)
+			}
+		},
+		[session, sendImageStart],
+	)
 
 	// 初期化時にセッションを作成
 	useEffect(() => {
@@ -279,8 +343,9 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		voiceDisconnect()
 		cleanupPlayer()
 		await clearSession()
+		setInputMode(null) // 入力モードをリセット
 		router.push("/")
-	}, [voiceDisconnect, cleanupPlayer, clearSession, router])
+	}, [voiceDisconnect, cleanupPlayer, clearSession, setInputMode, router])
 
 	const handleSendMessage = useCallback(
 		(text: string) => {
@@ -331,7 +396,25 @@ export function SessionContent({ characterType }: SessionContentProps) {
 		)
 	}
 
-	// セッションが存在する場合のメインUI
+	// セッション作成完了後、モード未選択の場合は InputModeSelector を表示
+	if (session && inputMode === null) {
+		return (
+			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 p-4">
+				<InputModeSelector onModeSelect={setInputMode} />
+			</main>
+		)
+	}
+
+	// 画像モード選択時のCameraInterface表示
+	if (session && inputMode === "image") {
+		return (
+			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-purple-50 p-4">
+				<CameraInterface onProblemRecognized={handleProblemRecognized} />
+			</main>
+		)
+	}
+
+	// セッションが存在し、音声モードが選択された場合のメインUI
 	const isConnected = !!session
 	const isVoiceConnected = isVoiceEnabled && voiceConnectionState === "connected"
 

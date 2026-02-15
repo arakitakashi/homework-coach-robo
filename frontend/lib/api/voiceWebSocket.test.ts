@@ -497,4 +497,144 @@ describe("VoiceWebSocketClient", () => {
 			expect(defaultOptions.onError).toHaveBeenCalled()
 		})
 	})
+
+	describe("画像イベント", () => {
+		describe("sendImageStart()", () => {
+			it("接続中にstart_with_imageメッセージを送信する", () => {
+				const client = new VoiceWebSocketClient(defaultOptions)
+				client.connect()
+				mockWebSocketInstance?.simulateOpen()
+
+				client.sendImageStart("3 + 5 = ?", "gs://bucket/image.jpg", "math", { source: "camera" })
+
+				expect(mockWebSocketInstance?.send).toHaveBeenCalledWith(
+					JSON.stringify({
+						type: "start_with_image",
+						payload: {
+							problem_text: "3 + 5 = ?",
+							image_url: "gs://bucket/image.jpg",
+							problem_type: "math",
+							metadata: { source: "camera" },
+						},
+					}),
+				)
+			})
+
+			it("未接続時は送信しない", () => {
+				const client = new VoiceWebSocketClient(defaultOptions)
+				client.connect()
+				// simulateOpen()を呼ばない（未接続状態）
+
+				client.sendImageStart("問題文", "gs://bucket/image.jpg")
+
+				expect(mockWebSocketInstance?.send).not.toHaveBeenCalled()
+			})
+
+			it("オプションパラメータなしで送信できる", () => {
+				const client = new VoiceWebSocketClient(defaultOptions)
+				client.connect()
+				mockWebSocketInstance?.simulateOpen()
+
+				client.sendImageStart("問題文", "gs://bucket/image.jpg")
+
+				expect(mockWebSocketInstance?.send).toHaveBeenCalledWith(
+					JSON.stringify({
+						type: "start_with_image",
+						payload: {
+							problem_text: "問題文",
+							image_url: "gs://bucket/image.jpg",
+						},
+					}),
+				)
+			})
+		})
+
+		describe("画像問題確認イベント受信", () => {
+			it("image_problem_confirmedイベントでコールバックを呼ぶ", () => {
+				const options = {
+					...defaultOptions,
+					onImageProblemConfirmed: vi.fn(),
+				}
+				const client = new VoiceWebSocketClient(options)
+				client.connect()
+				mockWebSocketInstance?.simulateOpen()
+
+				const event = {
+					type: "image_problem_confirmed",
+					payload: {
+						problem_id: "uuid-123",
+						coach_response: "画像から問題を読み取りました！",
+					},
+				}
+				mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+				expect(options.onImageProblemConfirmed).toHaveBeenCalledWith(
+					"uuid-123",
+					"画像から問題を読み取りました！",
+				)
+			})
+
+			it("onImageProblemConfirmedが未設定でもエラーにならない", () => {
+				const client = new VoiceWebSocketClient(defaultOptions)
+				client.connect()
+				mockWebSocketInstance?.simulateOpen()
+
+				const event = {
+					type: "image_problem_confirmed",
+					payload: {
+						problem_id: "uuid-123",
+						coach_response: "確認しました",
+					},
+				}
+
+				expect(() => {
+					mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+				}).not.toThrow()
+			})
+		})
+
+		describe("画像認識エラーイベント受信", () => {
+			it("image_recognition_errorイベントでコールバックを呼ぶ", () => {
+				const options = {
+					...defaultOptions,
+					onImageRecognitionError: vi.fn(),
+				}
+				const client = new VoiceWebSocketClient(options)
+				client.connect()
+				mockWebSocketInstance?.simulateOpen()
+
+				const event = {
+					type: "image_recognition_error",
+					payload: {
+						error: "画像が不鮮明です",
+						code: "INVALID_PAYLOAD",
+					},
+				}
+				mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+
+				expect(options.onImageRecognitionError).toHaveBeenCalledWith(
+					"画像が不鮮明です",
+					"INVALID_PAYLOAD",
+				)
+			})
+
+			it("onImageRecognitionErrorが未設定でもエラーにならない", () => {
+				const client = new VoiceWebSocketClient(defaultOptions)
+				client.connect()
+				mockWebSocketInstance?.simulateOpen()
+
+				const event = {
+					type: "image_recognition_error",
+					payload: {
+						error: "エラー",
+						code: "ERROR",
+					},
+				}
+
+				expect(() => {
+					mockWebSocketInstance?.simulateMessage(JSON.stringify(event))
+				}).not.toThrow()
+			})
+		})
+	})
 })

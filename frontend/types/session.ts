@@ -2,6 +2,8 @@
  * セッション関連の型定義
  */
 
+import type { SubjectType, ThinkingTendencies } from "./phase2"
+
 /** キャラクタータイプ */
 export type CharacterType = "robot" | "wizard" | "astronaut" | "animal"
 
@@ -20,8 +22,6 @@ export interface Session {
 
 /** セッション作成時の入力 */
 export type SessionCreation = Omit<Session, "id" | "startTime" | "endTime">
-
-import type { SubjectType, ThinkingTendencies } from "./phase2"
 
 /** 学習進捗 */
 export interface LearningProgress {

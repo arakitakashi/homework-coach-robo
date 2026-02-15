@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { inputModeAtom } from "@/store/atoms/camera"
 
 // セッションページコンポーネントをテスト用にインポート
 import { SessionContent } from "../../src/app/session/SessionContent"
@@ -123,6 +124,8 @@ vi.mock("@/lib/api", () => {
 // テスト用のラッパー（Jotaiストアをリセット）
 function TestWrapper({ children }: { children: ReactNode }) {
 	const store = createStore()
+	// 既存テストとの後方互換性のため、デフォルトで音声モードに設定
+	store.set(inputModeAtom, "voice")
 	return <Provider store={store}>{children}</Provider>
 }
 

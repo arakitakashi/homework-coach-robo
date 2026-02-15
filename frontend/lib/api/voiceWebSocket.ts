@@ -68,6 +68,33 @@ export class VoiceWebSocketClient {
 	}
 
 	/**
+	 * 画像問題開始イベントを送信
+	 * @param problemText - 認識された問題文
+	 * @param imageUrl - アップロード済み画像URL
+	 * @param problemType - 問題タイプ（optional）
+	 * @param metadata - 追加メタデータ（optional）
+	 */
+	sendImageStart(
+		problemText: string,
+		imageUrl: string,
+		problemType?: string,
+		metadata?: Record<string, unknown>,
+	): void {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			const message = JSON.stringify({
+				type: "start_with_image",
+				payload: {
+					problem_text: problemText,
+					image_url: imageUrl,
+					...(problemType && { problem_type: problemType }),
+					...(metadata && { metadata }),
+				},
+			})
+			this.ws.send(message)
+		}
+	}
+
+	/**
 	 * WebSocket URLを構築
 	 */
 	private buildWebSocketUrl(): string {
@@ -115,7 +142,7 @@ export class VoiceWebSocketClient {
 		}
 
 		// JSONメッセージをパース
-		let event: ADKEvent
+		let event: unknown
 		try {
 			event = JSON.parse(data)
 		} catch {
@@ -123,7 +150,44 @@ export class VoiceWebSocketClient {
 			return
 		}
 
-		this.processADKEvent(event)
+		// 型ガードで画像イベントかADKイベントかを判定
+		if (this.isImageEvent(event)) {
+			this.processImageEvent(event)
+		} else {
+			this.processADKEvent(event as ADKEvent)
+		}
+	}
+
+	/**
+	 * 画像イベントかどうかを判定
+	 */
+	private isImageEvent(
+		event: unknown,
+	): event is { type: string; payload: Record<string, unknown> } {
+		return (
+			typeof event === "object" &&
+			event !== null &&
+			"type" in event &&
+			typeof event.type === "string" &&
+			(event.type === "image_problem_confirmed" || event.type === "image_recognition_error")
+		)
+	}
+
+	/**
+	 * 画像イベントを処理
+	 */
+	private processImageEvent(event: { type: string; payload: Record<string, unknown> }): void {
+		if (event.type === "image_problem_confirmed") {
+			const { problem_id, coach_response } = event.payload
+			if (typeof problem_id === "string" && typeof coach_response === "string") {
+				this.options.onImageProblemConfirmed?.(problem_id, coach_response)
+			}
+		} else if (event.type === "image_recognition_error") {
+			const { error, code } = event.payload
+			if (typeof error === "string" && typeof code === "string") {
+				this.options.onImageRecognitionError?.(error, code)
+			}
+		}
 	}
 
 	/**
